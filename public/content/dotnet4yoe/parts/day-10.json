@@ -1,0 +1,29 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Messaging — RabbitMQ vs Kafka, outbox, saga",
+  "exp": "Know when to pick a broker, what partitions mean, and how to avoid dual-write bugs.",
+  "pts": [
+    "RabbitMQ: routing, work queues, push consumers.",
+    "Kafka: log, partitions = parallelism/ordering, consumer groups, replay.",
+    "**Outbox:** DB + outbox row same transaction; publisher drains — at-least-once without lost events.",
+    "**Saga:** multi-step business flow with compensations (choreography vs orchestration).",
+    "SignalR: WebSockets + fallback; scale-out via Redis/Azure SignalR."
+  ],
+  "code": "",
+  "pr": [
+    "Draw outbox flow for OrderPlaced",
+    "Compare partition count vs consumer count in Kafka"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "When do you choose Kafka over RabbitMQ?",
+      "a": "High-throughput event streams, replay/retention, partition-scaled consumers, and log-oriented processing. Choose RabbitMQ for complex routing, classic work queues, and lower operational complexity at moderate volume."
+    },
+    {
+      "q": "What problem does the outbox pattern solve?",
+      "a": "Dual-write: updating DB and publishing a message separately can lose one side on failure. Outbox writes the event in the same DB transaction; a process publishes later, yielding reliable at-least-once delivery with idempotent consumers."
+    }
+  ]
+}

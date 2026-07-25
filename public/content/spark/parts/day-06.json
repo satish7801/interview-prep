@@ -1,0 +1,57 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Scala basics for PySpark developers",
+  "exp": "Reading fluency only. Once you know PySpark, Scala Spark is mostly vocabulary. The JD mentions Scala so expect can-you-read-this questions.",
+  "pts": [
+    "val df = ... -- val means the reference cannot be reassigned (like C# readonly).",
+    "var x = 5 -- mutable. Use val by default.",
+    "Types come AFTER the name: val name: String = 'Satish'",
+    "case class Order(id: Int, amount: Double) -- like C# record or Python @dataclass.",
+    "Option[T]: Some(value) when exists, None when absent. Scala's null safety.",
+    "The Spark DataFrame API is identical across Python and Scala."
+  ],
+  "code": "// Scala Spark -- same logic as PySpark, different syntax\n\nval df = spark.read.option(\"header\",\"true\").csv(\"/path/data.csv\")\n\nval result = df\n  .filter(col(\"amount\") > 1000)\n  .groupBy(\"category\")\n  .agg(sum(\"amount\").alias(\"total\"))\n\nresult.write.mode(\"overwrite\").parquet(\"/output/\")\n\n// Case class\ncase class Order(id: Int, amount: Double, status: String)\nimport spark.implicits._\nval ds: Dataset[Order] = df.as[Order]\n\n// Option[T]\ndef find(id: Int, list: List[String]): Option[String] = list.find(_ == id.toString)\nfind(42, List(\"1\",\"42\",\"3\")) match {\n  case Some(v) => println(s\"Found: $v\")\n  case None    => println(\"Not found\")\n}\n\n// Collections\nval amounts = Seq(250.0, 1500.0, 800.0)\nval large   = amounts.filter(_ > 1000)\nval doubled = amounts.map(_ * 2)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Concept",
+        "C#",
+        "PySpark",
+        "Scala"
+      ],
+      "r": [
+        [
+          "Immutable",
+          "readonly x",
+          "(convention)",
+          "val x"
+        ],
+        [
+          "Mutable",
+          "var x",
+          "x =",
+          "var x"
+        ],
+        [
+          "Null safety",
+          "T? / null",
+          "None",
+          "Option[T]"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between val and var in Scala?",
+      "a": "val declares an immutable reference -- once assigned, cannot be reassigned (like C# readonly field). var is mutable. Scala style strongly prefers val for predictability and thread safety."
+    },
+    {
+      "q": "How does the Spark DataFrame API differ between PySpark and Scala?",
+      "a": "The method names are nearly identical: .filter(), .groupBy(), .agg(), .join(), .write.parquet() are the same. Main differences: column reference uses col() or $'colName' in Scala; reader options use .option() chains; sum does not need to be renamed (no conflict with Python built-in). Reading Scala Spark code requires mostly just adjusting for different syntax, not different concepts."
+    }
+  ]
+}

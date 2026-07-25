@@ -1,0 +1,53 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Blob Storage -- containers, tiers, lifecycle, SAS tokens",
+  "exp": "Blob Storage is Azure's S3. Same conceptual shape -- containers instead of buckets, blobs instead of objects -- with a few naming and API differences worth knowing cold.",
+  "pts": [
+    "Storage Account is the top-level namespace -- one account can hold many containers, unlike S3 where bucket names are globally unique on their own.",
+    "Containers hold blobs. Blob names support '/' as a path-like convention, same as S3 keys -- no real folder structure underneath.",
+    "Access tiers: Hot (frequent), Cool (infrequent, 30-day minimum), Cold (rarer, 90-day minimum), Archive (rare, hours to rehydrate) -- directly analogous to S3 Standard/IA/Glacier/Deep Archive.",
+    "Lifecycle management policies auto-transition or delete blobs by age, defined as a JSON rule set on the Storage Account.",
+    "SAS (Shared Access Signature) tokens are Azure's presigned URL equivalent -- time-limited, permission-scoped access without sharing account keys.",
+    "ADLS Gen2 (Azure Data Lake Storage Gen2) is Blob Storage with a hierarchical namespace enabled -- this is what Databricks/Spark actually reads from in production, not plain Blob Storage, because it supports real directory-level operations Spark relies on."
+  ],
+  "code": "from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions\nfrom azure.identity import DefaultAzureCredential\nfrom datetime import datetime, timedelta\n\nclient = BlobServiceClient(\n    account_url=\"https://satishpipeline.blob.core.windows.net\",\n    credential=DefaultAzureCredential()\n)\ncontainer = client.get_container_client(\"orders-raw\")\n\nwith open(\"orders.csv\", \"rb\") as f:\n    container.upload_blob(name=\"2024/01/orders.csv\", data=f, overwrite=True)\n\nfor blob in container.list_blobs(name_starts_with=\"2024/01/\"):\n    print(blob.name, blob.size)\n\nsas = generate_blob_sas(\n    account_name=\"satishpipeline\", container_name=\"reports\", blob_name=\"q4.pdf\",\n    permission=BlobSasPermissions(read=True),\n    expiry=datetime.utcnow() + timedelta(hours=1)\n)\nurl = f\"https://satishpipeline.blob.core.windows.net/reports/q4.pdf?{sas}\"\n\n# Spark reads from ADLS Gen2 (hierarchical namespace), not plain Blob Storage\ndf = spark.read.parquet(\"abfss://raw@satishpipeline.dfs.core.windows.net/orders/2024/\")",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS S3",
+        "Azure Blob"
+      ],
+      "r": [
+        [
+          "Bucket",
+          "Storage Account + Container"
+        ],
+        [
+          "Object key",
+          "Blob name"
+        ],
+        [
+          "Presigned URL",
+          "SAS token"
+        ],
+        [
+          "Standard/IA/Glacier/Deep Archive",
+          "Hot/Cool/Cold/Archive"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is ADLS Gen2 and why does Spark specifically need it instead of plain Blob Storage?",
+      "a": "ADLS Gen2 is Blob Storage with hierarchical namespace enabled -- meaning directories are real, atomic filesystem objects rather than just a naming convention over flat keys. Spark's write process (especially the rename-based commit pattern many Spark output formats use) relies on atomic directory rename operations, which plain flat Blob Storage doesn't support efficiently. Enabling hierarchical namespace on the storage account is what makes it 'ADLS Gen2' and production-ready for Spark workloads."
+    },
+    {
+      "q": "How does a SAS token differ from an S3 presigned URL in how it's generated?",
+      "a": "Functionally identical purpose -- time-limited, permission-scoped access to a blob without full account credentials. Generation differs: SAS tokens typically need either the storage account key or a user-delegation key obtained via Entra ID, while S3 presigned URLs are generated directly from IAM credentials. Prefer user-delegation SAS (tied to an Entra ID identity, revocable) over account-key SAS in production, since account-key SAS tokens are harder to revoke individually."
+    }
+  ]
+}

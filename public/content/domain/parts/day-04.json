@@ -1,0 +1,29 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "Cross-stack technical deep dives",
+  "exp": "These test system-level thinking across all tracks -- the questions that separate knows-the-tools from can-lead-a-platform-team.",
+  "pts": [
+    "System design: clarify requirements, sketch happy path, identify one key decision, drill in, state trade-offs.",
+    "Schema versioning: additive changes backward-compatible in Parquet. Breaking changes need versioned paths.",
+    "Always: explicit beats implicit. Config-driven beats hardcoded. Idempotent beats append-only."
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Senior scoring: 1pt clear problem statement, 1pt named trade-offs (not just options), 1pt concrete example from your work. Generic answers score 1/3."
+    }
+  ],
+  "qa": [
+    {
+      "q": "How would you version a dataset schema without breaking existing consumers?",
+      "a": "Additive (new nullable columns): Parquet handles automatically -- existing readers see null. Breaking changes: new versioned path (v2/) that new consumers opt into while old consumers stay on v1, or a transition period where both field names coexist before deprecating the old one on a communicated timeline. Never break consumers without a migration path."
+    },
+    {
+      "q": "How do you test transformation logic without running the full dataset?",
+      "a": "Create a representative test dataset: 10-20 rows covering edge cases (nulls, duplicates, boundary values). Write unit tests: given this input, assert this output. pytest + assert_frame_equal for pandas; local SparkSession for PySpark. Test the function in isolation -- integration tests on full pipelines live separately as slower tests."
+    }
+  ]
+}

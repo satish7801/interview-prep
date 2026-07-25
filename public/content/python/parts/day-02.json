@@ -1,0 +1,39 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "File I/O, CSV, JSON, environment variables",
+  "exp": "Data engineering is 80% reading files, transforming them, and writing files. Environment variables are the professional way to manage credentials.",
+  "pts": [
+    "with open(path, mode) as f: -- context manager that auto-closes the file (like C# using statement).",
+    "csv.DictReader(f) -- reads each row as a dict keyed by column header.",
+    "CSV values are always strings when read -- you must float(r['amount']) before numeric comparisons.",
+    "json.loads(string) -- parse JSON to Python dict. json.dumps(obj) -- serialize to JSON string.",
+    "os.environ.get('DB_PASSWORD') -- read environment variables. Never hardcode credentials.",
+    "pathlib.Path -- modern cross-platform path: Path('data') / 'input.csv'."
+  ],
+  "code": "import csv, json, os\nfrom pathlib import Path\n\n# CSV READ -- all values are strings!\nwith open('orders.csv', newline='') as f:\n    rows = list(csv.DictReader(f))\n\nfiltered = [r for r in rows if float(r['amount']) > 1000]\n\n# CSV WRITE\nout = Path('output') / 'filtered.csv'\nout.parent.mkdir(parents=True, exist_ok=True)\nwith open(out, 'w', newline='') as f:\n    writer = csv.DictWriter(f, fieldnames=filtered[0].keys())\n    writer.writeheader()\n    writer.writerows(filtered)\n\n# JSON\nwith open('config.json') as f: config = json.load(f)\nconfig['last_run'] = '2025-01-01'\nwith open('config.json', 'w') as f: json.dump(config, f, indent=2)\n\n# ENV VARIABLES -- never hardcode!\npw = os.environ.get('DB_PASSWORD')\nif not pw: raise ValueError('DB_PASSWORD not set')",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "open(csv)",
+        "DictReader",
+        "Filter rows",
+        "DictWriter",
+        "Write output"
+      ],
+      "cap": "CSV read-filter-write: the core data pipeline building block"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why convert CSV values before comparing?",
+      "a": "csv.DictReader reads every value as a string. '1500' > 1000 raises TypeError in Python 3. Convert explicitly: float(row['amount']) > 1000. Add type conversion as the first step after reading any CSV."
+    },
+    {
+      "q": "json.loads vs json.load?",
+      "a": "json.loads('string') parses a JSON STRING -- the s stands for string. json.load(file) reads from a FILE OBJECT directly. Similarly dumps serializes to string, dump writes to a file handle."
+    }
+  ]
+}

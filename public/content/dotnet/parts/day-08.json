@@ -1,0 +1,75 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Collections internals -- List, Dictionary, HashSet under the hood",
+  "exp": "Knowing WHAT List<T> and Dictionary<K,V> do is table stakes. Knowing HOW they work internally -- resizing behavior, hash bucket collisions, when to reach for a different collection -- is what a 4-YOE interview actually probes for.",
+  "pts": [
+    "List<T> is backed by a resizable array. When capacity is exceeded, it allocates a NEW array (typically double the size) and copies every existing element over -- an O(n) operation that happens amortized rarely, but is the reason `new List<T>(expectedCount)` matters for hot paths.",
+    "`Add()` is O(1) amortized, but a single Add() call can trigger an O(n) resize. `Insert(0, item)` is always O(n) because every subsequent element must shift right.",
+    "Dictionary<K,V> is a hash table with separate chaining for collision resolution. Key lookup is O(1) average case, but degrades toward O(n) if many keys hash to the same bucket -- a bad GetHashCode() implementation can silently turn your dictionary into a linked list.",
+    "**The GetHashCode/Equals contract:** if you override Equals(), you MUST override GetHashCode() consistently -- two objects that are Equal must return the same hash code, or Dictionary/HashSet lookups will silently fail to find entries that are logically present.",
+    "HashSet<T> is literally a Dictionary<T, object> under the hood with the value discarded -- same O(1) average lookup, same hash-collision risk, same Equals/GetHashCode contract requirement.",
+    "SortedDictionary<K,V> (red-black tree, O(log n) operations, keys always enumerated in order) vs SortedList<K,V> (sorted array, O(log n) lookup via binary search but O(n) insertion due to shifting) -- know when ordered enumeration matters enough to pay the cost.",
+    "Queue<T> (FIFO) and Stack<T> (LIFO) are both backed by a resizable circular array or array respectively -- O(1) for their primary operations (Enqueue/Dequeue, Push/Pop).",
+    "ConcurrentDictionary<K,V> uses fine-grained internal locking (lock striping) rather than one global lock -- multiple threads can operate on different segments of the dictionary concurrently, unlike wrapping a regular Dictionary in a single lock statement."
+  ],
+  "code": "// Pre-sizing a List to avoid repeated array reallocation on a hot path\nvar results = new List<Order>(expectedCount);  // avoids resize-copy cycles during population\n\n// The GetHashCode/Equals contract -- getting this wrong breaks Dictionary silently\npublic class OrderKey\n{\n    public int CustomerId { get; set; }\n    public string Region { get; set; }\n\n    public override bool Equals(object obj) =>\n        obj is OrderKey other && CustomerId == other.CustomerId && Region == other.Region;\n\n    // MUST be overridden alongside Equals -- HashCode.Combine is the modern standard\n    public override int GetHashCode() => HashCode.Combine(CustomerId, Region);\n}\n\n// Without a correct GetHashCode, this lookup can silently return false\n// even when a logically identical key was inserted:\nvar seen = new Dictionary<OrderKey, bool>();\nseen[new OrderKey { CustomerId = 1, Region = \"US\" }] = true;\nseen.ContainsKey(new OrderKey { CustomerId = 1, Region = \"US\" });  // MUST be true\n\n// ConcurrentDictionary -- safe for multi-threaded access without a manual lock\nvar cache = new ConcurrentDictionary<string, decimal>();\ncache.AddOrUpdate(\"AAPL\", 150.00m, (key, oldValue) => oldValue + 1.0m);\n\n// GetOrAdd -- but beware: the factory can run MORE THAN ONCE under contention\nvar value = cache.GetOrAdd(\"AAPL\", key => ExpensiveComputation(key));\n// If two threads call GetOrAdd simultaneously for a missing key, ExpensiveComputation\n// may execute twice -- only one result is kept, but both ran",
+  "pr": [
+    "Write a class that overrides Equals() but forgets GetHashCode(), then demonstrate the Dictionary lookup failure this causes"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Collection",
+        "Backing structure",
+        "Key operation cost"
+      ],
+      "r": [
+        [
+          "List<T>",
+          "Resizable array",
+          "Add O(1) amortized, Insert(0,x) O(n)"
+        ],
+        [
+          "Dictionary<K,V>",
+          "Hash table + chaining",
+          "Lookup O(1) average, O(n) worst case"
+        ],
+        [
+          "SortedDictionary<K,V>",
+          "Red-black tree",
+          "O(log n) insert and lookup"
+        ],
+        [
+          "SortedList<K,V>",
+          "Sorted array",
+          "O(log n) lookup, O(n) insert"
+        ],
+        [
+          "ConcurrentDictionary<K,V>",
+          "Hash table + lock striping",
+          "Thread-safe, fine-grained locking"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What happens internally when a List<T> exceeds its current capacity during an Add() call?",
+      "a": "The List allocates a new backing array, typically double the previous capacity, then copies every existing element from the old array into the new one before adding the new item. This is an O(n) operation, though it happens infrequently enough that Add() is described as O(1) amortized. On a hot path adding many items, pre-sizing the List with new List<T>(expectedCount) avoids repeated resize-copy cycles entirely."
+    },
+    {
+      "q": "Why must GetHashCode() be overridden whenever Equals() is overridden, and what breaks if you skip it?",
+      "a": "Dictionary and HashSet use GetHashCode() to determine which bucket an object belongs in, then use Equals() to confirm an exact match within that bucket. If two objects are Equal but return different hash codes, they can land in different buckets entirely -- a lookup for a logically present key can silently return 'not found' because the search never even checks the bucket the matching object is actually sitting in. This is a genuinely dangerous silent failure, not a compile error or exception."
+    },
+    {
+      "q": "What is the danger of ConcurrentDictionary's GetOrAdd factory method under concurrent access?",
+      "a": "If multiple threads call GetOrAdd for the same missing key at nearly the same time, the value factory function can be invoked more than once -- ConcurrentDictionary guarantees only one result is ultimately stored, but does not guarantee the factory itself only runs once. If the factory has side effects (an API call, a database write, incrementing an external counter), those side effects can happen multiple times even though only one value survives in the dictionary. For expensive or side-effecting factories, additional synchronization (like Lazy<T>) is needed."
+    },
+    {
+      "q": "When would you choose SortedDictionary over SortedList, given both maintain key order?",
+      "a": "SortedDictionary (backed by a red-black tree) has O(log n) insertion because it doesn't need to shift elements -- it rebalances the tree instead. SortedList (backed by a sorted array) has O(log n) lookup via binary search, but O(n) insertion because inserting into the middle of the array requires shifting every subsequent element. Choose SortedDictionary when insertions/deletions are frequent; SortedList when the collection is built once and then mostly read, since arrays have better cache locality and lower memory overhead per element than a tree's node objects."
+    }
+  ]
+}

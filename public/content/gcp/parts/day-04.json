@@ -1,0 +1,55 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "Dataproc -- managed Spark clusters, jobs, cost management",
+  "exp": "Dataproc is GCP's managed Hadoop/Spark service -- the direct equivalent of EMR, sharing much of EMR's cluster-lifecycle vocabulary since both are built on the same open-source Hadoop ecosystem foundations.",
+  "pts": [
+    "Dataproc cluster: Master node(s) + Worker nodes, structurally identical to EMR's Master/Core split -- Dataproc calls the data-holding compute nodes simply 'Workers' rather than distinguishing Core vs Task the way EMR does.",
+    "Secondary Workers (Dataproc's Preemptible or Spot VM worker pool) are the direct equivalent of EMR Task nodes on Spot Instances -- safe for compute-only work that can be retried, never for data-critical roles.",
+    "Ephemeral clusters: created just before a job runs and deleted immediately after, via a single gcloud dataproc clusters create with a job attached and --delete-cluster-on-completion-style workflow -- the Dataproc equivalent of an EMR transient cluster with auto-terminate.",
+    "Dataproc Serverless for Spark removes cluster management entirely -- submit a batch workload, GCP provisions and tears down compute automatically, billed per resource-second -- the direct equivalent of EMR Serverless.",
+    "Dataproc Workflow Templates define a multi-step job DAG (create cluster, run job, delete cluster) as a single reusable resource -- somewhat like combining an EMR cluster definition and its Steps into one deployable unit.",
+    "Cluster autoscaling policies can be attached to a Dataproc cluster to scale worker count based on YARN pending memory, the same underlying signal EMR's managed scaling uses."
+  ],
+  "code": "# Ephemeral cluster + job in one workflow -- the Dataproc \"transient EMR\" pattern\ngcloud dataproc clusters create orders-pipeline-cluster \\\n  --region=us-central1 \\\n  --master-machine-type=n2-standard-4 \\\n  --worker-machine-type=n2-standard-4 \\\n  --num-workers=2 \\\n  --num-secondary-workers=4 \\\n  --secondary-worker-type=spot\n\ngcloud dataproc jobs submit pyspark gs://bucket/scripts/validate.py \\\n  --cluster=orders-pipeline-cluster --region=us-central1\n\n# Delete when done -- the equivalent discipline to terminating an EMR cluster\ngcloud dataproc clusters delete orders-pipeline-cluster --region=us-central1 --quiet\n\n# Dataproc Serverless -- no cluster to manage at all\ngcloud dataproc batches submit pyspark gs://bucket/scripts/validate.py \\\n  --region=us-central1 \\\n  --batch=orders-pipeline-batch\n\n# Workflow Template -- reusable create-run-delete DAG as one resource\ngcloud dataproc workflow-templates create orders-pipeline-template --region=us-central1\ngcloud dataproc workflow-templates set-managed-cluster orders-pipeline-template \\\n  --region=us-central1 --cluster-name=ephemeral-cluster \\\n  --num-workers=2 --worker-machine-type=n2-standard-4",
+  "pr": [
+    "Create an ephemeral Dataproc cluster with Secondary Workers, submit a PySpark job, and delete the cluster -- matching the transient EMR cluster exercise"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "EMR concept",
+        "Dataproc equivalent"
+      ],
+      "r": [
+        [
+          "Core nodes",
+          "Workers (primary)"
+        ],
+        [
+          "Task nodes on Spot",
+          "Secondary Workers on Spot/Preemptible"
+        ],
+        [
+          "Transient cluster, auto-terminate",
+          "Ephemeral cluster, explicit delete or Workflow Template"
+        ],
+        [
+          "EMR Serverless",
+          "Dataproc Serverless for Spark"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the Dataproc equivalent of an EMR transient cluster with auto-terminate, and what command pattern achieves it?",
+      "a": "An ephemeral cluster -- created immediately before a job with gcloud dataproc clusters create, the job submitted against it, then explicitly deleted with gcloud dataproc clusters delete right after. Dataproc Workflow Templates can also encode this entire create-run-delete sequence as a single reusable resource, which is arguably a cleaner abstraction than manually scripting the equivalent sequence of EMR CLI calls."
+    },
+    {
+      "q": "How do Dataproc's Secondary Workers compare to EMR's Task nodes, and what is the safety rule that carries over unchanged?",
+      "a": "Secondary Workers are Dataproc's Spot/Preemptible-backed compute-only worker pool, structurally equivalent to EMR Task nodes on Spot Instances. The exact same safety rule applies: Secondary Workers are safe for retriable compute-only work because a reclaimed VM just causes Spark to reschedule the affected tasks, but they should never host anything data-critical or serve as the cluster's primary/master role, mirroring the never-Spot-the-core-or-master guidance from the EMR days."
+    }
+  ]
+}

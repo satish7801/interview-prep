@@ -1,0 +1,46 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Worked system design 1 -- design the compliance alert notification service",
+  "exp": "This is a full worked example, start to finish, of the exact question type from Day 1 and Day 5's mock -- not just concepts, but an actual 15-minute answer laid out with the reasoning made explicit at each step. Read it once, then re-derive it yourself out loud without looking, twice.",
+  "pts": [
+    "**Step 1 -- Clarify requirements out loud before designing anything:** functional -- alert relevant people when a compliance control goes out of status; non-functional -- must not spam (dedup repeated alerts), must not silently drop a real alert, delivery within a few minutes is fine (not sub-second), volume is modest (hundreds of control changes/day, not millions).",
+    "**Step 2 -- State the scale explicitly, even if you have to guess:** 'Let's say ~500 control status changes per day across all monitored systems, each potentially triggering 1-3 notifications. That's a low-volume, correctness-over-throughput problem -- which immediately rules out needing anything like Kafka-scale infrastructure and points toward a simple queue.'",
+    "**Step 3 -- Sketch the happy path first, narrating each box:** Control Status Change (DB trigger or app-level event) -> Message Queue (decouples the source system from notification delivery -- if the notification service is briefly down, events queue up instead of being lost) -> Alert Worker (checks dedup, formats message) -> Notification Service (Email via SendGrid, Slack via webhook).",
+    "**Step 4 -- Drill into the ONE component that has a real design decision, don't spread thin:** the interesting problem here is deduplication -- 'if a control flaps between compliant/non-compliant three times in an hour, do we send three alerts?' Answer: no. Use a dedup key (control_id + status) with a TTL in Redis -- if the same key fired in the last N minutes, suppress the duplicate and only send a 'flapping' summary instead.",
+    "**Step 5 -- Name the trade-off explicitly, don't just describe the chosen design:** 'I'm choosing a message queue over a direct synchronous call from the control-monitoring system to the notification service specifically because it decouples their availability -- if notifications are down, control monitoring keeps working and events just queue up, rather than a notification outage blocking the core compliance monitoring itself. The cost is a few seconds to minutes of delivery latency, which the requirements say is acceptable.'",
+    "**Step 6 -- Address failure modes when asked (or proactively if time allows):** what if the Alert Worker crashes mid-processing? Use at-least-once delivery from the queue (message isn't removed until processing succeeds) plus the Redis dedup key as an idempotency guard -- so a redelivered message after a crash doesn't double-send, it just gets suppressed as a 'duplicate' by the same mechanism built for the flapping case.",
+    "**What NOT to do:** don't jump straight to drawing boxes before stating requirements and scale. Don't spend equal time on every component -- the queue and the notification services (Email/Slack) are boring, well-understood pieces; spend your limited time on the deduplication logic, which is the one place a real design decision lives."
+  ],
+  "code": "-- The data model underpinning the dedup logic, made concrete\n-- (interviewers often ask \"show me the dedup key\" -- have this ready)\n\n-- Redis key structure for dedup:\n--   key:   dedup:{control_id}:{status}\n--   value: timestamp of last alert sent\n--   TTL:   15 minutes\n\n-- Pseudocode for the Alert Worker's dedup check\nfunction shouldSendAlert(controlId, newStatus):\n    dedupKey = f\"dedup:{controlId}:{newStatus}\"\n    lastSent = redis.get(dedupKey)\n\n    if lastSent is None:\n        redis.set(dedupKey, now(), ttl=15_minutes)\n        return True   -- first time seeing this control+status combo recently, send it\n\n    return False   -- suppressed as a duplicate within the TTL window\n\n-- Flapping detection (bonus depth if the interviewer probes further):\n-- track a separate counter per control_id regardless of status;\n-- if count > 3 within 30 minutes, send ONE \"control is flapping\" summary\n-- instead of continuing to suppress silently",
+  "pr": [
+    "Re-derive this entire design out loud from memory, without looking, in under 15 minutes -- time yourself"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "Control status change",
+        "Message Queue",
+        "Alert Worker (dedup check)",
+        "Redis (dedup key, TTL)",
+        "Email/Slack notification"
+      ],
+      "cap": "Worked example: the dedup key + TTL in Redis is the one genuine design decision -- everything else is well-understood plumbing"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Walk through your first 60 seconds of answering 'design a compliance alert notification service' -- what do you actually say, in order?",
+      "a": "'Before I design anything, let me clarify a few things. Functionally, this needs to alert the right people when a compliance control changes status -- is that right, or is there more scope? For non-functional requirements: how much delay is acceptable between the status change and the alert -- seconds, or is a few minutes fine? And roughly what volume are we talking about -- is this hundreds of events a day, or closer to real-time market data volume?' Then wait for answers before sketching anything. This single opening -- clarify before designing -- is the most commonly skipped step by candidates who otherwise know the material."
+    },
+    {
+      "q": "Why does this design use a message queue between the control-monitoring system and the notification service, instead of the monitoring system calling the notification service directly?",
+      "a": "Decoupling availability: if the notification service has an outage or is being deployed, a direct synchronous call would either block or fail the core compliance monitoring system's status update -- which is a far more serious problem than a delayed alert. With a queue in between, the monitoring system publishes an event and moves on regardless of the notification service's health; events simply queue up and get processed once the notification service is healthy again. The explicit trade-off being accepted is added delivery latency (seconds to minutes) in exchange for this availability isolation."
+    },
+    {
+      "q": "What happens in this design if the Alert Worker crashes halfway through processing a message?",
+      "a": "With at-least-once delivery semantics (standard for most queue systems), the message isn't removed from the queue until processing completes successfully -- so a crash mid-processing means the message gets redelivered to another worker instance. The redelivery would normally risk sending a duplicate alert, except the same Redis dedup key mechanism built for the flapping-status case also happens to make this redelivery idempotent -- the redelivered message hits the same dedup key, sees it was already 'sent' within the TTL window, and gets suppressed. One mechanism solves two problems, which is worth pointing out explicitly if asked."
+    }
+  ]
+}

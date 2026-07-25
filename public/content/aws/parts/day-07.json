@@ -1,0 +1,69 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "CloudWatch deep dive -- metrics, namespaces, custom metrics, alarms",
+  "exp": "CloudWatch is AWS's native observability service and the foundation everything else, including Grafana, builds on. Before connecting Grafana to anything, you need to understand what metrics actually exist and how to publish your own.",
+  "pts": [
+    "Namespace: a container for related metrics -- AWS/EMR, AWS/S3, AWS/Lambda, or a custom namespace like Pipeline/Orders for metrics you publish yourself.",
+    "Dimensions: key-value pairs that uniquely identify a metric within a namespace -- e.g. JobFlowId for an EMR cluster, FunctionName for a Lambda, BucketName for S3.",
+    "Standard resolution metrics: 1-minute granularity, included free. High-resolution custom metrics: down to 1-second granularity, additional cost per metric.",
+    "CloudWatch Logs: Log Groups (one per application or EMR cluster) contain Log Streams (one per instance or step invocation). Always set a retention policy -- the default is never expire, so costs accumulate silently forever if forgotten.",
+    "Metric filters: extract a numeric metric from log line patterns -- count occurrences of 'ERROR' in a log group and turn it into an alarmable CloudWatch metric without changing application code.",
+    "CloudWatch Alarms: trigger when a metric crosses a threshold for N consecutive evaluation periods. Composite alarms combine multiple alarms with AND/OR logic to reduce noisy single-metric alerts.",
+    "Key EMR metrics to know cold: IsIdle (1 = cluster sitting idle, wasting money), AppsRunning, AppsPending, MemoryAvailableMB, ContainerPendingRatio.",
+    "Key S3 metrics: BucketSizeBytes and NumberOfObjects (daily granularity, free), 4xxErrors/5xxErrors (only if request metrics are explicitly enabled per bucket, which has its own cost)."
+  ],
+  "code": "import boto3\nfrom datetime import datetime\n\ncw = boto3.client('cloudwatch', region_name='us-east-1')\n\n# PUBLISH a custom metric -- records processed per pipeline run\ncw.put_metric_data(\n    Namespace='Pipeline/Orders',\n    MetricData=[{\n        'MetricName': 'RecordsProcessed',\n        'Dimensions': [{'Name': 'Source', 'Value': 'Bloomberg'}],\n        'Value': 45000,\n        'Unit': 'Count',\n        'Timestamp': datetime.utcnow()\n    }]\n)\n\n# READ a built-in metric -- EMR cluster idle state\nresp = cw.get_metric_statistics(\n    Namespace='AWS/ElasticMapReduce',\n    MetricName='IsIdle',\n    Dimensions=[{'Name': 'JobFlowId', 'Value': 'j-XXXXXXXXX'}],\n    StartTime=datetime.utcnow().replace(hour=0, minute=0),\n    EndTime=datetime.utcnow(),\n    Period=300,\n    Statistics=['Maximum']\n)\n\n# CREATE an alarm -- alert if cluster idle for 30+ minutes\ncw.put_metric_alarm(\n    AlarmName='EMR-IdleTooLong',\n    Namespace='AWS/ElasticMapReduce',\n    MetricName='IsIdle',\n    Dimensions=[{'Name': 'JobFlowId', 'Value': 'j-XXXXXXXXX'}],\n    Statistic='Maximum',\n    Period=300,\n    EvaluationPeriods=6,          # 6 x 5min = 30 minutes\n    Threshold=1,\n    ComparisonOperator='GreaterThanOrEqualToThreshold',\n    AlarmActions=['arn:aws:sns:us-east-1:123456789:PipelineAlerts']\n)\n\n# METRIC FILTER -- turn a log pattern into a metric (no app code change)\nlogs = boto3.client('logs')\nlogs.put_metric_filter(\n    logGroupName='/pipeline/orders-validation',\n    filterName='ErrorCount',\n    filterPattern='ERROR',\n    metricTransformations=[{\n        'metricName': 'ValidationErrors',\n        'metricNamespace': 'Pipeline/Orders',\n        'metricValue': '1'\n    }]\n)\n\n# RETENTION -- prevent unbounded log storage cost\nlogs.put_retention_policy(logGroupName='/pipeline/orders-validation', retentionInDays=30)",
+  "pr": [
+    "Publish a custom CloudWatch metric for records processed, then create an alarm that fires if it drops to zero"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Metric type",
+        "Resolution",
+        "Cost"
+      ],
+      "r": [
+        [
+          "Standard built-in (AWS/EMR, AWS/S3)",
+          "1 minute",
+          "Included free"
+        ],
+        [
+          "Standard custom metric",
+          "1 minute",
+          "Per-metric monthly charge"
+        ],
+        [
+          "High-resolution custom metric",
+          "1 second",
+          "Higher per-metric charge"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between a CloudWatch namespace and a dimension?",
+      "a": "A namespace groups related metrics together -- AWS/EMR holds every EMR metric, Pipeline/Orders could hold your own custom metrics. A dimension is a key-value pair that distinguishes one specific metric instance within that namespace -- JobFlowId=j-ABC123 identifies which cluster's IsIdle metric you're looking at. Without dimensions, all clusters' IsIdle values would be indistinguishable."
+    },
+    {
+      "q": "What is the cost trade-off between standard and high-resolution custom metrics?",
+      "a": "Standard resolution (1-minute granularity) is included in the base CloudWatch pricing. High-resolution custom metrics (down to 1-second) cost more per metric and are billed differently. For a daily batch pipeline, 1-minute resolution is more than sufficient -- reserve high-resolution metrics for systems where sub-minute spikes genuinely matter, like a real-time trading system, not a once-daily ingestion job."
+    },
+    {
+      "q": "Why is forgetting to set a CloudWatch Logs retention policy a real cost trap?",
+      "a": "The default retention for a new Log Group is 'Never Expire' -- logs accumulate indefinitely and you pay for storage forever. A verbose Spark job logging gigabytes per run, multiplied across 50 sources running daily for a year, becomes a meaningful unplanned cost. Always explicitly set retentionInDays (e.g. 30 or 90) when creating a log group, or audit existing log groups for ones still on indefinite retention."
+    },
+    {
+      "q": "What is a CloudWatch metric filter and when would you use one?",
+      "a": "A metric filter scans incoming log lines for a pattern (like the literal string 'ERROR') and increments a CloudWatch metric each time it matches -- without any application code change. Use it when you have existing unstructured logs you can't easily modify, but still want to alarm on error frequency. For new code, structured logging with an explicit put_metric_data call is more precise, but metric filters are valuable for legacy or third-party log sources."
+    },
+    {
+      "q": "What does the EMR IsIdle metric tell you and why does it matter for cost?",
+      "a": "IsIdle is 1 when the cluster has no running or pending YARN applications, 0 when busy. An idle cluster is still billed by the hour. An alarm on IsIdle staying at 1 for 30+ minutes catches a cluster that should have auto-terminated but didn't -- usually because KeepJobFlowAliveWhenNoSteps was left True, or a step finished but a bug prevented the terminate call. This is one of the highest-value cost alarms you can set up."
+    }
+  ]
+}

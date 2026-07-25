@@ -1,0 +1,29 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "ASP.NET Core — Kestrel, middleware, Minimal vs MVC",
+  "exp": "Know the request path: Kestrel → middleware → endpoint. Wrong middleware order causes 'auth never runs' bugs.",
+  "pts": [
+    "Kestrel is the cross-platform server; often behind IIS/Nginx for TLS.",
+    "Middleware order: exception handler → HTTPS → static → routing → CORS → authN → authZ → endpoints.",
+    "**Minimal APIs** for small services; **Controllers** when you need structure/filters at scale.",
+    "Model binding: route/query/form/body → validation → ModelState; `[ApiController]` auto-400.",
+    "Scoped services align with one HTTP request."
+  ],
+  "code": "",
+  "pr": [
+    "Reorder a broken middleware pipeline on paper",
+    "Convert one controller action to Minimal API"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "Describe the ASP.NET Core request pipeline.",
+      "a": "Kestrel accepts the connection and parses HTTP, then invokes the middleware pipeline in order. Routing selects an endpoint; the handler runs; the response flows back through middleware. Auth middleware must be placed correctly relative to UseRouting/UseEndpoints."
+    },
+    {
+      "q": "Minimal APIs vs Controllers — when do you choose each?",
+      "a": "Minimal for small/focused APIs and fast delivery. Controllers for larger apps needing conventions, filters, inheritance, and clearer organization. Either can be production-grade; choose for maintainability of the team."
+    }
+  ]
+}

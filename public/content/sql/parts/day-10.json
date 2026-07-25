@@ -1,0 +1,48 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Classic problems — pivot, unpivot, gaps & islands, string aggregation",
+  "exp": "These patterns combine multiple SQL concepts and test whether you can think set-theoretically about a problem. 'Gaps and islands' is the signature senior-level SQL interview problem — master the key insight (the subtraction trick) and you can solve any variant.",
+  "pts": [
+    "**Gaps in a sequence:** find values missing from a consecutive series; use `ROW_NUMBER() - value` = constant trick or `LAG + DATEDIFF` comparison",
+    "**Islands:** consecutive runs of values; key insight: `value - ROW_NUMBER() OVER (ORDER BY value)` is constant within a run; group by this difference",
+    "**PIVOT:** rotate rows to columns using `PIVOT(aggregate FOR column IN (val1, val2, ...))` — column list must be static",
+    "**Dynamic PIVOT:** generate the column list dynamically using STRING_AGG or FOR XML PATH, then execute with sp_executesql",
+    "**String aggregation → rows:** `STRING_SPLIT(string, delimiter)` converts a delimited string to a table of values (SQL Server 2016+)",
+    "**Deduplication:** `WITH cte AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY key ORDER BY id) AS rn FROM t) DELETE FROM cte WHERE rn > 1`",
+    "**Telephone intervals / merging overlapping ranges:** classic advanced problem — requires LAG to detect range starts and running counts"
+  ],
+  "code": "-- GAPS: find missing IDs in a sequence\nWITH numbered AS (\n  SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn FROM items\n)\nSELECT id - rn AS gap_group_start, MIN(id) AS first_missing\nFROM numbered WHERE id != rn  -- id and rn diverge at each gap\nGROUP BY id - rn;\n\n-- ISLANDS: find consecutive date ranges\nWITH dated AS (\n  SELECT login_date,\n    DATEADD(DAY, -ROW_NUMBER() OVER (ORDER BY login_date), login_date) AS island_key\n  FROM logins\n)\nSELECT MIN(login_date) AS streak_start, MAX(login_date) AS streak_end,\n       DATEDIFF(DAY, MIN(login_date), MAX(login_date)) + 1 AS streak_days\nFROM dated GROUP BY island_key ORDER BY streak_start;\n\n-- PIVOT: monthly sales per product (static columns)\nSELECT product, [Jan], [Feb], [Mar]\nFROM (SELECT product, month_name, sales FROM monthly_sales) src\nPIVOT (SUM(sales) FOR month_name IN ([Jan],[Feb],[Mar])) pvt;\n\n-- DELETE duplicates, keep lowest id\nWITH cte AS (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id) AS rn\n  FROM users\n)\nDELETE FROM cte WHERE rn > 1;\n\n-- STRING_SPLIT: expand comma list to rows\nSELECT value AS tag FROM STRING_SPLIT('sql,python,java', ',');\n\n-- Merge overlapping date ranges (medical/event scheduling)\nWITH range_starts AS (\n  SELECT start_date, end_date,\n    CASE WHEN start_date <= MAX(end_date) OVER (ORDER BY start_date\n         ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)\n    THEN 0 ELSE 1 END AS is_new_range\n  FROM date_ranges\n),\ngroups AS (SELECT *, SUM(is_new_range) OVER (ORDER BY start_date) AS grp FROM range_starts)\nSELECT grp, MIN(start_date) AS merged_start, MAX(end_date) AS merged_end\nFROM groups GROUP BY grp;",
+  "pr": [
+    "LeetCode: Delete Duplicate Emails",
+    "LeetCode: Human Traffic of Stadium",
+    "LeetCode: Consecutive Numbers"
+  ],
+  "viz": [
+    {
+      "t": "islands"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the key insight for solving the \"islands\" problem in SQL?",
+      "a": "Within a consecutive sequence, the difference between each value and its ROW_NUMBER() is constant. For the sequence 1,2,3,5,6,9: ROW_NUMBERs are 1,2,3,4,5,6. Differences are 0,0,0,1,1,3. All rows in the same consecutive run share the same difference — that's the \"island key.\" GROUP BY this difference and take MIN/MAX to get each island's start and end."
+    },
+    {
+      "q": "What is the PIVOT operator in SQL Server and what is its limitation?",
+      "a": "PIVOT rotates unique values from one column into multiple columns, applying an aggregate. Syntax: PIVOT(SUM(value) FOR category IN ([A],[B],[C])). The limitation: the column list ([A],[B],[C]) must be hardcoded at query time — you cannot dynamically generate it in standard SQL. For dynamic column lists, you must use dynamic SQL: build the column list with STRING_AGG, construct the full PIVOT query as a string, then execute with sp_executesql."
+    },
+    {
+      "q": "How do you efficiently find gaps in a numeric sequence?",
+      "a": "Use ROW_NUMBER() minus the actual value: WITH cte AS (SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn FROM t) SELECT id-rn AS gap_marker... The id-rn difference increments by 1 at each gap, staying constant within a consecutive run. Alternatively, join the table to a generated number sequence: SELECT n FROM numbers LEFT JOIN t ON t.id = n.n WHERE t.id IS NULL. The recursive CTE date generation pattern also works for specific ranges."
+    },
+    {
+      "q": "What is STRING_SPLIT and what problems does it solve?",
+      "a": "STRING_SPLIT(string, delimiter) is a table-valued function (SQL Server 2016+) that converts a delimited string into a result set of rows — one row per token. It solves the \"comma-separated values in a single column\" anti-pattern. Example: for tags = 'sql,python,java', SELECT value FROM STRING_SPLIT(tags, ',') gives three rows. Use it when you need to JOIN or filter on individual items in a delimited string."
+    },
+    {
+      "q": "Walk through how you would delete duplicate rows while keeping the row with the lowest ID.",
+      "a": "WITH cte AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY email ORDER BY id ASC) AS rn FROM users) DELETE FROM cte WHERE rn > 1. ROW_NUMBER() assigns 1 to the row with the lowest id in each duplicate group (ORDER BY id ASC). All subsequent rows in the group get rn = 2, 3, etc. Deleting WHERE rn > 1 removes all duplicates while keeping the first-inserted row."
+    }
+  ]
+}

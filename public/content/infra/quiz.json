@@ -1,0 +1,83 @@
+{
+  "trackId": "infra",
+  "items": [
+    {
+      "dayN": 1,
+      "qi": 0,
+      "q": "What does terraform plan show and why always read it first?",
+      "a": "Shows the diff: + created, - destroyed, ~ modified, -/+ destroy+recreate. A common mistake: renaming an S3 bucket shows -/+ which would delete all data. The plan reveals this before it happens. Equivalent to reviewing a database migration before running it."
+    },
+    {
+      "dayN": 1,
+      "qi": 1,
+      "q": "What is Terraform state and why never commit it?",
+      "a": "terraform.tfstate maps your .tf resource blocks to real AWS resource IDs and often contains sensitive values (passwords, keys). Committing exposes these in Git history. For teams, local state means concurrent applies can corrupt it -- solution: remote state in S3 + DynamoDB locking."
+    },
+    {
+      "dayN": 2,
+      "qi": 0,
+      "q": "Why S3 + DynamoDB for remote state?",
+      "a": "S3 stores the file centrally, encrypted, with versioning. DynamoDB adds a mutex: before terraform apply, Terraform writes a lock entry; if another apply is running, it waits. Prevents concurrent applies from corrupting state -- essential for CI/CD and team use."
+    },
+    {
+      "dayN": 2,
+      "qi": 1,
+      "q": "What is a Terraform module?",
+      "a": "A reusable package of resources. Instead of copy-pasting the same S3+versioning+public-access-block setup every project, write once and call it. Enforces standards without remembering to add each resource manually every time."
+    },
+    {
+      "dayN": 3,
+      "qi": 0,
+      "q": "What should a data pipeline Grafana dashboard include?",
+      "a": "Records ingested per run/source, job duration trend, error rate, EMR cluster cost/idle time, last successful run time per source. A Stat panel showing last run: 2 hours ago for an hourly job immediately surfaces a missed run."
+    },
+    {
+      "dayN": 3,
+      "qi": 1,
+      "q": "What are Grafana dashboard variables?",
+      "a": "Dropdown filters at the top that filter all panels simultaneously. $source with values [Bloomberg, ICE] -- selecting one filters every panel. Avoids creating 50 identical dashboards. Interpolated into queries: rate(records{source='$source'}[5m])."
+    },
+    {
+      "dayN": 4,
+      "qi": 0,
+      "q": "Grafana vs Kibana -- when use each?",
+      "a": "Grafana for metrics -- numerical time-series (CPU%, error rate). Best for how is my system performing. Kibana for logs -- event documents. Best for what exactly happened at 3am. A production platform uses both: Grafana for dashboards, Kibana for log debugging."
+    },
+    {
+      "dayN": 4,
+      "qi": 1,
+      "q": "Why is structured JSON logging better than plain text?",
+      "a": "Plain text requires Logstash grok patterns to parse fields -- fragile, breaks on format changes. JSON logs parse automatically; Elasticsearch creates fields with zero config. You can immediately filter level:ERROR AND source:Bloomberg without writing parsing rules."
+    },
+    {
+      "dayN": 5,
+      "qi": 0,
+      "q": "What is a FlowFile?",
+      "a": "The fundamental unit of data in NiFi -- two parts: Attributes (metadata key-value pairs: filename, source, timestamp) and Content (the actual data bytes). Processors receive, modify, route, and forward FlowFiles. Attributes travel with the data and drive routing decisions."
+    },
+    {
+      "dayN": 5,
+      "qi": 1,
+      "q": "What is back-pressure and why does it matter?",
+      "a": "A threshold on a Connection queue. When exceeded (10,000 objects or 1GB), NiFi pauses the upstream processor automatically. Without it, a fast producer and slow consumer fill memory indefinitely until OOM. Back-pressure provides implicit flow control."
+    },
+    {
+      "dayN": 5,
+      "qi": 2,
+      "q": "How would you design a NiFi flow for 50 sources?",
+      "a": "Config-driven: each source is a parameter context entry, not a separate Processor set. One generic GetHTTP reads the URL from a parameter; UpdateAttribute adds source name and date; RouteOnAttribute branches valid/invalid; PutS3Object writes to landing zone. Adding source 51 is a config entry -- zero Processor changes."
+    },
+    {
+      "dayN": 6,
+      "qi": 0,
+      "q": "Precision vs recall with a financial data example?",
+      "a": "Precision: of companies flagged as likely to default, how many actually did -- high precision means few false alarms. Recall: of companies that actually defaulted, how many did the model catch -- high recall means few misses. Trade-off: increasing sensitivity catches more real defaults but flags more false alarms. The business decides which matters more."
+    },
+    {
+      "dayN": 6,
+      "qi": 1,
+      "q": "What is model drift and why is it a data pipeline problem?",
+      "a": "The relationship between features and labels changes over time -- a fraud model trained on 2022 data becomes less accurate as patterns evolve. Requires pipelines that continuously evaluate accuracy on live data, automatically retrain when accuracy drops, and provide correctly-windowed training data. This is the core of MLOps."
+    }
+  ]
+}

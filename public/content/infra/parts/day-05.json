@@ -1,0 +1,42 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "Apache NiFi -- FlowFiles, processors, back-pressure",
+  "exp": "NiFi automates data movement -- the plumbing layer before Spark. Expect what is a FlowFile and how would you route based on content.",
+  "pts": [
+    "FlowFile: Attributes (metadata) + Content (data bytes). The unit of data in NiFi.",
+    "Processor: does work. GetFile, PutS3Object, RouteOnAttribute, UpdateAttribute.",
+    "Connection: queue between processors with configurable back-pressure.",
+    "Back-pressure: when queue exceeds threshold, upstream processor pauses -- prevents OOM.",
+    "RouteOnAttribute: branches based on attribute value -- like SQL CASE WHEN for data flow."
+  ],
+  "code": "# NiFi flows are built in the web UI. Logical flow for 50-source pipeline:\n\n# [GetHTTP] -> [UpdateAttribute] -> [ValidateRecord] -> [RouteOnAttribute]\n#                                                          |-> valid -> [PutS3Object]\n#                                                          |-> invalid -> [PutFile dead-letter]\n\n# UpdateAttribute config:\n#   source = Bloomberg\n#   ingestion_date = ${now():format('yyyy-MM-dd')}\n#   output_key = raw/${source}/${ingestion_date}/data.json\n\n# RouteOnAttribute config:\n#   valid   = ${validation.result:equals('VALID')}\n#   invalid = ${validation.result:equals('INVALID')}\n\n# Back-pressure on connection before PutS3Object:\n#   Object Threshold: 1000 FlowFiles\n#   Data Size: 1 GB\n\n# Expression Language examples\n# ${source:toLower()}             -> 'bloomberg'\n# ${now():format('yyyyMMdd')}     -> '20240115'\n# ${file.size:gt(1000000)}        -> boolean: file > 1MB?",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "GetHTTP (50 sources)",
+        "UpdateAttribute",
+        "ValidateRecord",
+        "RouteOnAttribute",
+        "PutS3Object (valid)"
+      ],
+      "cap": "NiFi flow for 50-source daily ingestion to S3 landing zone"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a FlowFile?",
+      "a": "The fundamental unit of data in NiFi -- two parts: Attributes (metadata key-value pairs: filename, source, timestamp) and Content (the actual data bytes). Processors receive, modify, route, and forward FlowFiles. Attributes travel with the data and drive routing decisions."
+    },
+    {
+      "q": "What is back-pressure and why does it matter?",
+      "a": "A threshold on a Connection queue. When exceeded (10,000 objects or 1GB), NiFi pauses the upstream processor automatically. Without it, a fast producer and slow consumer fill memory indefinitely until OOM. Back-pressure provides implicit flow control."
+    },
+    {
+      "q": "How would you design a NiFi flow for 50 sources?",
+      "a": "Config-driven: each source is a parameter context entry, not a separate Processor set. One generic GetHTTP reads the URL from a parameter; UpdateAttribute adds source name and date; RouteOnAttribute branches valid/invalid; PutS3Object writes to landing zone. Adding source 51 is a config entry -- zero Processor changes."
+    }
+  ]
+}

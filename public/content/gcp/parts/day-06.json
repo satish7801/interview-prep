@@ -1,0 +1,39 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Dataproc debugging, monitoring, cost control",
+  "exp": "Running a Dataproc job and diagnosing failures -- the direct equivalent of the EMR and Databricks debugging days.",
+  "pts": [
+    "Debug path: Dataproc console -> Jobs -> failed job -> the job details page shows driver output directly, with a link into the YARN ResourceManager UI and Spark History Server for that specific job.",
+    "Job driver logs are also available via gcloud dataproc jobs wait <job-id>, which streams output to the terminal -- useful for CI/CD pipelines that submit a job and need to know the result programmatically.",
+    "Common failures mirror EMR/Databricks: wrong gs:// path (FileNotFoundException), insufficient worker memory (OOM, visible in YARN NodeManager logs), missing IAM permission on the Service Account (403 error on the storage call).",
+    "Cluster staging bucket (auto-created per cluster unless specified) holds job dependencies and logs -- worth knowing this exists so you're not confused when a bucket you didn't explicitly create shows up in the project.",
+    "Cost visibility: the GCP Billing console's cost breakdown by SKU shows Dataproc compute costs separately from the underlying Compute Engine VM costs, similar in spirit to the Databricks DBU-vs-VM-cost split, though Dataproc's own management fee is smaller relative to the VM cost than Databricks' DBU charge tends to be.",
+    "Idle cluster detection: unlike Databricks' built-in autotermination_minutes, a standard Dataproc cluster has no automatic idle-shutdown by default -- this must be built via a Cloud Scheduler job calling the delete API, or by using ephemeral/Workflow Template patterns from Day 4 that avoid the problem structurally instead."
+  ],
+  "code": "# Submit and wait, streaming output -- useful in CI/CD\ngcloud dataproc jobs submit pyspark gs://bucket/scripts/validate.py \\\n  --cluster=orders-pipeline-cluster --region=us-central1\n\ngcloud dataproc jobs wait <job-id> --region=us-central1\n\n# List recent jobs to spot a pattern\ngcloud dataproc jobs list --cluster=orders-pipeline-cluster --region=us-central1 --limit=20\n\n# Describe a specific job for its status and error detail\ngcloud dataproc jobs describe <job-id> --region=us-central1\n\n# Python -- programmatic monitoring\nfrom google.cloud import dataproc_v1\n\nclient = dataproc_v1.JobControllerClient(\n    client_options={\"api_endpoint\": \"us-central1-dataproc.googleapis.com:443\"}\n)\njob = client.get_job(project_id=\"orders-pipeline-prod\", region=\"us-central1\", job_id=\"<job-id>\")\nif job.status.state != dataproc_v1.JobStatus.State.DONE:\n    print(job.status.details)  # error detail",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "gcloud dataproc jobs submit",
+        "jobs wait / describe",
+        "Check driver output",
+        "YARN / Spark History link",
+        "Fix and resubmit"
+      ],
+      "cap": "Dataproc debugging path -- CLI-forward, similar depth to EMR but with a smoother wait/describe flow"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Since Dataproc clusters have no built-in idle-shutdown timer like Databricks' autotermination_minutes, what are the two practical ways to avoid a forgotten idle cluster costing money?",
+      "a": "Either build the safety net yourself with a Cloud Scheduler job periodically checking cluster idle status and calling the delete API, or -- the structurally better fix -- avoid the problem entirely by defaulting to ephemeral clusters or Workflow Templates (from Day 4) that create the cluster immediately before the job and delete it immediately after, so there's never a persistent cluster left running to forget about in the first place."
+    },
+    {
+      "q": "What does the Dataproc cluster staging bucket do, and why might it be confusing to someone new to the platform?",
+      "a": "When a Dataproc cluster is created without an explicitly specified staging bucket, GCP auto-creates one to hold job dependencies (uploaded scripts, JARs) and cluster logs. It's easy to be confused seeing a bucket you never explicitly created show up in the project's Cloud Storage list -- recognizing this as an auto-managed Dataproc artifact (rather than a security concern or a mistake) is a small but genuine piece of platform-specific knowledge."
+    }
+  ]
+}

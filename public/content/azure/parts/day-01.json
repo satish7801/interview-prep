@@ -1,0 +1,55 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "Azure fundamentals -- resource hierarchy, Subscriptions, Resource Groups",
+  "exp": "Azure's hierarchy has one genuine structural difference from AWS that trips people up: Resource Groups. Everything else maps cleanly onto concepts you already know.",
+  "pts": [
+    "Management Group: entire divisions of an org, used to apply policy broadly -- large-org concept, skip if not relevant to your context.",
+    "Subscription: the billing + fundamental access boundary -- roughly equivalent to an AWS Account.",
+    "Resource Group: a project folder inside a subscription. A VM, its storage, its network can all live in one Resource Group -- and deleting the group deletes everything inside it at once. This has NO direct AWS equivalent -- AWS resources aren't grouped this way by default at all.",
+    "Hierarchy: Management Group (optional) -> Subscription (billing/access boundary) -> Resource Group (project folder, cascading delete) -> Resources.",
+    "Naming and tagging conventions matter more on Azure because Resource Groups become the default cost/access boundary people reason about -- get the grouping right from day one.",
+    "Azure resource IDs are hierarchical paths: /subscriptions/{id}/resourceGroups/{rg}/providers/{provider}/{type}/{name} -- the Azure equivalent of an AWS ARN, but always encodes the Resource Group in the path."
+  ],
+  "code": "# Azure CLI -- fundamentals\naz login\naz account list --output table\naz account set --subscription \"Pipeline-Subscription\"\n\n# Create the project folder -- everything for this pipeline lives here\naz group create --name rg-orders-pipeline --location eastus\n\n# Everything inside rg-orders-pipeline can be deleted in ONE command --\n# no AWS equivalent for this cascading behavior\naz group delete --name rg-orders-pipeline --yes --no-wait\n\n# Resource ID structure -- the Azure equivalent of an ARN\n# /subscriptions/<sub-id>/resourceGroups/rg-orders-pipeline\n#   /providers/Microsoft.Storage/storageAccounts/satishpipeline",
+  "pr": [
+    "Create a Resource Group, put a storage account inside it, then delete the whole group in one command"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Level",
+        "AWS equivalent"
+      ],
+      "r": [
+        [
+          "Management Group",
+          "No direct equivalent (Organizations, loosely)"
+        ],
+        [
+          "Subscription",
+          "AWS Account"
+        ],
+        [
+          "Resource Group",
+          "No equivalent -- cascading-delete project folder"
+        ],
+        [
+          "Resource",
+          "AWS Resource (EC2 instance, S3 bucket, etc.)"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a Resource Group and why does it have no direct AWS equivalent?",
+      "a": "A Resource Group is a logical container for resources sharing a lifecycle -- typically deployed, managed, and deleted together. AWS has no default equivalent grouping construct at this level; you'd have to build the same 'delete everything for this project at once' behavior yourself via tags and a script, or CloudFormation stack deletion for IaC-managed resources specifically. In Azure, this cascading delete is a first-class, built-in behavior of the platform itself."
+    },
+    {
+      "q": "What is the Azure equivalent of an AWS Account, and what's the practical difference in how it's used day-to-day?",
+      "a": "A Subscription is the billing and fundamental access boundary, closely analogous to an AWS Account. The practical difference: within one Subscription, Resource Groups provide a second layer of organization AWS doesn't have natively -- meaning a single Azure Subscription commonly hosts many distinct projects cleanly separated by Resource Group, where the AWS equivalent might require multiple Accounts or careful tagging discipline to achieve the same separation."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Joins, aggregations, broadcast -- performance fundamentals",
+  "exp": "Broadcast joins eliminate the most expensive shuffle in many pipelines. Understanding when Spark chooses broadcast vs sort-merge is where most Spark optimization happens.",
+  "pts": [
+    "df1.join(df2, on='key', how='inner') -- how: inner, left, right, full, left_semi, left_anti.",
+    "left_semi: rows from left that HAVE a match in right (like EXISTS). No right columns in result.",
+    "left_anti: rows from left with NO match (like NOT EXISTS).",
+    "broadcast(small_df): copies small table to every executor -- no shuffling the large table.",
+    "Spark auto-broadcasts tables below spark.sql.autoBroadcastJoinThreshold (default 10MB).",
+    "df.explain(): BroadcastHashJoin=no shuffle, SortMergeJoin=shuffle."
+  ],
+  "code": "from pyspark.sql.functions import col, sum, avg, count, broadcast\n\norders    = spark.read.parquet('s3://bucket/orders/')\ncustomers = spark.read.parquet('s3://bucket/customers/')  # small table\n\n# BROADCAST JOIN -- no shuffling of the large orders table\njoined = orders.join(broadcast(customers), on='customer_id', how='left')\njoined.explain()  # confirms BroadcastHashJoin in the plan\n\n# LEFT_SEMI -- orders where customer IS platinum (no customer columns in result)\nhigh_value = orders.join(\n    broadcast(customers.filter(col('tier') == 'platinum')),\n    on='customer_id', how='left_semi')\n\n# AGGREGATION\nsummary = (orders\n    .groupBy('category', 'status')\n    .agg(sum('amount').alias('total'),\n         avg('amount').alias('avg_order'),\n         count('*').alias('cnt'))\n    .orderBy(col('total').desc()))",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Shuffle join: both tables redistributed by key (expensive). Broadcast join: small table copied to every executor, large table never moves (fast)."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a broadcast join and when should you use it?",
+      "a": "A broadcast join copies the smaller table to every executor -- the large table never moves. Eliminates the shuffle on the large table, typically 5-20x speedup. Use broadcast() explicitly for tables Spark does not auto-broadcast (above 10MB but below ~100MB). Check explain() to confirm BroadcastHashJoin appears in the plan."
+    }
+  ]
+}

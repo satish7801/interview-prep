@@ -1,0 +1,51 @@
+{
+  "id": "day-14",
+  "n": 14,
+  "title": "Glue Data Catalog, Athena, and the observability capstone",
+  "exp": "Glue's Data Catalog and Athena complete the AWS-native picture: a schema registry for your Parquet data and a serverless SQL engine over S3. This closes the AWS track by tying CloudWatch, Grafana, and this serving layer together.",
+  "pts": [
+    "AWS Glue Data Catalog: a persistent, Hive-compatible metastore storing table definitions (schema, partition structure, S3 location) -- both EMR/Spark and Athena read from the same catalog.",
+    "Glue Crawlers scan S3 and automatically infer and register schema -- useful for onboarding a new source's Parquet output, though explicit schema definition is safer for stable, high-value tables.",
+    "Athena: serverless, pay-per-query SQL engine reading directly from S3 using the Glue Data Catalog for schema -- no cluster to manage, ideal for ad-hoc analyst queries against processed Parquet output.",
+    "Athena pricing is $5 per TB of data SCANNED, not time-based -- query cost is driven entirely by how much data is read, making partition design and Parquet direct cost levers, not just performance ones.",
+    "Partition pruning is the highest-leverage Athena cost optimization: WHERE order_date = '2024-01-15' on a table partitioned by order_date scans only that day's data.",
+    "CTAS (CREATE TABLE AS SELECT) materializes an expensive query's result as a new Parquet table -- useful for pre-aggregating data a dashboard queries repeatedly.",
+    "Athena can itself be a Grafana data source -- a dashboard panel can show a business-level SQL aggregate alongside the operational CloudWatch metrics on the same dashboard.",
+    "Capstone integration: this is the layer between 'Spark wrote Parquet to S3' and 'a business stakeholder or Grafana panel can query it with SQL.'"
+  ],
+  "code": "# Glue Data Catalog table definition -- Terraform\nresource \"aws_glue_catalog_database\" \"pipeline\" {\n  name = \"orders_pipeline\"\n}\n\nresource \"aws_glue_catalog_table\" \"orders_processed\" {\n  name          = \"orders_processed\"\n  database_name = aws_glue_catalog_database.pipeline.name\n  table_type    = \"EXTERNAL_TABLE\"\n\n  storage_descriptor {\n    location      = \"s3://bucket/processed/orders/\"\n    input_format  = \"org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat\"\n    output_format = \"org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat\"\n    ser_de_info { serialization_library = \"org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe\" }\n    columns { name = \"customer_id\"; type = \"int\" }\n    columns { name = \"amount\"; type = \"double\" }\n  }\n\n  partition_keys { name = \"order_date\"; type = \"string\" }\n}\n\n-- Athena query -- partition pruning keeps the scan (and cost) small\nSELECT category, SUM(amount) AS total\nFROM orders_pipeline.orders_processed\nWHERE order_date = '2024-01-15'\nGROUP BY category;\n\n-- CTAS -- materialize a pre-aggregated table for repeated dashboard queries\nCREATE TABLE orders_pipeline.daily_category_summary\nWITH (format = 'PARQUET', external_location = 's3://bucket/agg/daily_category/')\nAS\nSELECT order_date, category, SUM(amount) AS total, COUNT(*) AS order_count\nFROM orders_pipeline.orders_processed\nGROUP BY order_date, category;\n\n# Glue Crawler -- auto-discover schema for a new source (use selectively)\nresource \"aws_glue_crawler\" \"new_source\" {\n  name          = \"new-source-crawler\"\n  database_name = aws_glue_catalog_database.pipeline.name\n  role          = aws_iam_role.glue_crawler.arn\n  s3_target { path = \"s3://bucket/raw/new-source/\" }\n  schedule = \"cron(0 7 * * ? *)\"\n}",
+  "pr": [
+    "Write a CTAS query that pre-aggregates orders_processed by date and category, and explain in one sentence why this reduces Athena cost for a dashboard querying it repeatedly"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "Spark writes Parquet",
+        "Glue Catalog schema",
+        "Athena ad-hoc SQL",
+        "CTAS pre-aggregate",
+        "Grafana Athena panel"
+      ],
+      "cap": "The serving layer: from raw Parquet to a queryable, cost-controlled, dashboard-ready table"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why does Athena pricing make partition design a cost decision, not just a performance one?",
+      "a": "Athena charges $5 per TB of data actually scanned, regardless of query duration. A query filtering on order_date against a table partitioned by order_date only scans that day's files. The identical query against a non-partitioned table scans the ENTIRE table every time -- on a year of daily data, that's a 365x cost difference for the same logical query."
+    },
+    {
+      "q": "What is the Glue Data Catalog and why can both EMR and Athena read from the same one?",
+      "a": "A persistent, centralized metastore storing table schema, column types, and S3 partition locations -- separate from the actual data files. Both Spark (via EMR, using Glue as its Hive metastore) and Athena query this same catalog to interpret the Parquet files in S3. Schema is defined once and both heavy processing jobs and lightweight ad-hoc queries agree on it."
+    },
+    {
+      "q": "When would you use a CTAS query instead of just querying the raw processed table every time?",
+      "a": "When the same expensive aggregation is queried repeatedly -- by a Grafana dashboard refreshing every 5 minutes, or by multiple analysts. CTAS materializes that aggregation's result once as a small Parquet table; subsequent queries read the tiny pre-aggregated table instead of re-scanning and re-aggregating the full raw dataset each time, cutting cost and latency."
+    },
+    {
+      "q": "When should you use a Glue Crawler versus explicitly defining the table schema in Terraform?",
+      "a": "Crawlers suit quickly onboarding a new, evolving, or exploratory source where the schema isn't known yet. For stable, high-value production tables feeding dashboards and analyst queries, explicit schema definition in Terraform is safer -- version-controlled, code-reviewed, and won't silently change if the crawler infers a different type after a data anomaly."
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Azure Data Factory + Logic Apps -- orchestration",
+  "exp": "The Azure equivalent of Step Functions + EventBridge for sequencing the daily pipeline run.",
+  "pts": [
+    "Azure Data Factory (ADF): a visual, pipeline-oriented orchestration service -- activities (copy, notebook, stored procedure) chained together with dependencies, retries, and triggers, closely analogous to a Step Functions state machine but built with a drag-and-drop-first design philosophy.",
+    "ADF triggers: Schedule (cron-like, same role as an EventBridge scheduled rule), Tumbling Window (for time-sliced backfills), Event-based (fires on a Blob Storage event, same role as an S3-event-triggered EventBridge rule).",
+    "ADF's ForEach activity with batchCount is the direct equivalent of a Step Functions Map state -- runs the same sub-pipeline in parallel across an array of inputs, with a configurable concurrency limit.",
+    "Logic Apps: lighter-weight, more consumer/SaaS-integration-oriented than ADF -- better suited for 'send a Slack/Teams notification' or 'call a webhook' glue steps than for heavy data movement orchestration, roughly filling the same niche as a simple Lambda-triggered-by-EventBridge for lightweight tasks.",
+    "ADF has a Databricks Notebook activity as a first-class pipeline step -- meaning ADF can directly trigger and wait on a Databricks job as one step in a larger pipeline, the same relationship Step Functions has with an EMR addStep.sync call.",
+    "Retry and timeout are per-activity settings in ADF, conceptually identical to Step Functions' per-state Retry block."
+  ],
+  "code": "{\n  \"name\": \"DailyOrdersPipeline\",\n  \"properties\": {\n    \"activities\": [\n      {\n        \"name\": \"FetchAllSources\",\n        \"type\": \"ForEach\",\n        \"typeProperties\": {\n          \"items\": \"@pipeline().parameters.sources\",\n          \"batchCount\": 10,\n          \"activities\": [{\n            \"name\": \"FetchSource\",\n            \"type\": \"WebActivity\",\n            \"policy\": { \"retry\": 3, \"retryIntervalInSeconds\": 30 }\n          }]\n        }\n      },\n      {\n        \"name\": \"RunSparkValidation\",\n        \"type\": \"DatabricksNotebook\",\n        \"dependsOn\": [{ \"activity\": \"FetchAllSources\", \"dependencyConditions\": [\"Succeeded\"] }],\n        \"typeProperties\": { \"notebookPath\": \"/Repos/pipeline/validate_and_transform\" }\n      },\n      {\n        \"name\": \"NotifyComplete\",\n        \"type\": \"WebActivity\",\n        \"dependsOn\": [{ \"activity\": \"RunSparkValidation\", \"dependencyConditions\": [\"Succeeded\"] }]\n      }\n    ],\n    \"parameters\": { \"sources\": { \"type\": \"array\" } }\n  },\n  \"triggers\": [{ \"type\": \"ScheduleTrigger\", \"recurrence\": { \"frequency\": \"Day\", \"interval\": 1, \"startTime\": \"2024-01-01T06:00:00Z\" } }]\n}",
+  "pr": [
+    "Sketch the ADF pipeline JSON for the 50-source daily run: ForEach fetch, DatabricksNotebook validate, WebActivity notify"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "ScheduleTrigger 6am daily",
+        "ADF pipeline starts",
+        "ForEach 50 parallel fetches",
+        "DatabricksNotebook validate",
+        "WebActivity notify"
+      ],
+      "cap": "ADF orchestration -- the Azure equivalent of EventBridge + Step Functions"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the ADF equivalent of a Step Functions Map state, and how do they compare?",
+      "a": "A ForEach activity with batchCount set -- runs the same nested activities in parallel across an array of inputs, with the batch count controlling max concurrency, exactly like MaxConcurrency on a Step Functions Map state. The 50-source fan-out pattern maps identically onto both: one definition, many parallel independent branches, some may fail without blocking others given appropriate error handling per branch."
+    },
+    {
+      "q": "When would you reach for Logic Apps instead of Data Factory for a piece of the pipeline?",
+      "a": "Logic Apps is lighter-weight and more oriented toward SaaS/consumer service integration -- sending a Teams notification, calling a third-party webhook, simple conditional branching on an event. ADF is built for data movement and transformation orchestration at scale, with native activities for copying data, running Databricks notebooks, and stored procedures. Using Logic Apps for the notification step and ADF for the actual data orchestration mirrors using a lightweight Lambda for the Slack-notify step while Step Functions handles the heavier sequencing on AWS."
+    }
+  ]
+}

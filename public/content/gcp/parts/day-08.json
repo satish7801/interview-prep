@@ -1,0 +1,48 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Grafana on GCP -- Google Cloud Managed Service for Grafana",
+  "exp": "Same managed-vs-self-hosted decision as AWS and Azure, now on GCP. The identity wiring detail is the same lesson for the third time -- which itself is worth saying out loud in an interview.",
+  "pts": [
+    "Google Cloud Managed Service for Grafana (GMP-adjacent, built on Grafana Labs' managed offering): a fully managed workspace, patching and scaling handled for you.",
+    "Authentication integrates with Google Identity / Cloud IAM -- users sign in with their existing Google Workspace or Cloud Identity account.",
+    "The now-familiar critical identity detail: the Grafana service itself needs a Service Account with the Monitoring Viewer role to query Cloud Monitoring -- separate from the IAM permissions controlling who can log into the Grafana UI. This is the third cloud in a row with this exact same two-layer gotcha, which is itself a pattern worth naming explicitly in an interview answer.",
+    "Self-hosted alternative: Grafana OSS on Compute Engine, Cloud Run, or GKE -- full plugin control and no managed-service fee, at the cost of owning patching and uptime.",
+    "VPC Service Controls / Private Google Access matter here the same way VPC endpoints and Private Endpoints did on AWS/Azure -- if a data source has no public endpoint, network configuration is required to reach it from the managed Grafana workspace."
+  ],
+  "code": "# Grafana service account with Monitoring Viewer role\ngcloud iam service-accounts create grafana-sa \\\n  --display-name=\"Grafana Monitoring Reader\"\n\ngcloud projects add-iam-policy-binding orders-pipeline-prod \\\n  --member=\"serviceAccount:grafana-sa@orders-pipeline-prod.iam.gserviceaccount.com\" \\\n  --role=\"roles/monitoring.viewer\"\n\n# This Service Account is what the Grafana workspace's Cloud Monitoring\n# data source authenticates as -- separate from human user login access\n# to the Grafana UI itself, which is controlled by Cloud IAM roles on\n# the Grafana resource (roles/grafana.admin, roles/grafana.viewer, etc.)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Cloud",
+        "Grafana workspace identity"
+      ],
+      "r": [
+        [
+          "AWS",
+          "IAM role attached to the AMG workspace"
+        ],
+        [
+          "Azure",
+          "Managed Identity attached to the Grafana resource"
+        ],
+        [
+          "GCP",
+          "Service Account bound to the Grafana service"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "This is the third cloud in this plan with the same 'Grafana workspace needs its own identity' gotcha. What is the general principle underneath all three specific cases?",
+      "a": "Any managed visualization or observability tool that queries a cloud's native monitoring service needs its OWN service-level identity with read permissions on that monitoring data, entirely independent of the identity system controlling human login access to the tool's UI. AWS calls this the workspace IAM role, Azure calls it the workspace's Managed Identity, GCP calls it a Service Account bound to the Grafana service -- three different names for exactly the same architectural requirement, and recognizing the pattern rather than memorizing three unrelated facts is what makes this genuinely transferable knowledge."
+    },
+    {
+      "q": "When would VPC Service Controls or Private Google Access be relevant to a GCP Grafana setup?",
+      "a": "When the data Grafana needs to query lives behind a private network boundary -- a self-hosted Prometheus with no public IP, or a Cloud SQL instance configured for private-IP-only access. Public Cloud Monitoring and Cloud Logging APIs are reachable through Google's standard API endpoints without special networking; private network configuration only becomes necessary once a genuinely private resource is in the picture, mirroring the same conditional need for VPC Endpoints on AWS and Private Endpoints on Azure."
+    }
+  ]
+}

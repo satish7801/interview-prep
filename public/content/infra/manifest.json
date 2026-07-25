@@ -1,0 +1,87 @@
+{
+  "id": "infra",
+  "name": "Terraform + Observability",
+  "color": "--infra",
+  "sub": "IaC, Grafana, Kibana, NiFi, ML - 6 days",
+  "desc": "Infrastructure-as-code and observability tools complete the production data engineering stack. Terraform makes infrastructure repeatable. Grafana/Kibana make pipelines visible. NiFi automates data movement.",
+  "tip": "In Terraform interviews, the most impressive sentence is not I know the syntax but I store state remotely with S3+DynamoDB locking so two people can't apply simultaneously. That shows production thinking.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Key point"
+    ],
+    "r": [
+      [
+        "Terraform plan symbols",
+        "+ = create, - = destroy, ~ = modify. Read plan before every apply."
+      ],
+      [
+        "Remote state",
+        "S3 + DynamoDB for team use. Never commit .tfstate to Git."
+      ],
+      [
+        "Drift",
+        "Manual console changes that don't match Terraform state. Fix by re-applying or importing."
+      ],
+      [
+        "Grafana panel types",
+        "Time series for metrics over time. Stat for single current value."
+      ],
+      [
+        "Kibana Discover",
+        "Search raw log documents. KQL: level:ERROR AND service:pipeline."
+      ],
+      [
+        "NiFi FlowFile",
+        "Attributes (metadata) + Content (data bytes). The unit of data in NiFi."
+      ],
+      [
+        "Processor vs Connection",
+        "Processor does work. Connection is a queue between processors."
+      ],
+      [
+        "Precision vs Recall",
+        "Precision: of flagged positives, how many correct. Recall: of true positives, how many caught."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "Terraform -- IaC, plan/apply/destroy, variables, state",
+      "summary": "Terraform turns AWS resources into version-controlled code. .tf files describe what should exist, plan shows the diff, apply makes it real."
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "Remote state, modules, capstone infrastructure",
+      "summary": "Remote state is the first thing a real team adds. Modules scale beyond one file -- together they make a team-shared system."
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Grafana -- dashboards, panels, alerting",
+      "summary": "Grafana turns metrics into visibility. The JD's near-real-time dashboard is likely Grafana."
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "Kibana + ELK -- log search, structured logging",
+      "summary": "Where Grafana shows metrics, Kibana shows logs. When your Spark job fails and you need the exact exception at 3am, you search Kibana Discover."
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Apache NiFi -- FlowFiles, processors, back-pressure",
+      "summary": "NiFi automates data movement -- the plumbing layer before Spark. Expect what is a FlowFile and how would you route based on content."
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "ML literacy -- precision/recall, overfitting, MLOps",
+      "summary": "The JD mentions ML. You need to understand concepts well enough to discuss them in context, not build models from scratch."
+    }
+  ]
+}

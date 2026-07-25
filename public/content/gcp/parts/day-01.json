@@ -1,0 +1,55 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "GCP fundamentals -- Projects, Folders, Organizations, billing",
+  "exp": "GCP's resource hierarchy is conceptually close to Azure's Management Group/Subscription structure, but the Project is the true fundamental unit -- almost everything in GCP lives inside exactly one Project.",
+  "pts": [
+    "Organization: the root node, tied to a Google Workspace or Cloud Identity domain -- optional for a personal/small setup, standard for any real company.",
+    "Folder: an optional grouping layer between Organization and Project, used to apply policy to a department or environment (e.g. a 'Production' folder containing several related projects).",
+    "Project: the fundamental unit almost everything lives inside -- billing, quotas, and IAM policy are all scoped primarily at the Project level. This is the closest single analog to an AWS Account, closer than a Subscription is on Azure.",
+    "Every resource has a globally unique Project ID (not just a display name) baked into its identifiers -- somewhat like how an S3 bucket name must be globally unique, but applied at the Project level instead of per-resource.",
+    "Billing Account is a separate top-level construct linked to one or more Projects -- a single Billing Account can fund many Projects, and a Project can be moved between Billing Accounts, a genuinely different model from how AWS ties billing directly to the Account itself.",
+    "Set a budget alert on the Billing Account immediately -- the GCP equivalent of the AWS/Azure billing-alarm habit, and arguably the most important five minutes of setup on any new GCP environment."
+  ],
+  "code": "# gcloud CLI -- fundamentals\ngcloud auth login\ngcloud projects list\n\ngcloud projects create orders-pipeline-prod --name=\"Orders Pipeline\"\ngcloud config set project orders-pipeline-prod\n\n# Link a Billing Account to the project\ngcloud billing projects link orders-pipeline-prod \\\n  --billing-account=XXXXXX-XXXXXX-XXXXXX\n\n# Budget alert -- set this immediately on any new project\ngcloud billing budgets create \\\n  --billing-account=XXXXXX-XXXXXX-XXXXXX \\\n  --display-name=\"SpendingAlert-20USD\" \\\n  --budget-amount=20USD \\\n  --threshold-rule=percent=1.0",
+  "pr": [
+    "Create a GCP Project, link it to a Billing Account, and set a budget alert at $20"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Level",
+        "AWS/Azure equivalent"
+      ],
+      "r": [
+        [
+          "Organization",
+          "AWS Organization / Azure Management Group"
+        ],
+        [
+          "Folder",
+          "Azure Management Group tier (loosely)"
+        ],
+        [
+          "Project",
+          "AWS Account (closest single equivalent)"
+        ],
+        [
+          "Billing Account",
+          "No direct AWS equivalent -- funds multiple Projects"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the fundamental unit of organization in GCP, and how does it compare to an AWS Account or an Azure Subscription?",
+      "a": "The Project. Nearly every resource, IAM policy, and quota is scoped primarily at the Project level -- it's the closest single analog to an AWS Account, arguably closer than an Azure Subscription is, since Azure additionally has Resource Groups as a meaningful sub-Subscription organizational layer that GCP's Project doesn't have an equivalent of within itself."
+    },
+    {
+      "q": "How does GCP's Billing Account relationship to Projects differ structurally from how AWS ties billing to an Account?",
+      "a": "A Billing Account is a separate, standalone construct that can fund multiple Projects simultaneously, and a Project can be relinked to a different Billing Account over its lifetime. AWS ties billing directly to the Account itself -- there's no equivalent of a separate billing entity funding multiple otherwise-independent Accounts in the same lightweight way. This makes GCP's model slightly more flexible for scenarios like a single company Billing Account funding many independent team Projects."
+    }
+  ]
+}

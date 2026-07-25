@@ -1,0 +1,155 @@
+{
+  "id": "azure",
+  "name": "Azure",
+  "color": "--azure",
+  "sub": "Map AWS to Azure - 14 days",
+  "desc": "A parallel-track crash course mapping everything you already know from AWS onto Azure -- same concepts (object storage, IAM, managed Spark), new vocabulary and a few genuine structural differences.",
+  "tip": "Every strong Azure answer starts with the AWS mapping, then names the one real structural difference -- e.g. 'Blob Storage is S3, but Resource Groups have no AWS equivalent -- deleting one deletes everything inside it at once.' That's what proves you're reasoning, not just memorizing new button names.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "AWS concept",
+      "Azure equivalent"
+    ],
+    "r": [
+      [
+        "Account",
+        "Subscription"
+      ],
+      [
+        "S3",
+        "Blob Storage"
+      ],
+      [
+        "EC2",
+        "Virtual Machines"
+      ],
+      [
+        "EMR",
+        "Azure Databricks"
+      ],
+      [
+        "Lambda",
+        "Azure Functions"
+      ],
+      [
+        "IAM",
+        "Entra ID (Azure AD) + RBAC"
+      ],
+      [
+        "RDS",
+        "Azure SQL Database"
+      ],
+      [
+        "Redshift / Athena",
+        "Synapse Analytics"
+      ],
+      [
+        "CloudFormation",
+        "ARM / Bicep"
+      ],
+      [
+        "EKS",
+        "AKS"
+      ],
+      [
+        "Glue / Step Functions",
+        "Data Factory / Logic Apps"
+      ],
+      [
+        "Secrets Manager",
+        "Key Vault"
+      ],
+      [
+        "CloudWatch",
+        "Azure Monitor"
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "Azure fundamentals -- resource hierarchy, Subscriptions, Resource Groups",
+      "summary": "Azure's hierarchy has one genuine structural difference from AWS that trips people up: Resource Groups. Everything else maps cleanly onto concepts you already k…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "Entra ID (Azure AD) + RBAC -- the identity and access model",
+      "summary": "Azure's access model maps onto IAM conceptually but is expressed through Role-Based Access Control assigned at points in the resource hierarchy from Day 1, rath…"
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Blob Storage -- containers, tiers, lifecycle, SAS tokens",
+      "summary": "Blob Storage is Azure's S3. Same conceptual shape -- containers instead of buckets, blobs instead of objects -- with a few naming and API differences worth know…"
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "Azure Databricks -- clusters, jobs, cost management",
+      "summary": "Azure Databricks is the direct equivalent of the EMR days -- built by the original Spark creators, deeply integrated with Azure infrastructure."
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Azure SDK for .NET, CI/CD, shared responsibility",
+      "summary": "The Azure SDK is likely more natural to you than the AWS SDK given your .NET background. This day covers the concrete API shape and CI/CD integration."
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Databricks debugging, monitoring, cost control",
+      "summary": "Running a Databricks job and diagnosing failures end to end -- the direct equivalent of the EMR debugging day."
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Azure Monitor -- metrics, Log Analytics, KQL basics",
+      "summary": "Azure Monitor is the direct equivalent of CloudWatch -- the platform-native observability service everything else, including Grafana, ultimately reads from."
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Grafana on Azure -- Managed Grafana vs self-hosted",
+      "summary": "Same decision as Amazon Managed Grafana, on Azure's platform. This day covers the specific identity wiring Azure requires before a panel can query Azure Monitor…"
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Grafana + Azure Monitor -- building the pipeline dashboard",
+      "summary": "With the workspace and identity in place, wire up Azure Monitor as a Grafana data source and build the same panel set from the AWS track, now against Metrics an…"
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Azure Data Factory + Logic Apps -- orchestration",
+      "summary": "The Azure equivalent of Step Functions + EventBridge for sequencing the daily pipeline run."
+    },
+    {
+      "id": "day-11",
+      "n": 11,
+      "title": "Synapse Analytics -- serverless SQL over the data lake",
+      "summary": "Synapse's serverless SQL pool is Azure's answer to Athena -- pay-per-query SQL directly over files in ADLS Gen2, no cluster to manage."
+    },
+    {
+      "id": "day-12",
+      "n": 12,
+      "title": "Terraform on Azure -- azurerm provider, state, modules",
+      "summary": "The exact same Terraform discipline from the Infrastructure track, now targeting Azure resources via the azurerm provider -- remote state, plan-before-apply, an…"
+    },
+    {
+      "id": "day-13",
+      "n": 13,
+      "title": "Azure security and compliance -- Key Vault, Defender for Cloud, Private Endpoints",
+      "summary": "The Azure equivalents of Secrets Manager, Security Hub, and PrivateLink -- the security layer questions that come up once the core pipeline is working."
+    },
+    {
+      "id": "day-14",
+      "n": 14,
+      "title": "Azure capstone -- putting the full stack together",
+      "summary": "Ties every Azure day into the same end-to-end shape as the AWS capstone -- the question 'walk me through how this pipeline would look on Azure' should now have …"
+    }
+  ]
+}

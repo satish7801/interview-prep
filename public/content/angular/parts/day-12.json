@@ -1,0 +1,48 @@
+{
+  "id": "day-12",
+  "n": 12,
+  "title": "State management — signals patterns, when to use NgRx",
+  "exp": "The state management question always comes up for senior Angular roles. At 4 YOE, you should be able to design a signals-based state architecture AND explain when that's insufficient and NgRx makes sense. Most companies are still on NgRx but are moving toward signals.",
+  "pts": [
+    "**Local state:** component-level signals (`count = signal(0)`) — for state that lives and dies with the component",
+    "**Shared state:** injectable service with signals — `@Injectable({ providedIn: 'root' })` holding `state = signal<State>(initial)` — simple, no boilerplate",
+    "**Computed state:** derived values with `computed()` — replaces NgRx selectors for simple cases",
+    "**SignalStore pattern** (NgRx Signals, `@ngrx/signals`): structured store with `withState`, `withComputed`, `withMethods` — scales better than raw service signals",
+    "**When plain signals suffice:** small-to-medium apps, simple CRUD state, teams that don't need time-travel debugging or action logs",
+    "**When NgRx is worth it:** complex async flows needing Effects, dev tools with time-travel debugging, large teams needing predictable one-directional data flow, action logs for debugging/analytics",
+    "**NgRx overview:** Store (holds state), Actions (describe what happened), Reducers (pure functions: state + action → new state), Effects (async side effects like HTTP), Selectors (memoized derived state)",
+    "**NgRx Signals (v17+):** `signalStore()` — a modern NgRx store built on Angular signals; combines the structure of NgRx with signal primitives; growing rapidly"
+  ],
+  "code": "// Pattern 1: Service with signals (no NgRx — good for most apps)\n@Injectable({ providedIn: 'root' })\nexport class TodoStore {\n  private todos = signal<Todo[]>([]);\n  private filter = signal<'all' | 'active' | 'done'>('all');\n\n  // Computed: derived state (like NgRx selectors)\n  visibleTodos = computed(() => {\n    const f = this.filter();\n    const all = this.todos();\n    if (f === 'active') return all.filter(t => !t.done);\n    if (f === 'done') return all.filter(t => t.done);\n    return all;\n  });\n  count = computed(() => this.todos().length);\n\n  // Methods: mutations (like NgRx actions/reducers)\n  add(text: string) { this.todos.update(ts => [...ts, { id: Date.now(), text, done: false }]); }\n  toggle(id: number) { this.todos.update(ts => ts.map(t => t.id === id ? {...t, done: !t.done} : t)); }\n  setFilter(f: typeof this.filter extends Signal<infer T> ? T : never) { this.filter.set(f); }\n}\n\n// Pattern 2: NgRx SignalStore (structured, scales better)\nexport const TodoStore = signalStore(\n  { providedIn: 'root' },\n  withState({ todos: [] as Todo[], filter: 'all' as const }),\n  withComputed(({ todos, filter }) => ({\n    visibleTodos: computed(() => todos().filter(/* ... */))\n  })),\n  withMethods((store) => ({\n    addTodo: rxMethod<string>(pipe(\n      switchMap(text => inject(TodoService).create(text)),\n      tap(todo => patchState(store, { todos: [...store.todos(), todo] }))\n    ))\n  }))\n);\n\n// Pattern 3: Classic NgRx (when you need time-travel debug, Effects)\n// actions.ts\nconst loadTodos = createAction('[Todo] Load');\nconst todosLoaded = createAction('[Todo] Loaded', props<{ todos: Todo[] }>());\n\n// reducer.ts\nconst reducer = createReducer(initialState,\n  on(todosLoaded, (state, { todos }) => ({ ...state, todos }))\n);\n\n// effect.ts\nloadTodosEffect = createEffect(() =>\n  this.actions$.pipe(\n    ofType(loadTodos),\n    switchMap(() => this.http.get<Todo[]>('/api/todos').pipe(\n      map(todos => todosLoaded({ todos }))\n    ))\n  )\n);",
+  "pr": [
+    "Implement a TodoStore using plain signals that covers add, toggle, filter, and computed count"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Diagram: two architectures side by side — (1) Service with signals: component → method → signal.set() → computed → template; (2) NgRx: component → dispatch action → reducer → store → selector → template"
+    }
+  ],
+  "qa": [
+    {
+      "q": "When would you use plain service signals vs NgRx for state management in Angular?",
+      "a": "Plain service signals for: small to medium apps, simple CRUD state without complex async orchestration, teams new to reactive patterns who need quick onboarding, prototypes. NgRx for: complex async flows where Effects provide a natural home for HTTP + error handling, large teams that benefit from enforced unidirectional data flow, apps where time-travel debugging (Redux DevTools) would save significant debugging time, or apps where action logs are needed for analytics/monitoring. NgRx Signals is a good middle ground — structured like NgRx but using signal primitives."
+    },
+    {
+      "q": "What is the role of each part of NgRx (Store, Action, Reducer, Effect, Selector)?",
+      "a": "Store: holds the entire application state as one immutable object. Actions: plain objects describing what happened (loadUsers, usersLoaded, loadUsersFailed) — the \"events\" of the app. Reducers: pure functions that take (currentState, action) and return a new state — no side effects. Effects: handle side effects (HTTP calls, routing, local storage) triggered by actions; dispatch new actions when complete. Selectors: pure, memoized functions that derive specific slices of state from the store — like computed() signals but for NgRx."
+    },
+    {
+      "q": "How does NgRx Signals (SignalStore) differ from classic NgRx?",
+      "a": "Classic NgRx: actions, reducers, effects, selectors are all separate files; boilerplate-heavy; built on RxJS Observables. NgRx Signals (signalStore): the store is a single entity with withState (signal-based state), withComputed (derived signals), and withMethods (mutations and side effects); much less boilerplate; state is signals not Observables; direct reads without selectors. NgRx Signals is the recommended approach for new NgRx projects targeting Angular 17+, though classic NgRx is still common in existing codebases."
+    },
+    {
+      "q": "What is the difference between a Selector and a Computed signal in terms of functionality?",
+      "a": "Both memoize derived state and only recalculate when their inputs change. NgRx Selectors: created with createSelector, compose with other selectors, work with the Observable-based store.select() API, and are tested separately. Computed signals: created with computed(), work natively with Angular templates and signals, no separate testing infrastructure needed, and are the native Angular approach for derived state. Functionally equivalent for simple derivations; NgRx selectors have better composition primitives for complex state trees."
+    },
+    {
+      "q": "What is the \"one-directional data flow\" principle and why does NgRx enforce it?",
+      "a": "One-directional data flow means data flows in only one direction: component dispatches Action → Effect handles async → Reducer produces new State → Selector derives view data → component reads via store.select(). No component directly mutates state. Benefits: predictable state changes (any change has a traceable action), testable (each piece is a pure function), reproducible bugs (replay actions), and time-travel debugging (step backward through actions). NgRx enforces it structurally — you cannot mutate state outside a reducer."
+    }
+  ]
+}

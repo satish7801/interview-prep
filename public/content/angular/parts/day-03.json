@@ -1,0 +1,50 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Dependency injection deep dive — tokens, hierarchical DI, factories",
+  "exp": "Most Angular developers know basic @Injectable DI but struggle with InjectionToken, multi-providers, and hierarchical injectors. These are tested in library authoring and architecture questions — and they explain some Angular behaviours that otherwise seem like magic.",
+  "pts": [
+    "`@Injectable({ providedIn: 'root' })` — registers at the root injector; singleton; tree-shakeable",
+    "`providers` in `@Component` metadata — creates a new instance of the service for that component and its children; not a singleton",
+    "**Hierarchical injectors:** root injector → environment injectors (lazy-loaded modules) → component injectors (each component can override). Resolution walks up the tree.",
+    "**`InjectionToken<T>`:** for providing non-class values (strings, config objects, functions, primitives) via DI",
+    "**`useClass`:** provide a different implementation. **`useValue`:** provide a literal value. **`useFactory`:** provide a value from a factory function. **`useExisting`:** alias one token to another.",
+    "**Multi-providers:** `multi: true` — multiple providers for the same token return an array. Used for HTTP_INTERCEPTORS, VALIDATORS, and extensible plugin systems.",
+    "**`inject()` function:** call inside constructor, factory functions, or injection context (not in lifecycle hooks); preferred over constructor injection in modern Angular",
+    "**`@Optional()`:** inject returns null if not provided. **`@Self()`:** only look in the component's own injector. **`@SkipSelf()`:** skip current injector, go straight to parent.",
+    "**`@Host()`:** look only up to the host element's injector — useful in directives"
+  ],
+  "code": "// InjectionToken for a config object\nconst API_CONFIG = new InjectionToken<{ baseUrl: string; timeout: number }>('api.config');\n\n// Provide in the module/app config\nbootstrapApplication(AppComponent, {\n  providers: [\n    { provide: API_CONFIG, useValue: { baseUrl: '/api/v2', timeout: 5000 } }\n  ]\n});\n\n// Inject in a service\n@Injectable({ providedIn: 'root' })\nexport class ApiService {\n  private config = inject(API_CONFIG);\n  get baseUrl() { return this.config.baseUrl; }\n}\n\n// useFactory: inject with dependencies\n{ provide: LogService,\n  useFactory: (env: EnvironmentService) =>\n    env.isProd() ? new SilentLogger() : new ConsoleLogger(),\n  deps: [EnvironmentService] }\n\n// Multi-providers: register multiple HTTP interceptors\n{ provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },\n{ provide: HTTP_INTERCEPTORS, useClass: LoggingInterceptor, multi: true }\n\n// Component-level provider: each instance gets its own StateService\n@Component({\n  providers: [StateService]  // NOT a singleton — new instance per component\n})\nexport class WidgetComponent {\n  private state = inject(StateService);\n}\n\n// @Optional: inject a service that may not be provided\n@Directive({ selector: '[tooltip]' })\nexport class TooltipDirective {\n  private tooltipConfig = inject(TOOLTIP_CONFIG, { optional: true });\n  // tooltipConfig is null if TOOLTIP_CONFIG was not provided\n}\n\n// @SkipSelf: useful in directives to get parent's instance\nconstructor(@SkipSelf() private parentService: ParentService) {}",
+  "pr": [
+    "Create an InjectionToken for an API config object and use it in a service",
+    "Add a component-level provider to give a widget its own isolated state service"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Diagram: injector tree showing root → environment → component levels, with arrows showing the resolution walk-up order"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is an InjectionToken and when do you use it instead of a class?",
+      "a": "InjectionToken<T> is a typed token for providing non-class values via Angular's DI system — strings, numbers, config objects, factory functions, or anything that isn't a class. Example: const API_URL = new InjectionToken<string>('api.url'). You use it because Angular's DI uses types as keys, and there's no type key for a primitive. InjectionTokens also work for providing different implementations of the same interface without a concrete class as the token."
+    },
+    {
+      "q": "What are multi-providers and what are they used for?",
+      "a": "Multi-providers let multiple providers register under the same token, and the injected value is an array of all registered values. Add multi: true to each provider. Angular uses this pattern for HTTP_INTERCEPTORS (register multiple interceptors that all run), VALIDATORS (multiple validator factories), and extensible plugin systems. Without multi: true, later providers overwrite earlier ones. With multi: true, all are collected into an array."
+    },
+    {
+      "q": "How does hierarchical DI work in Angular?",
+      "a": "Angular has a tree of injectors mirroring the component tree. When you inject a service, Angular walks up the injector tree: component injector → parent component injector → ... → environment injector → root injector. If a component provides a service in its providers array, it (and its children) get a new instance, not the root singleton. This enables component-scoped state. @Self() limits lookup to the current component's injector; @SkipSelf() skips it and goes to the parent; @Optional() returns null instead of throwing if not found."
+    },
+    {
+      "q": "What is the difference between useClass, useValue, useFactory, and useExisting?",
+      "a": "useClass: provide an instance of a different class than the token — { provide: Logger, useClass: ConsoleLogger }. useValue: provide a static value directly — { provide: API_URL, useValue: '/api/v2' }. useFactory: compute the provided value via a function that can inject its own dependencies — { provide: Logger, useFactory: (env: Env) => env.prod ? new SilentLogger() : new ConsoleLogger(), deps: [Env] }. useExisting: alias one token to an already-registered token — { provide: OldService, useExisting: NewService }."
+    },
+    {
+      "q": "What is the inject() function and when do you use it instead of constructor injection?",
+      "a": "inject(Token) is a function-based alternative to constructor injection, usable inside the injection context: constructor body, field initializers, factory functions, and functional guards/interceptors. It's preferred in modern Angular because: (1) it's less ceremony for simple injections, (2) works in functional constructs (guards, interceptors) that have no class constructor, and (3) it's required inside inject()-based factory providers. It cannot be used in lifecycle hooks (outside the injection context)."
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "day-13",
+  "n": 13,
+  "title": ".NET security -- authentication, authorization, data protection, common vulnerabilities",
+  "exp": "Security questions at 4 YOE go beyond 'don't concatenate SQL strings' (covered in the SQL track). This day covers the ASP.NET Core-specific security surface: auth middleware, claims-based authorization, and the OWASP-adjacent vulnerabilities specific to .NET applications.",
+  "pts": [
+    "Authentication (who are you) and Authorization (what are you allowed to do) are distinct middleware concerns in ASP.NET Core, registered in a specific required order: `UseAuthentication()` MUST precede `UseAuthorization()`, since authorization checks depend on the identity authentication establishes.",
+    "Claims-based identity: a ClaimsPrincipal carries a collection of Claims (key-value pairs like role, department, employee ID) established during authentication -- authorization policies check for the presence/value of specific claims rather than hardcoding role name strings scattered through the codebase.",
+    "`[Authorize(Roles = \"Admin\")]` is simple role-based authorization. `[Authorize(Policy = \"CanApproveHighValueOrders\")]` referencing a named policy defined once in Program.cs is more maintainable and testable -- the policy's actual logic (which might check a claim, a custom requirement, or a combination) lives in one place, not duplicated across every controller action that needs it.",
+    "ASP.NET Core Data Protection API automatically handles encryption of things like authentication cookies and anti-forgery tokens -- in a multi-instance deployment (multiple servers behind a load balancer), the Data Protection keys MUST be shared across instances (via a shared key ring in Redis, Blob Storage, or a database) or users will be randomly logged out when their request hits a different instance than the one that issued their cookie.",
+    "CSRF (Cross-Site Request Forgery) protection via anti-forgery tokens is built into Razor Pages/MVC forms automatically but must be explicitly wired for JavaScript-driven SPA scenarios calling an API -- a common gap when a .NET API backs an Angular/React frontend.",
+    "Mass assignment / over-posting: binding a request body directly to an EF Core entity (rather than a dedicated DTO) can let an attacker set fields they shouldn't be able to -- e.g. posting `{\"isAdmin\": true}` in a user-registration payload if the entity has an IsAdmin property and the controller binds directly to it. Always bind to a DTO with only the intended fields, then map explicitly to the entity.",
+    "Secrets in configuration: `appsettings.json` committed to source control should NEVER contain real secrets -- use User Secrets for local development, and Azure Key Vault / AWS Secrets Manager (configured as an additional configuration provider) for production, so the actual secret value never touches source control or a config file on disk.",
+    "`[ValidateAntiForgeryToken]`, output encoding (Razor auto-encodes by default, but `Html.Raw()` bypasses this and is a real XSS risk if used on user-supplied content), and parameterized EF Core/Dapper queries (never raw string-concatenated SQL, covered in depth in the SQL track) round out the core defensive checklist."
+  ],
+  "code": "// Middleware order -- Authentication MUST precede Authorization\napp.UseAuthentication();   // establishes WHO the caller is\napp.UseAuthorization();    // checks WHAT they're allowed to do -- depends on the above\n\n// Claims-based identity and policy-based authorization\nbuilder.Services.AddAuthorization(options =>\n{\n    options.AddPolicy(\"CanApproveHighValueOrders\", policy =>\n        policy.RequireClaim(\"Department\", \"Finance\")\n              .RequireClaim(\"ApprovalLimit\"));   // custom requirement, not just a role string\n});\n\n[Authorize(Policy = \"CanApproveHighValueOrders\")]\n[HttpPost(\"approve/{orderId}\")]\npublic async Task<IActionResult> ApproveOrder(int orderId) { /* ... */ }\n\n// Mass assignment / over-posting protection -- bind to a DTO, not the entity directly\npublic class RegisterUserDto\n{\n    public string Email { get; set; }\n    public string Password { get; set; }\n    // Deliberately NO IsAdmin property here -- can't be set via this payload\n}\n\n[HttpPost(\"register\")]\npublic async Task<IActionResult> Register(RegisterUserDto dto)\n{\n    var user = new User { Email = dto.Email, PasswordHash = Hash(dto.Password) };\n    // IsAdmin defaults to false on the entity -- never settable through this endpoint\n    await _repo.SaveAsync(user);\n    return Ok();\n}\n\n// Data Protection shared key ring for multi-instance deployment (prevents random logouts)\nbuilder.Services.AddDataProtection()\n    .PersistKeysToStackExchangeRedis(redisConnection, \"DataProtection-Keys\")\n    .SetApplicationName(\"OrdersApi\");   // must match across all instances\n\n// Secrets -- local dev via User Secrets, never in appsettings.json\n// dotnet user-secrets set \"ConnectionStrings:Default\" \"Server=...;Password=...\"\n\n// Production -- Key Vault as a configuration provider, secret never touches disk/repo\nbuilder.Configuration.AddAzureKeyVault(\n    new Uri(\"https://kv-orders.vault.azure.net\"),\n    new DefaultAzureCredential());",
+  "pr": [
+    "Identify the over-posting vulnerability in a controller action that binds directly to an entity, then fix it with a dedicated DTO"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Vulnerability",
+        "Root cause",
+        "Defense"
+      ],
+      "r": [
+        [
+          "Mass assignment / over-posting",
+          "Binding request body directly to entity",
+          "Bind to a dedicated DTO, map explicitly"
+        ],
+        [
+          "Random logout in multi-instance deploy",
+          "Independent Data Protection key rings per instance",
+          "Shared key ring (Redis/Blob/DB)"
+        ],
+        [
+          "XSS via Html.Raw()",
+          "Bypassing Razor's default auto-encoding",
+          "Avoid Html.Raw() on user-supplied content"
+        ],
+        [
+          "Secrets in source control",
+          "Real values committed in appsettings.json",
+          "User Secrets locally, Key Vault in production"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why must UseAuthentication() be registered before UseAuthorization() in the middleware pipeline, and what specifically breaks if the order is reversed?",
+      "a": "Authorization middleware checks claims and roles on the current request's ClaimsPrincipal to decide if access is allowed -- but that ClaimsPrincipal is only populated by the Authentication middleware processing the request's credentials (a cookie, a bearer token). If Authorization runs first, it evaluates against an unauthenticated (anonymous) principal, meaning every authorization check would effectively see 'no identity' regardless of the actual credentials sent -- authenticated requests would be incorrectly treated as anonymous and likely rejected or given only anonymous-level access."
+    },
+    {
+      "q": "What is mass assignment / over-posting, and what is the standard defense against it in an ASP.NET Core API?",
+      "a": "Mass assignment happens when a request body is bound directly to a domain entity that has more properties than the endpoint intends to let a caller set -- if a User entity has an IsAdmin boolean and a registration endpoint binds the request body directly to that entity type, a malicious caller could include \"isAdmin\": true in their JSON payload and have it silently accepted and persisted. The defense: always bind incoming requests to a dedicated DTO containing ONLY the fields that specific endpoint should accept, then explicitly map the allowed fields onto the domain entity in code -- never bind a request body directly to the full entity type."
+    },
+    {
+      "q": "Why does a multi-instance deployment require explicitly configuring a shared Data Protection key ring, and what symptom appears if you skip this?",
+      "a": "By default, ASP.NET Core's Data Protection API generates and stores its encryption keys locally per instance. Authentication cookies and anti-forgery tokens are encrypted with these keys. In a load-balanced multi-instance deployment, if each instance has its own independent key ring, a cookie encrypted by instance A cannot be decrypted by instance B -- so a user whose request lands on a different instance than the one that issued their login cookie appears to be randomly logged out, an intermittent and confusing symptom that only appears in production behind a real load balancer, not in local single-instance development."
+    },
+    {
+      "q": "What is the difference between role-based and policy-based authorization in ASP.NET Core, and why is policy-based generally preferred for anything beyond the simplest cases?",
+      "a": "[Authorize(Roles = \"Admin\")] checks for a specific role string directly in the attribute, scattered across every action that needs that check -- if the actual business rule ever needs to change (say, from 'must be Admin' to 'must be Admin OR have a specific delegated claim'), every attribute referencing that role must be found and updated individually. [Authorize(Policy = \"SomeNamedPolicy\")] references a policy defined once in configuration, whose actual logic (which can check claims, combine multiple requirements, or run custom code) lives in one place -- changing the underlying rule means updating the policy definition once, with every action referencing that policy automatically getting the updated behavior."
+    }
+  ]
+}

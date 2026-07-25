@@ -1,0 +1,49 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "Template syntax — deferrable views, pipes, ng-template, reference variables",
+  "exp": "Angular's @defer blocks (stable in v17) are now a core performance feature that interviewers ask about. Custom pipes, the async pipe, and template reference variables are all commonly tested. Know how to avoid the common pitfall of impure pipes breaking OnPush.",
+  "pts": [
+    "**New control flow:** `@if (cond)`, `@if (cond) {} @else {}`, `@for (item of list; track item.id) {} @empty {}`, `@switch (val) { @case (x) {} @default {} }`",
+    "**`@for` must have `track`:** expression that uniquely identifies items for DOM reconciliation — without it, Angular recreates all DOM on any change",
+    "**Deferrable views `@defer`:** lazily loads a component chunk; the browser only downloads the JS when a condition is met",
+    "**`@defer` triggers:** `@defer (on viewport)` — when block enters viewport; `@defer (on idle)` — when browser is idle; `@defer (on interaction)` — on click/focus; `@defer (when condition)` — signal/expression becomes true",
+    "**`@defer` blocks:** `@placeholder` (rendered before defer), `@loading` (shown while loading), `@error` (shown if load fails)",
+    "**Pure pipes:** implement `PipeTransform`, run only when input reference changes — safe with OnPush. **Impure pipes:** run on every change detection cycle — avoid with OnPush",
+    "**`async` pipe:** subscribes to an Observable/Promise, returns current value, auto-unsubscribes on component destroy — the cleanest way to consume Observables in templates",
+    "**Template reference variables `#ref`:** reference an element, component, or directive in the template; accessible via @ViewChild or in the same template",
+    "**`ng-template` + `*ngTemplateOutlet`:** re-use a template fragment multiple times with different context variables"
+  ],
+  "code": "// @defer: load heavy chart component only when in viewport\n@defer (on viewport) {\n  <heavy-chart [data]=\"chartData()\" />\n} @placeholder {\n  <div class=\"chart-skeleton\" style=\"height: 300px\"></div>\n} @loading (minimum 500ms) {\n  <spinner />\n} @error {\n  <p>Failed to load chart</p>\n}\n\n// @defer with condition (signal or expression)\n@defer (when isExpanded()) {\n  <detailed-view [item]=\"selected()\" />\n}\n\n// Pure custom pipe (runs only when value reference changes)\n@Pipe({ name: 'fileSize', pure: true })\nexport class FileSizePipe implements PipeTransform {\n  transform(bytes: number): string {\n    if (bytes < 1024) return bytes + ' B';\n    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';\n    return (bytes / 1048576).toFixed(1) + ' MB';\n  }\n}\n\n// async pipe — subscribe in template, auto-unsubscribe\n@Component({\n  template: `\n    @if (user$ | async; as user) {\n      <p>Welcome, {{ user.name }}</p>\n    } @else {\n      <p>Loading...</p>\n    }\n  `\n})\nexport class ProfileComponent {\n  user$ = this.userService.getCurrentUser();\n  constructor(private userService: UserService) {}\n}\n\n// ng-template + ngTemplateOutlet for reusable fragments\n@Component({\n  template: \\`\n    <ng-template #avatarTpl let-user=\"user\">\n      <img [src]=\"user.avatar\" [alt]=\"user.name\">\n    </ng-template>\n    <ng-container *ngTemplateOutlet=\"avatarTpl; context: {user: currentUser()}\"></ng-container>\n    <ng-container *ngTemplateOutlet=\"avatarTpl; context: {user: selectedUser()}\"></ng-container>\n  \\`\n})\nexport class AvatarExample { currentUser = signal<User|null>(null); selectedUser = signal<User|null>(null); }",
+  "pr": [
+    "Add @defer (on viewport) to a heavy component in your project to test lazy loading"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Diagram: @defer block shows @placeholder → @loading → content, with trigger arrows (viewport / idle / interaction / when condition)"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is @defer and what are its trigger options?",
+      "a": "@defer is a block-level template directive that lazily loads the template content (and the component classes it uses) as a separate JS chunk. It only downloads the code when a trigger condition is met. Triggers: on viewport (IntersectionObserver), on idle (requestIdleCallback), on interaction (click or focus on the placeholder), on immediate (right away, but async), on timer(n) (after n ms), when expression (signal or boolean expression). @placeholder, @loading, and @error blocks control what's shown before/during/after loading."
+    },
+    {
+      "q": "What is the difference between a pure and an impure pipe?",
+      "a": "Pure pipe (pure: true, the default): Angular only re-runs the transform when the input reference changes — works well with OnPush components. Impure pipe (pure: false): Angular re-runs the transform on every change detection cycle regardless of input changes — necessary for pipes that depend on external state (like the async pipe or a pipe that reads Date.now()), but breaks OnPush optimization. Avoid impure pipes in OnPush components unless necessary."
+    },
+    {
+      "q": "What does the async pipe do that manually subscribing doesn't?",
+      "a": "The async pipe: (1) subscribes to an Observable or Promise automatically, (2) returns the current emitted value for display, (3) triggers change detection when a new value arrives (compatible with OnPush), and (4) automatically unsubscribes when the component is destroyed — preventing memory leaks. Manual subscribe() in the component requires explicit unsubscribe in ngOnDestroy; forgetting causes memory leaks. The async pipe is the preferred pattern for template-bound streams."
+    },
+    {
+      "q": "What is a template reference variable and how is it used?",
+      "a": "A template reference variable (#ref) is a name given to an element, component, or directive in the template. Inside the template, you can use #myInput on an <input> and then reference it as myInput.value in event handlers. Combined with @ViewChild('myInput') in the component class, you can access the element programmatically after the view is initialized. They're also used to reference child components: #myModal gives access to the MyModalComponent's public API."
+    },
+    {
+      "q": "What is @for's track and what happens without it?",
+      "a": "track is an expression that uniquely identifies each item in the list — Angular uses it to associate DOM elements with data items across re-renders. With track item.id: when the list changes, Angular only updates DOM nodes whose items actually changed. Without track: Angular must destroy and recreate ALL DOM nodes on any list change (since it can't tell what moved vs what changed). Missing track is a compile error in Angular 17+ (unlike *ngFor where trackBy was optional)."
+    }
+  ]
+}

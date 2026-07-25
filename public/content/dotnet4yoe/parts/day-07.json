@@ -1,0 +1,29 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "EF Core & SQL — N+1, indexes, AsNoTracking",
+  "exp": "Data access is where mid-senior candidates separate themselves: N+1, plans, and read vs write patterns.",
+  "pts": [
+    "N+1: fix with `Include`, projections, split queries, or Dapper joins.",
+    "Indexes: clustered vs nonclustered; seek vs scan; covering `INCLUDE`.",
+    "`AsNoTracking()` for read-only lists — less memory, faster.",
+    "Change tracker identity resolution: same key → same instance.",
+    "Know how to read a basic execution plan in interviews."
+  ],
+  "code": "var orders = await db.Orders\n    .AsNoTracking()\n    .Include(o => o.Items)\n    .Where(o => o.CustomerId == id)\n    .ToListAsync(ct);",
+  "pr": [
+    "Rewrite an N+1 loop with Include + projection",
+    "Propose an index for a slow WHERE/ORDER BY"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "What is the N+1 problem and how do you fix it in EF?",
+      "a": "Loading a collection then lazy-loading a navigation per row causes 1+N queries. Fix with Include/ThenInclude, Select projections, AsSplitQuery for big graphs, or explicit SQL joins. Verify with logging or a profiler."
+    },
+    {
+      "q": "When do you use AsNoTracking?",
+      "a": "Read-only queries where you won't Update/SaveChanges. Skipping tracking reduces memory and CPU. Don't use it if you need to mutate and persist the same instances."
+    }
+  ]
+}

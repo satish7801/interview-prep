@@ -1,0 +1,70 @@
+{
+  "id": "day-11",
+  "n": 11,
+  "title": "EF Core query internals -- IQueryable, deferred execution, split queries, compiled queries",
+  "exp": "Day 6 covered the practical N+1 problem. This day goes into HOW EF Core actually translates your LINQ into SQL, and the specific query-shaping decisions that separate an EF Core novice from someone who can reason about its generated SQL.",
+  "pts": [
+    "`IQueryable<T>` represents an UN-executed query expression tree -- calling .Where(), .Select(), .OrderBy() on it doesn't touch the database, it just builds up the expression tree. The query only executes when you enumerate it: .ToList(), .ToListAsync(), foreach, .First(), .Count(), etc.",
+    "This deferred nature means building a query across multiple method calls (a repository pattern chaining .Where() calls, for instance) is fine and even beneficial -- EF Core translates the FULL final expression tree into one SQL query, not one query per method call.",
+    "`IEnumerable<T>` vs `IQueryable<T>` is the classic footgun: if you call `.ToList()` too early then continue chaining `.Where()`, the filtering happens in-memory in C# (LINQ-to-Objects) instead of being translated to SQL and executed by the database -- silently pulling far more rows across the wire than necessary.",
+    "**Split queries:** by default, EF Core translates multiple `.Include()` calls for collection navigation properties into ONE large SQL query with multiple JOINs, which can produce a Cartesian-product explosion of duplicate row data. `.AsSplitQuery()` tells EF Core to instead issue separate SQL queries per Include, avoiding the row-multiplication at the cost of multiple round-trips.",
+    "**Compiled queries** (`EF.CompileAsyncQuery`) pre-compile a LINQ query's translation to SQL once, bypassing the expression-tree-to-SQL translation overhead on every subsequent call -- meaningful for a query executed extremely frequently in a hot path, not worth the added complexity for typical CRUD queries.",
+    "Change tracking behavior on a query: EF Core's default tracking query creates a snapshot of every returned entity to detect changes for a future SaveChanges(). This snapshot creation has real CPU/memory cost proportional to the number of entities and properties returned -- `.AsNoTracking()` skips it entirely for read-only scenarios.",
+    "`.AsNoTrackingWithIdentityResolution()` is a middle ground: skips full change tracking overhead but still ensures that if the same entity appears multiple times in a result set (via multiple Include paths), you get the same C# object instance rather than duplicate copies -- useful for complex read-only graphs where object identity still matters to your code.",
+    "Client-side evaluation warnings: EF Core will throw at runtime (in modern versions) rather than silently falling back to in-memory evaluation if part of your LINQ expression cannot be translated to SQL -- know this is a deliberate design choice to surface performance problems early rather than hide them."
+  ],
+  "code": "// IQueryable -- deferred execution, builds an expression tree\nIQueryable<Order> query = context.Orders.Where(o => o.Status == \"Pending\");\n// No SQL has run yet -- query is just an expression tree at this point\n\nquery = query.Where(o => o.Amount > 1000);   // still building the expression tree\nquery = query.OrderByDescending(o => o.Amount);\n\nvar results = await query.ToListAsync();\n// ONLY NOW does EF Core translate the full expression tree into ONE SQL query and execute it\n\n// THE CLASSIC FOOTGUN -- calling ToList() too early forces in-memory filtering\nvar badResults = context.Orders.ToList()               // pulls ALL rows across the wire\n    .Where(o => o.Status == \"Pending\")                   // filters in C#, not SQL!\n    .Where(o => o.Amount > 1000);\n\n// Correct version -- entire filter chain translates to SQL, only matching rows come back\nvar goodResults = await context.Orders\n    .Where(o => o.Status == \"Pending\")\n    .Where(o => o.Amount > 1000)\n    .ToListAsync();\n\n// Split query -- avoid Cartesian-product row explosion from multiple Includes\nvar ordersWithDetails = await context.Orders\n    .Include(o => o.LineItems)\n    .Include(o => o.StatusHistory)\n    .AsSplitQuery()          // issues separate SQL queries per Include instead of one giant JOIN\n    .ToListAsync();\n\n// Compiled query -- pre-compiled translation for a very hot-path query\nprivate static readonly Func<AppDbContext, int, Task<Order>> GetOrderById =\n    EF.CompileAsyncQuery((AppDbContext ctx, int id) =>\n        ctx.Orders.FirstOrDefault(o => o.Id == id));\n\nvar order = await GetOrderById(context, 12345);\n\n// AsNoTrackingWithIdentityResolution -- read-only, but preserves object identity\nvar report = await context.Orders\n    .Include(o => o.Customer)\n    .AsNoTrackingWithIdentityResolution()\n    .ToListAsync();\n// If the same Customer appears via multiple Orders, all references point to the SAME\n// C# object instance, unlike plain AsNoTracking() which could produce duplicate copies",
+  "pr": [
+    "Rewrite a query that calls .ToList() before its final .Where() clause so the filter executes in SQL instead of in-memory"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Concept",
+        "What it solves",
+        "Cost/trade-off"
+      ],
+      "r": [
+        [
+          "AsNoTracking()",
+          "Skip change-tracking snapshot overhead",
+          "Can't call SaveChanges() on results"
+        ],
+        [
+          "AsNoTrackingWithIdentityResolution()",
+          "Read-only but preserve object identity",
+          "Slightly more overhead than plain AsNoTracking"
+        ],
+        [
+          "AsSplitQuery()",
+          "Avoid JOIN row-multiplication from multiple Includes",
+          "Multiple round-trips instead of one"
+        ],
+        [
+          "EF.CompileAsyncQuery",
+          "Skip repeated LINQ-to-SQL translation cost",
+          "Only worth it for very hot-path queries"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the classic IQueryable vs IEnumerable footgun in EF Core, and how do you spot it in a code review?",
+      "a": "If .ToList() (or .ToListAsync(), or any other enumeration) is called BEFORE the final .Where()/.OrderBy()/.Select() chain is complete, everything after that point executes as LINQ-to-Objects in memory in C#, not as SQL executed by the database. This silently pulls the entire unfiltered table across the network before applying the filter locally -- correct but catastrophically inefficient on a large table. Spot it in review by checking whether .ToList()/.ToListAsync() appears in the middle of a LINQ chain rather than strictly at the end."
+    },
+    {
+      "q": "What problem does AsSplitQuery() solve, and what is the trade-off of using it?",
+      "a": "When you Include() multiple collection navigation properties (Orders -> LineItems AND Orders -> StatusHistory, for example), EF Core's default behavior generates one SQL query with multiple JOINs -- but if an order has 5 line items and 3 status history entries, the JOIN produces 15 rows for that one order (a Cartesian product), which EF Core then has to de-duplicate back into the correct object graph client-side. AsSplitQuery() instead issues one SQL query per Include, avoiding the row multiplication, at the cost of multiple round-trips to the database instead of one -- correct choice depends on whether the JOIN explosion or the extra round-trips is the bigger cost for your specific data shape."
+    },
+    {
+      "q": "When is a compiled query worth the added complexity, and when is it not?",
+      "a": "EF.CompileAsyncQuery pre-compiles the LINQ-to-SQL translation once, avoiding that translation overhead on every subsequent execution -- meaningful for a query that executes extremely frequently (thousands of times per second in a hot path). For typical CRUD queries executed at normal application request rates, the translation overhead EF Core incurs per query is small relative to the actual database round-trip time, so the added code complexity and reduced flexibility of a compiled query usually isn't worth it. Profile first; don't reach for this as a default optimization."
+    },
+    {
+      "q": "Why does modern EF Core throw an exception instead of silently falling back to client-side evaluation for untranslatable LINQ expressions?",
+      "a": "Earlier EF Core versions would silently evaluate any part of a LINQ query that couldn't be translated to SQL by pulling the necessary data into memory and finishing the operation in C# -- which could work correctly but catastrophically underperform on a large table, with no visible warning that this was happening. Modern EF Core throws at runtime instead, forcing the developer to either restructure the query into something translatable or explicitly opt into client evaluation, surfacing a potential performance cliff during development and testing rather than allowing it to silently degrade production performance."
+    }
+  ]
+}

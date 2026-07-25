@@ -1,0 +1,50 @@
+{
+  "id": "day-13",
+  "n": 13,
+  "title": "Serverless orchestration -- Step Functions, EventBridge, Lambda",
+  "exp": "NiFi handles data movement, but something needs to trigger and sequence the overall daily run. Step Functions and EventBridge are AWS's native orchestration answer to that sequencing problem.",
+  "pts": [
+    "EventBridge: a scheduled rule (rate(1 day) or a cron expression) is the most common trigger for a daily pipeline -- no server to keep alive or patch.",
+    "EventBridge can also trigger on AWS service EVENTS, not just schedules -- an S3 'object created' event can kick off processing the moment a file lands, instead of polling on a schedule.",
+    "Step Functions: a state machine defined in Amazon States Language (JSON) that sequences Lambda invocations, EMR steps, and Glue jobs -- visually rendered as a flowchart in the console.",
+    "Built-in Retry and Catch blocks per state remove the need to hand-write orchestration-level retry loops -- though your Python/Spark code still needs its own retry logic for things like API calls.",
+    "A Map state runs the same sub-workflow in parallel across an array of inputs -- exactly the shape needed to fan out 50 sources as parallel branches, with configurable max concurrency.",
+    "Lambda's practical role: lightweight glue work -- trigger the EMR step, check config, send a Slack notification -- not the heavy Spark processing, which belongs on EMR.",
+    "Lambda has a 15-minute maximum execution time -- know this ceiling so you don't force genuinely heavy processing into a Lambda function."
+  ],
+  "code": "# EventBridge scheduled rule -- Terraform\nresource \"aws_cloudwatch_event_rule\" \"daily_pipeline\" {\n  name                = \"daily-orders-pipeline-trigger\"\n  schedule_expression = \"cron(0 6 * * ? *)\"\n}\n\nresource \"aws_cloudwatch_event_target\" \"start_step_function\" {\n  rule     = aws_cloudwatch_event_rule.daily_pipeline.name\n  arn      = aws_sfn_state_machine.pipeline.arn\n  role_arn = aws_iam_role.eventbridge_invoke_sfn.arn\n}\n\n# Step Functions state machine -- Amazon States Language (JSON)\n{\n  \"Comment\": \"Daily 50-source ingestion pipeline\",\n  \"StartAt\": \"FetchAllSources\",\n  \"States\": {\n    \"FetchAllSources\": {\n      \"Type\": \"Map\",\n      \"ItemsPath\": \"$.sources\",\n      \"MaxConcurrency\": 10,\n      \"Iterator\": {\n        \"StartAt\": \"FetchSource\",\n        \"States\": {\n          \"FetchSource\": {\n            \"Type\": \"Task\",\n            \"Resource\": \"arn:aws:lambda:us-east-1:123456789:function:fetch-source\",\n            \"Retry\": [{ \"ErrorEquals\": [\"States.TaskFailed\"],\n                        \"IntervalSeconds\": 30, \"MaxAttempts\": 3, \"BackoffRate\": 2.0 }],\n            \"Catch\": [{ \"ErrorEquals\": [\"States.ALL\"],\n                        \"ResultPath\": \"$.error\", \"Next\": \"LogFailedSource\" }],\n            \"End\": true\n          },\n          \"LogFailedSource\": {\n            \"Type\": \"Task\",\n            \"Resource\": \"arn:aws:lambda:us-east-1:123456789:function:log-dead-letter\",\n            \"End\": true\n          }\n        }\n      },\n      \"Next\": \"RunSparkValidation\"\n    },\n    \"RunSparkValidation\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:states:::elasticmapreduce:addStep.sync\",\n      \"Parameters\": {\n        \"ClusterId.$\": \"$.clusterId\",\n        \"Step\": { \"Name\": \"ValidateAndTransform\", \"ActionOnFailure\": \"CONTINUE\",\n                  \"HadoopJarStep\": { \"Jar\": \"command-runner.jar\",\n                    \"Args\": [\"spark-submit\", \"s3://bucket/scripts/validate.py\"] } }\n      },\n      \"Next\": \"NotifyComplete\"\n    },\n    \"NotifyComplete\": {\n      \"Type\": \"Task\",\n      \"Resource\": \"arn:aws:lambda:us-east-1:123456789:function:notify-slack\",\n      \"End\": true\n    }\n  }\n}",
+  "pr": [
+    "Sketch the Step Functions state machine for the 50-source pipeline: list each state, its type, and what happens on failure"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "EventBridge 6am daily",
+        "Step Functions starts",
+        "Map 50 parallel fetches",
+        "EMR validate step",
+        "Notify Slack"
+      ],
+      "cap": "Serverless orchestration triggering and sequencing the daily pipeline"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why prefer EventBridge over a cron job on an EC2 instance for triggering the daily pipeline?",
+      "a": "A cron job on EC2 requires a server that's always running, needs patching, and is a single point of failure -- if that instance is down at 6am, nothing triggers. EventBridge is fully managed with no server to maintain, and it can trigger on actual AWS events (like an S3 object landing), enabling event-driven triggering instead of purely time-based polling."
+    },
+    {
+      "q": "What does a Step Functions Map state let you do that would otherwise require a manual loop in code?",
+      "a": "Map runs the same sub-workflow across every item in an array in parallel (with configurable MaxConcurrency), each with independent retry and catch handling, visualized as parallel branches. For the 50-source pipeline, this maps directly onto '50 sources, each fetched and validated independently, some may fail without blocking the others.'"
+    },
+    {
+      "q": "What is the practical ceiling on what you should run inside a Lambda function versus an EMR step?",
+      "a": "Lambda has a hard 15-minute execution limit and modest memory even at its highest tier -- built for glue logic: triggering a job, checking config, sending a notification. Genuinely heavy processing -- validating millions of rows across 50 sources -- belongs on EMR/Spark, which has no time ceiling and is built for that volume."
+    },
+    {
+      "q": "How do Step Functions' built-in Retry and Catch relate to retry logic you'd write in Python?",
+      "a": "They operate at different layers. Step Functions' Retry/Catch handle orchestration-level failures -- a Lambda invocation that failed to even start. Your Python code still needs its own retry logic for failures INSIDE that Lambda or Spark job -- a single API call timing out. Step Functions retry is a safety net around the whole task; application-level retry handles failures within the task's own logic."
+    }
+  ]
+}

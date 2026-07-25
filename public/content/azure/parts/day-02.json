@@ -1,0 +1,57 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "Entra ID (Azure AD) + RBAC -- the identity and access model",
+  "exp": "Azure's access model maps onto IAM conceptually but is expressed through Role-Based Access Control assigned at points in the resource hierarchy from Day 1, rather than JSON policy documents attached to users.",
+  "pts": [
+    "Entra ID (formerly Azure AD): the identity provider behind every login, service principal, and Managed Identity -- the Azure equivalent of IAM's user/role identity layer.",
+    "RBAC role assignment = (security principal) + (role definition) + (scope). Scope can be Management Group, Subscription, Resource Group, or a single Resource -- narrower scope always applies in addition to broader ones.",
+    "Built-in roles: Reader (view only), Contributor (full read/write/delete, cannot grant access to others), Owner (Contributor + can grant roles). Prefer built-in roles over custom roles unless there's a genuine gap.",
+    "Managed Identity: Azure's answer to an EC2 instance profile -- a service gets an identity with no secrets to manage, auto-rotated credentials. System-assigned ties to one resource's lifecycle; user-assigned is standalone and shareable across services.",
+    "Service Principal: an app-level identity used for CI/CD or automation that isn't tied to a specific resource's lifecycle -- roughly the Azure equivalent of an IAM user created specifically for programmatic access.",
+    "Azure Policy enforces organization-wide rules (like 'only allow resources in these regions') independent of RBAC -- RBAC controls WHO can do WHAT, Policy controls WHAT is allowed to exist at all, regardless of who's doing it."
+  ],
+  "code": "# RBAC assignment -- scope to the resource group, not the whole subscription\naz role assignment create \\\n  --assignee <managed-identity-object-id> \\\n  --role \"Storage Blob Data Contributor\" \\\n  --scope \"/subscriptions/<sub-id>/resourceGroups/rg-orders-pipeline/providers/Microsoft.Storage/storageAccounts/satishpipeline\"\n\n# Create a Managed Identity for a service (e.g. a Databricks workspace)\naz identity create --name id-orders-pipeline --resource-group rg-orders-pipeline\n\n# Azure Policy -- deny resource creation outside approved regions\naz policy assignment create \\\n  --name \"restrict-to-eu-regions\" \\\n  --scope \"/subscriptions/<sub-id>\" \\\n  --policy \"location-restriction-policy-id\" \\\n  --params '{\"listOfAllowedLocations\":{\"value\":[\"westeurope\",\"northeurope\"]}}'",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS IAM concept",
+        "Azure equivalent"
+      ],
+      "r": [
+        [
+          "IAM Policy (JSON)",
+          "RBAC Role Definition"
+        ],
+        [
+          "IAM User",
+          "Entra ID user / Service Principal"
+        ],
+        [
+          "EC2 Instance Profile",
+          "Managed Identity (system-assigned)"
+        ],
+        [
+          "Resource-based policy / SCP",
+          "Azure Policy"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the Azure equivalent of an AWS IAM instance role, and what's the one meaningful naming distinction to know?",
+      "a": "Managed Identity. System-assigned Managed Identity is tied to a single resource's lifecycle (created and destroyed with it) -- the closer analog to an EC2 instance profile. User-assigned Managed Identity is a standalone resource that can be attached to multiple services at once and outlives any single resource -- useful when several services need the same permission set, which has no single clean AWS equivalent since instance profiles are inherently per-instance."
+    },
+    {
+      "q": "What's the difference between RBAC and Azure Policy, and why do interviewers ask this specifically?",
+      "a": "RBAC controls WHO can perform WHAT actions on WHICH resources -- it's an access control layer. Azure Policy controls WHAT is allowed to exist or be configured at all, regardless of who's attempting it -- e.g. 'no resource may be created outside EU regions,' enforced even against someone who otherwise has full Owner rights. Interviewers ask this because conflating the two is a common real mistake -- someone assumes an RBAC restriction also enforces a compliance rule like data residency, when that actually requires Policy."
+    },
+    {
+      "q": "Why would you use a Service Principal instead of a Managed Identity for a CI/CD pipeline?",
+      "a": "Managed Identity is tied to an actual Azure resource running the workload (a VM, a Function App) -- it doesn't exist independent of that resource. A CI/CD pipeline running outside Azure (on GitHub Actions runners, for instance) has no Azure resource to attach a Managed Identity to, so it needs a Service Principal -- an app-level identity that exists independently and can authenticate from anywhere, ideally via Workload Identity Federation so no long-lived secret needs to be stored."
+    }
+  ]
+}

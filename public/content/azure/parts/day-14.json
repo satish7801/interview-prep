@@ -1,0 +1,42 @@
+{
+  "id": "day-14",
+  "n": 14,
+  "title": "Azure capstone -- putting the full stack together",
+  "exp": "Ties every Azure day into the same end-to-end shape as the AWS capstone -- the question 'walk me through how this pipeline would look on Azure' should now have a confident, concrete answer.",
+  "pts": [
+    "Full pipeline: source APIs -> Azure Data Factory (orchestration, ForEach fan-out) -> ADLS Gen2 raw landing zone -> Azure Databricks (validate + transform, job cluster) -> ADLS Gen2 processed zone (Delta/Parquet) -> Synapse serverless SQL (queryable layer) -> Grafana on Azure Monitor + Log Analytics (dashboard).",
+    "Identity story end to end: every hop uses Managed Identity with RBAC scoped to a Resource Group -- no connection strings or keys anywhere in the pipeline, mirroring the IAM-role-everywhere design principle from the AWS capstone.",
+    "Cost story: job clusters with autotermination, Synapse serverless's pay-per-query model, and Blob lifecycle rules moving cold data to cheaper tiers -- the same three cost levers (compute auto-shutdown, query-time cost control, storage tiering) as the AWS version, expressed through Azure-native mechanisms.",
+    "Observability story: Diagnostic Settings routing every resource's logs into one Log Analytics workspace, KQL-based alerts for the same conditions (no data in 25h, error rate > 5%, cluster idle), Grafana as the single pane of glass across Metrics and Logs.",
+    "The single best interview sentence for this whole track: 'The concepts transfer completely -- object storage, managed Spark, native monitoring, Terraform-managed infrastructure, Grafana as the visualization layer. What's genuinely different is the identity model (Managed Identity + RBAC scope instead of IAM roles + policy), the Resource Group as a cascading-delete container AWS doesn't have, and Synapse/ADF's more visual, less code-first design philosophy versus Athena/Step Functions.'",
+    "Config-driven design from the Domain track applies unchanged: each of the 50 sources is a parameter in the ADF pipeline's array input, not a hardcoded branch -- adding source 51 is a data change, not a pipeline redesign, exactly like the AWS Step Functions Map pattern."
+  ],
+  "code": "",
+  "pr": [
+    "Draw the full Azure pipeline architecture diagram from memory, labeling each Azure service and its AWS equivalent"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "ADF (orchestration)",
+        "ADLS Gen2 raw",
+        "Databricks job cluster",
+        "ADLS Gen2 processed",
+        "Synapse serverless SQL",
+        "Grafana + Log Analytics"
+      ],
+      "cap": "The complete Azure pipeline -- structurally identical to the AWS capstone, different vocabulary and identity model"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Walk through the full Azure-equivalent pipeline architecture end to end.",
+      "a": "ADF triggers on a schedule, fans out 50 sources in parallel via ForEach, each fetching into an ADLS Gen2 raw landing zone. A Databricks job cluster validates and transforms the data, writing to a processed ADLS Gen2 zone in Delta/Parquet format. Synapse serverless SQL provides the queryable layer over that processed data, with CETAS pre-aggregating anything queried repeatedly. Diagnostic Settings route every resource's telemetry into one Log Analytics workspace, and Grafana on Azure Managed Grafana visualizes both Metrics and KQL-queried Logs on one dashboard, alerting on the same conditions as the AWS version -- silent source failure, elevated error rate, idle compute."
+    },
+    {
+      "q": "What is genuinely structurally different about Azure versus AWS for this pipeline, beyond just naming?",
+      "a": "Three real differences worth naming explicitly: the Resource Group as a cascading-delete container with no AWS equivalent; the identity model expressed as RBAC role assignments at hierarchy scopes rather than JSON IAM policy documents attached to principals; and ADF/Synapse's more visual, configuration-first design philosophy compared to the more code-first Step Functions/Athena experience on AWS. Everything else -- object storage tiers, managed Spark cost discipline, KQL vs Logs Insights, Grafana's role as the unifying dashboard layer -- is the same concept with a different name."
+    }
+  ]
+}

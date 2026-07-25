@@ -1,0 +1,31 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "pytest -- unit testing, fixtures, parametrize, mocking",
+  "exp": "For data engineering, testing transformation logic (given this input DataFrame, expect this output DataFrame) is the most important skill.",
+  "pts": [
+    "pytest runs all test_*.py files and test_* functions.",
+    "@pytest.fixture creates reusable setup injected by parameter name.",
+    "@pytest.mark.parametrize runs the same test with multiple inputs.",
+    "unittest.mock.patch replaces a function with a MagicMock during the test.",
+    "pd.testing.assert_frame_equal(result, expected) -- compares DataFrames including dtypes."
+  ],
+  "code": "import pytest, pandas as pd\nfrom unittest.mock import patch, MagicMock\n\ndef filter_large(df, threshold=1000):\n    return df[df['amount'] > threshold]\n\ndef test_filter_basic():\n    df = pd.DataFrame({'id':[1,2,3], 'amount':[500,1500,200]})\n    result = filter_large(df)\n    assert len(result) == 1 and result.iloc[0]['id'] == 2\n\n@pytest.mark.parametrize('amounts,threshold,expected', [\n    ([500,1500,200], 1000, 1),\n    ([1100,1200,1300], 1000, 3),\n    ([50,100], 1000, 0),\n])\ndef test_filter_param(amounts, threshold, expected):\n    df = pd.DataFrame({'amount': amounts})\n    assert len(filter_large(df, threshold)) == expected\n\n@pytest.fixture\ndef sample_df():\n    return pd.DataFrame({'customer_id':[1,1,2],'amount':[500,1500,200]})\n\ndef test_mock_api():\n    mock_resp = MagicMock()\n    mock_resp.json.return_value = {'id':1,'name':'Acme'}\n    mock_resp.raise_for_status = MagicMock()\n    with patch('requests.get', return_value=mock_resp):\n        import requests\n        r = requests.get('https://api.example.com/users/1')\n        assert r.json()['name'] == 'Acme'",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "pytest: test_*.py -> test_* functions -> fixtures injected by name -> assert with diff on failure."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a pytest fixture?",
+      "a": "A fixture is a function decorated with @pytest.fixture providing reusable test setup. Pytest injects fixtures by matching function parameter names to fixture names. Shared fixtures go in conftest.py -- discovered automatically without importing."
+    },
+    {
+      "q": "What should you prioritize testing in a data pipeline?",
+      "a": "Transformation logic: given this input DataFrame, produce this exact output. These are pure functions, fast to test, highest-consequence if wrong. Second priority: edge cases -- empty DataFrames, nulls in key columns, duplicate rows. Avoid testing framework code (pandas, SQLAlchemy) -- only test YOUR logic."
+    }
+  ]
+}

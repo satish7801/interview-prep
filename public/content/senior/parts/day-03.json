@@ -1,0 +1,34 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Leadership & mentoring signals",
+  "exp": "At 4 YOE, you're expected to multiply the team's output, not just your own. Prepare two short STAR stories before any interview.",
+  "pts": [
+    "**Code review philosophy:** correctness, readability, test coverage, consistency with existing patterns, performance — give specific feedback with examples, not vague critique",
+    "**Constructive pushback:** describe a time you disagreed with a technical decision, how you raised it with data/reasoning (not emotion), and the outcome",
+    "**Mentoring:** even informal counts — explaining N+1 to a colleague, teaching comments in a PR, pairing on a tricky edge case",
+    "**Two STAR stories to prepare:** (1) technical disagreement/pushback, (2) helping a teammate grow"
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Run a mock behavioral round with your AI: \"Tell me about a time you disagreed with a technical decision.\" Then critique your own STAR structure."
+    }
+  ],
+  "qa": [
+    {
+      "q": "How do you approach a code review when you find significant issues?",
+      "a": "I prioritise by impact: blocking (correctness, security, data loss) vs non-blocking (style, minor improvements). For blocking issues I explain specifically what could go wrong, not just flag it. For non-blocking improvements I prefix with \"optional:\" so the author knows what's required vs suggested. I also note what's good in the PR — positive feedback helps people understand what \"good\" looks like."
+    },
+    {
+      "q": "Tell me about a time you pushed back on a technical decision.",
+      "a": "(Prepare a real story.) Frame it as: the decision, why you disagreed, how you raised it constructively with data/reasoning, the outcome, and what you'd do the same or differently. Interviewers are testing that you can disagree professionally — not that you're contrarian."
+    },
+    {
+      "q": "How would you handle a junior developer who keeps submitting code below team standards?",
+      "a": "First understand why: knowledge gap, unclear standards, or time pressure? If knowledge gap: pair program, show specifically what good looks like. If standards are unclear: advocate for documented standards or linter rules. If time pressure causing shortcuts: that's a planning conversation, not a dev conversation. Escalate only if the pattern continues after active support."
+    }
+  ]
+}

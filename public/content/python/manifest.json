@@ -1,0 +1,99 @@
+{
+  "id": "python",
+  "name": "Python",
+  "color": "--py",
+  "sub": "For .NET devs - 8 days",
+  "desc": "Python through a C# lens. Syntax, pandas, file I/O, SQL integration, generators, decorators, testing.",
+  "tip": "Practice writing small scripts from scratch -- not reading solutions. Muscle memory under interview pressure is built only one way.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Key point"
+    ],
+    "r": [
+      [
+        "Mutable default",
+        "def f(lst=[]) is a bug -- same list persists across calls. Use lst=None."
+      ],
+      [
+        "Generator",
+        "yield one item at a time (lazy). List holds everything in memory."
+      ],
+      [
+        "f-strings",
+        "f'{name}' is the modern standard for string interpolation."
+      ],
+      [
+        "SQL injection",
+        "Never concatenate user input. Use ? placeholders with pyodbc."
+      ],
+      [
+        "pandas groupby",
+        "df.groupby('col')['val'].sum() -- always .reset_index() after."
+      ],
+      [
+        "pd.read_sql",
+        "Returns a DataFrame in one call. Cleaner than cursor.fetchall()."
+      ],
+      [
+        "pytest fixture",
+        "@pytest.fixture creates reusable setup. Inject by parameter name."
+      ],
+      [
+        "venv",
+        "python -m venv .venv. Isolates packages per project. Always use one."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "Python syntax for C# developers",
+      "summary": "Python and C# share the same concepts but with different syntax. Day 1 goal: re-express everything you know in C# in Python style -- new spelling, not new ideas…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "File I/O, CSV, JSON, environment variables",
+      "summary": "Data engineering is 80% reading files, transforming them, and writing files. Environment variables are the professional way to manage credentials."
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Pandas -- DataFrames, groupby, merge, pivot",
+      "summary": "Pandas is the standard Python library for tabular data. Every SQL operation you know has a pandas equivalent."
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "Generators, decorators, context managers",
+      "summary": "These features distinguish idiomatic Python from basic Python. Generators are essential for large file processing."
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Python + SQL Server -- pyodbc, SQLAlchemy, parameterized queries",
+      "summary": "Connecting Python to SQL Server safely is the bridge between Python and SQL skills. Parameterized queries are a near-certain interview question."
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "OOP, type hints, virtual environments",
+      "summary": "Python OOP at professional level. Virtual environments are mandatory for any real project."
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "requests, REST APIs, retry, rate limiting",
+      "summary": "Fetching from REST APIs with proper error handling is core to the 50-source S&P pipeline."
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "pytest -- unit testing, fixtures, parametrize, mocking",
+      "summary": "For data engineering, testing transformation logic (given this input DataFrame, expect this output DataFrame) is the most important skill."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "Spark architecture -- Driver, Executors, lazy evaluation",
+  "exp": "Every Spark performance question flows from understanding the Driver/Executor model and lazy evaluation. Understand this before writing a single line of code.",
+  "pts": [
+    "Driver: coordinator. Runs your script, builds the execution plan, ships tasks to executors.",
+    "Executors: workers. JVM processes on cluster nodes. Read data, process tasks, write results.",
+    "Partitions: unit of parallelism. Each partition is processed by one task on one executor.",
+    "YARN (on EMR): resource manager. Allocates memory and CPU from the cluster pool.",
+    "Lazy evaluation: transformations (filter, select, groupBy) record what to do but do NOT execute until an action (show, collect, write) is called.",
+    "Catalyst optimizer: between your code and execution, Spark rewrites and optimizes the plan.",
+    "Shuffle: when Spark must redistribute data across partitions -- the most expensive operation."
+  ],
+  "code": "from pyspark.sql import SparkSession\n\nspark = (SparkSession.builder\n    .appName('OrdersPipeline')\n    .config('spark.executor.memory', '4g')\n    .getOrCreate())\n\ndf = spark.read.csv('s3://bucket/orders/', header=True, inferSchema=True)\n\n# LAZY -- nothing executes yet\nfiltered = df.filter(df['amount'] > 1000)\ngrouped  = filtered.groupBy('category').agg({'amount': 'sum'})\n\n# ACTION -- only now does Spark execute the full chain\ngrouped.show()\n\n# See the physical plan BEFORE running\ngrouped.explain(extended=True)\n# BroadcastHashJoin = no shuffle (fast)\n# SortMergeJoin = shuffle (potentially slow)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Driver (coordinator) sends tasks to 3 Executor boxes each processing partitions from S3. Shuffle arrows between executors at groupBy stage boundary."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between a transformation and an action?",
+      "a": "Transformations (filter, select, groupBy, join) are lazy -- they build a DAG of operations. Actions (show, collect, count, write) trigger actual execution -- Spark optimizes the full DAG and submits tasks. Laziness enables optimization: Spark can push filters down and choose join strategies across the entire plan before executing anything."
+    },
+    {
+      "q": "What is a shuffle and why is it expensive?",
+      "a": "A shuffle redistributes data across partitions so matching keys end up on the same executor. Occurs during groupBy, join, repartition. Requires intermediate files on disk and network transfer between nodes. The shuffle is the primary optimization target -- reduce its size (filter before groupBy), eliminate it (broadcast small tables)."
+    }
+  ]
+}

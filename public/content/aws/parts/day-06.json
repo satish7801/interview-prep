@@ -1,0 +1,30 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Cost control, EMR Serverless, architecture trade-offs",
+  "exp": "Cost and architecture decisions distinguish a developer who built a Spark job from one who can own a production data platform. These are Lead I questions.",
+  "pts": [
+    "Spot fleet with multiple instance types for better availability.",
+    "EMR Serverless: no cluster; pay per vCPU-second; ~30-90s cold start. Best for infrequent jobs.",
+    "AWS Glue: serverless ETL, simpler for small jobs, less control than EMR.",
+    "When Spark is overkill: a 50MB CSV daily does not need EMR -- pandas on Lambda is simpler and cheaper."
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Decision matrix: 50MB daily -> pandas Lambda. 10GB daily -> small EMR. 1TB daily -> EMR transient. 10TB hourly -> EMR persistent with auto-scaling task nodes."
+    }
+  ],
+  "qa": [
+    {
+      "q": "When would you choose EMR Serverless over EMR on EC2?",
+      "a": "EMR Serverless for infrequent jobs, variable workloads, teams with no cluster expertise, pay-per-use billing. EMR on EC2 for frequent jobs where a persistent cluster amortizes startup, complex tuning, Spot strategies. The JD's 50-source daily pipeline with hours of processing favors EMR on EC2."
+    },
+    {
+      "q": "When is Spark overkill?",
+      "a": "When data fits in memory on one machine. Spark adds startup overhead (2-10 min), operational complexity, higher cost. A 50MB CSV daily is better served by pandas on Lambda. Use Spark when data genuinely does not fit on one machine."
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Grafana -- dashboards, panels, alerting",
+  "exp": "Grafana turns metrics into visibility. The JD's near-real-time dashboard is likely Grafana.",
+  "pts": [
+    "Data source: where metrics come from -- Prometheus, CloudWatch, Elasticsearch, PostgreSQL.",
+    "Panel types: Time series (over time), Stat (single value), Table, Gauge.",
+    "Dashboard variables ($source dropdown) filter all panels simultaneously -- avoids 50 dashboards for 50 sources.",
+    "Alerting: threshold on a panel; Grafana evaluates on schedule; notifies Slack/email/PagerDuty."
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Dashboard: Row 1 = Stat panels (records today, error rate, last run). Row 2 = Time series (records/hour, duration trend). Row 3 = Table (per-source status)."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What should a data pipeline Grafana dashboard include?",
+      "a": "Records ingested per run/source, job duration trend, error rate, EMR cluster cost/idle time, last successful run time per source. A Stat panel showing last run: 2 hours ago for an hourly job immediately surfaces a missed run."
+    },
+    {
+      "q": "What are Grafana dashboard variables?",
+      "a": "Dropdown filters at the top that filter all panels simultaneously. $source with values [Bloomberg, ICE] -- selecting one filters every panel. Avoids creating 50 identical dashboards. Interpolated into queries: rate(records{source='$source'}[5m])."
+    }
+  ]
+}

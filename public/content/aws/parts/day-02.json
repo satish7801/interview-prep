@@ -1,0 +1,31 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "S3 -- lifecycle, versioning, presigned URLs, events",
+  "exp": "S3 looks simple but has depth that matters for production. Lifecycle rules, versioning, and event notifications directly affect cost and automation.",
+  "pts": [
+    "Storage classes: Standard (frequent), Standard-IA (45% cheaper), Glacier (68% cheaper), Deep Archive (95% cheaper).",
+    "Lifecycle rules: automatically transition objects to cheaper classes or delete after N days.",
+    "Versioning: keeps all versions; accidental deletes can be recovered.",
+    "Presigned URL: time-limited URL granting temporary access without AWS credentials.",
+    "S3 Event Notifications: trigger Lambda/SQS when an object is created -- event-driven pipelines."
+  ],
+  "code": "import boto3\ns3 = boto3.client('s3', region_name='us-east-1')\n\nresp = s3.list_objects_v2(Bucket='my-bucket', Prefix='data/orders/2024/')\nfor obj in resp.get('Contents', []): print(obj['Key'], obj['Size'])\n\ns3.upload_file('local.parquet', 'my-bucket', 'data/output.parquet',\n               ExtraArgs={'ServerSideEncryption': 'AES256'})\n\nurl = s3.generate_presigned_url('get_object',\n    Params={'Bucket':'my-bucket','Key':'reports/q4.pdf'}, ExpiresIn=3600)\n\ns3.put_bucket_lifecycle_configuration(\n    Bucket='my-bucket',\n    LifecycleConfiguration={'Rules':[{\n        'ID':'ArchiveOldData','Status':'Enabled','Prefix':'data/orders/',\n        'Transitions':[{'Days':90,'StorageClass':'GLACIER_IR'}],\n        'Expiration':{'Days':365}}]})",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Storage cost ladder: Standard ($0.023/GB) -> Standard-IA ($0.0125) -> Glacier Instant ($0.004) -> Deep Archive ($0.00099). Lifecycle rules move data down as it ages."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is an S3 lifecycle rule and when is it essential?",
+      "a": "A lifecycle rule auto-transitions objects to cheaper storage or deletes after N days. Without it, data accumulates in S3 Standard indefinitely. Standard-IA is 45% cheaper for infrequent access, Glacier Deep Archive 95% cheaper for archives. Lifecycle rules are the primary S3 cost control mechanism."
+    },
+    {
+      "q": "What is a presigned URL?",
+      "a": "A URL encoding AWS credentials and a signature, granting temporary access to a private object without AWS credentials. After ExpiresIn seconds it returns 403. Use to share reports with external partners without making the bucket public."
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "day-11",
+  "n": 11,
+  "title": "Grafana unified alerting -- multi-dimensional rules and notification policies",
+  "exp": "Grafana's alerting engine (unified alerting, the modern default since v9) evaluates queries on a schedule and routes firing alerts through a policy tree to notification channels. For a 50-source pipeline, one well-designed rule replaces 50 manually created alarms.",
+  "pts": [
+    "An alert rule = a query (usually the same CloudWatch query type from Day 10) + a condition (threshold) + an evaluation interval + a 'for' duration the condition must hold before firing.",
+    "Multi-dimensional alerting: if your query returns multiple series (one per Source dimension value), Grafana creates a SEPARATE alert instance per series automatically -- one rule definition, many independent alert instances, each labeled by its dimension value.",
+    "Alert states: Normal -> Pending (condition true, waiting out the 'for' duration) -> Alerting (notification sent) -> Normal again once resolved. Pending prevents single noisy spikes from paging someone.",
+    "Notification policies form a tree matched by label: a default policy catches everything, more specific policies match on labels (like source=Bloomberg) and can route to a different contact point or add a delay.",
+    "Contact points: Slack webhook, email, PagerDuty, generic webhook -- configured once, reused across many notification policies.",
+    "Mute timings suppress notifications during known maintenance windows without disabling the underlying alert rule.",
+    "The classic pipeline alert set: 'no records processed in the last 25 hours' (per source, catches silent failures), 'error rate > 5%' (per source, data quality), 'EMR cluster idle > 30 min' (cost), 'job duration > 2x rolling average' (performance regression)."
+  ],
+  "code": "// Grafana alert rule -- pseudocode representation of the UI configuration\n\nalert_rule: \"No records processed in 25 hours\"\ndata_source: CloudWatch\nquery: |\n  Namespace: Pipeline/Orders\n  MetricName: RecordsProcessed\n  Dimensions: { Source: \"*\" }        // wildcard -- one series per source\n  Statistic: Sum\n  Period: 1h\ncondition: |\n  last(query) == 0 over last 25h\nevaluation_interval: 15m\nfor: 0m\nlabels:\n  team: data-platform\n  severity: critical\n\nalert_rule: \"Error rate above 5 percent\"\nquery: \"Metric Math: 100 * (ValidationErrors.Sum / RecordsProcessed.Sum)\"\ncondition: \"query > 5\"\nevaluation_interval: 5m\nfor: 10m\nlabels: { team: data-platform, severity: warning }\n\n// Notification policy tree (Terraform provider example)\nresource \"grafana_notification_policy\" \"root\" {\n  contact_point = \"slack-data-platform\"\n  group_by      = [\"alertname\"]\n\n  policy {\n    matcher { label = \"severity\"; match = \"=\"; value = \"critical\" }\n    contact_point = \"pagerduty-oncall\"\n    continue      = false\n  }\n  policy {\n    matcher { label = \"source\"; match = \"=\"; value = \"Bloomberg\" }\n    contact_point = \"slack-bloomberg-team\"\n  }\n}\n\nresource \"grafana_contact_point\" \"slack\" {\n  name = \"slack-data-platform\"\n  slack {\n    url = var.slack_webhook_url\n    title = \"{{ .CommonLabels.alertname }}\"\n  }\n}",
+  "pr": [
+    "Design the alert rule set for the 50-source pipeline: list each rule, its threshold, its for duration, and its severity label"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "Alert rule query+threshold",
+        "Multi-series evaluation",
+        "Pending for duration",
+        "Alerting",
+        "Notification policy match",
+        "Contact point"
+      ],
+      "cap": "One rule definition fans out into per-source alert instances, then routes by label"
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does one Grafana alert rule generate 50 separate alerts for 50 sources?",
+      "a": "When the underlying query returns multiple time series (because the CloudWatch dimension wasn't pinned to a single value), Grafana automatically creates one independent alert instance per series, each carrying that series' label (Source=Bloomberg, Source=ICE, etc.). Each instance evaluates and fires independently -- Bloomberg going silent doesn't affect ICE's alert state. You write and maintain one rule, not fifty."
+    },
+    {
+      "q": "What is the purpose of the for duration on an alert rule, and when would you set it to zero?",
+      "a": "For requires the condition to remain true for that entire duration before the alert transitions from Pending to actually firing -- it filters out single noisy spikes. Set it to a real duration (like 10m) for noisy/bursty metrics. Set it to 0 when the condition already represents a meaningfully delayed signal -- 'zero records in the last 25 hours' is already checking a full day-plus window, so no additional spike-filtering is needed."
+    },
+    {
+      "q": "What is a notification policy tree and why not just attach a contact point directly to each alert rule?",
+      "a": "The policy tree matches alerts to contact points based on labels, independent of the alert rule definition -- so you can change routing (Bloomberg-source alerts to a specific Slack channel, critical-severity to PagerDuty) without touching any alert rule. New rules automatically get correctly routed as long as they carry the right labels, without editing the rule itself."
+    },
+    {
+      "q": "What is a mute timing and how is it different from disabling an alert rule?",
+      "a": "A mute timing suppresses notifications during a defined window (e.g. a maintenance window) while the rule keeps evaluating and its state history keeps recording normally -- you just don't get paged. Disabling the rule stops evaluation entirely, losing the record of whether the condition was true during that window. Mute timings suit planned downtime; disabling suits a rule you're actively reworking."
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "day-11",
+  "n": 11,
+  "title": "Synapse Analytics -- serverless SQL over the data lake",
+  "exp": "Synapse's serverless SQL pool is Azure's answer to Athena -- pay-per-query SQL directly over files in ADLS Gen2, no cluster to manage.",
+  "pts": [
+    "Synapse serverless SQL pool: query Parquet/CSV files directly in ADLS Gen2 using standard T-SQL syntax, billed per TB of data processed -- the same cost model shape as Athena's per-TB-scanned pricing.",
+    "OPENROWSET lets you query files in the lake directly without a pre-registered table, useful for ad-hoc exploration -- roughly Athena's equivalent of querying an S3 path without first defining a Glue Catalog table.",
+    "For repeated, structured access, define an external table (CREATE EXTERNAL TABLE) pointing at the lake location with an explicit schema -- the Synapse equivalent of a Glue Catalog table definition, making the schema reusable and consistent across queries.",
+    "Partition pruning works the same way conceptually: filtering on the column the data is physically partitioned by (folder-structured by date, for instance) dramatically reduces the data scanned and therefore the cost -- identical reasoning to Athena partition design.",
+    "CETAS (CREATE EXTERNAL TABLE AS SELECT) is Synapse's CTAS equivalent -- materializes a query's result as a new set of files in the lake, useful for pre-aggregating data a dashboard queries repeatedly.",
+    "Synapse also offers dedicated SQL pools (a provisioned, always-on data warehouse) as an alternative to serverless -- the trade-off between serverless-pay-per-query and dedicated-always-on-provisioned mirrors Athena vs a provisioned Redshift cluster."
+  ],
+  "code": "-- OPENROWSET -- ad-hoc query directly against lake files, no table definition needed\nSELECT category, SUM(amount) AS total\nFROM OPENROWSET(\n    BULK 'https://satishpipeline.dfs.core.windows.net/processed/orders/*.parquet',\n    FORMAT = 'PARQUET'\n) AS orders\nWHERE order_date = '2024-01-15'\nGROUP BY category;\n\n-- External table -- reusable schema, Synapse's Glue Catalog table equivalent\nCREATE EXTERNAL TABLE orders_processed (\n    customer_id INT,\n    amount FLOAT,\n    order_date VARCHAR(10)\n)\nWITH (\n    LOCATION = 'processed/orders/',\n    DATA_SOURCE = lake_data_source,\n    FILE_FORMAT = parquet_format\n);\n\nSELECT category, SUM(amount) AS total\nFROM orders_processed\nWHERE order_date = '2024-01-15'   -- partition pruning keeps the scan small\nGROUP BY category;\n\n-- CETAS -- pre-aggregate for repeated dashboard queries\nCREATE EXTERNAL TABLE daily_category_summary\nWITH (LOCATION = 'agg/daily_category/', DATA_SOURCE = lake_data_source, FILE_FORMAT = parquet_format)\nAS\nSELECT order_date, category, SUM(amount) AS total, COUNT(*) AS order_count\nFROM orders_processed\nGROUP BY order_date, category;",
+  "pr": [
+    "Write a CETAS query that pre-aggregates orders_processed by date and category in Synapse, matching the Athena CTAS exercise from the AWS track"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS",
+        "Azure"
+      ],
+      "r": [
+        [
+          "Athena",
+          "Synapse serverless SQL pool"
+        ],
+        [
+          "Glue Catalog table",
+          "Synapse external table"
+        ],
+        [
+          "Query without a catalog table (path-based)",
+          "OPENROWSET"
+        ],
+        [
+          "CTAS",
+          "CETAS"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does Synapse serverless SQL pricing compare to Athena, and why does that make partition design just as much a cost lever?",
+      "a": "Synapse serverless bills per TB of data processed by a query, the same shape as Athena's $5/TB-scanned model. A query filtering on a column the data is physically partitioned by scans only the matching folders; the same query without that filter (or on non-partitioned data) scans everything. The exact same cost-versus-partition-design reasoning from the Athena day applies directly here -- just billed through Azure instead of AWS."
+    },
+    {
+      "q": "What is the difference between OPENROWSET and an external table in Synapse, and when would you use each?",
+      "a": "OPENROWSET queries files directly by path with no persistent schema definition -- fast for one-off exploration of a new dataset, but the schema and location must be specified in every query. An external table (CREATE EXTERNAL TABLE) defines the schema and location once, and subsequent queries just reference the table name -- the Synapse equivalent of registering a Glue Catalog table, and the correct choice for any dataset queried more than once or by more than one person."
+    },
+    {
+      "q": "What is CETAS and when would you use it instead of querying the raw processed table every time?",
+      "a": "CREATE EXTERNAL TABLE AS SELECT materializes an expensive query's result as a new set of Parquet files in the lake, the direct Synapse equivalent of Athena's CTAS. Use it when the same aggregation is queried repeatedly -- a dashboard refreshing every 5 minutes should read a small pre-aggregated table instead of re-scanning and re-aggregating the full raw dataset on every refresh, cutting both cost and query latency."
+    }
+  ]
+}

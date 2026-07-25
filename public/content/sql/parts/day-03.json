@@ -1,0 +1,51 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Subqueries — scalar, correlated, APPLY operators, EXISTS vs IN",
+  "exp": "Subqueries test your understanding of SQL execution and NULL semantics. The NOT IN NULL trap is a real production bug waiting to happen. CROSS APPLY and OUTER APPLY unlock the 'top N per group' pattern that trips up many candidates.",
+  "pts": [
+    "Scalar subquery: returns exactly one value, usable anywhere a single value is expected (SELECT, WHERE, HAVING)",
+    "Non-correlated subquery: independent of outer query, executes once, result reused",
+    "Correlated subquery: references outer query columns, **re-executes for every outer row** — potentially O(n × m)",
+    "`EXISTS` short-circuits at first match; `IN` materialises the full result set first — EXISTS is usually faster for large sets",
+    "**NOT IN NULL trap:** if the subquery returns ANY NULL, NOT IN evaluates to UNKNOWN for every row → zero rows returned. Three-valued logic in action.",
+    "**NOT EXISTS** does not have the NULL trap — it checks for absence of matching rows and handles NULLs correctly",
+    "**CROSS APPLY:** correlated join to a table expression; preserves all outer rows that produce at least one inner row (like INNER JOIN)",
+    "**OUTER APPLY:** correlated join that preserves all outer rows even if inner expression returns nothing (like LEFT JOIN)",
+    "Top-N per group with APPLY: apply a `SELECT TOP N ... WHERE id = outer.id ORDER BY ...` per outer row — cleaner than a CTE with window functions for some patterns",
+    "Rewrite correlated subqueries to JOINs or window functions for better performance at scale"
+  ],
+  "code": "-- NOT IN NULL trap: returns zero rows if any customer_id is NULL!\nSELECT name FROM customers\nWHERE id NOT IN (SELECT customer_id FROM orders);  -- ❌ dangerous\n\n-- Safe alternative 1: NOT EXISTS\nSELECT name FROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id); -- ✓\n\n-- Safe alternative 2: LEFT JOIN + IS NULL\nSELECT c.name FROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id\nWHERE o.id IS NULL;  -- ✓ also works\n\n-- Correlated subquery: employees earning > dept average\nSELECT name, salary, dept FROM employees e\nWHERE salary > (\n  SELECT AVG(salary) FROM employees\n  WHERE dept = e.dept  -- correlated: re-runs for each outer row\n);\n-- Faster rewrite using window function:\nSELECT name, salary, dept FROM (\n  SELECT *, AVG(salary) OVER (PARTITION BY dept) AS dept_avg\n  FROM employees\n) t WHERE salary > dept_avg;\n\n-- CROSS APPLY: most recent order per customer\nSELECT c.id, c.name, latest.order_date, latest.total\nFROM customers c\nCROSS APPLY (\n  SELECT TOP 1 order_date, total\n  FROM orders WHERE customer_id = c.id\n  ORDER BY order_date DESC\n) latest;\n\n-- EXISTS vs IN: EXISTS is faster when subquery is large\nSELECT name FROM customers c\nWHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.total > 1000);",
+  "pr": [
+    "LeetCode: Customers Who Never Order",
+    "LeetCode: Second Highest Salary",
+    "LeetCode: Nth Highest Salary"
+  ],
+  "viz": [
+    {
+      "t": "corr"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the NOT IN NULL trap and how do you fix it?",
+      "a": "If a subquery used with NOT IN returns any NULL, then every row in the outer query evaluates to UNKNOWN (due to three-valued logic) and is filtered out — returning zero rows total. Fix: use NOT EXISTS instead, which checks for the absence of matching rows and handles NULLs correctly. Alternatively, add WHERE col IS NOT NULL to the subquery, but NOT EXISTS is safer and clearer."
+    },
+    {
+      "q": "When should you use EXISTS over IN and why?",
+      "a": "EXISTS short-circuits — it stops as soon as it finds the first matching row. IN materialises the entire result set. For large subquery results, EXISTS is typically faster. EXISTS also handles NULLs correctly (no NULL trap). Use IN when: the subquery result is small, you want a list of static values (IN (1,2,3)), or the NOT IN case when you've confirmed no NULLs exist."
+    },
+    {
+      "q": "How would you rewrite a correlated subquery for better performance?",
+      "a": "Most correlated subqueries can be rewritten as: (1) a JOIN with aggregation in a derived table or CTE, or (2) a window function. Example: instead of WHERE salary > (SELECT AVG(salary) FROM employees WHERE dept = e.dept), use AVG(salary) OVER (PARTITION BY dept) in a subquery/CTE then filter in the outer query. Window functions are usually faster because they make a single pass over the data."
+    },
+    {
+      "q": "What is the difference between CROSS APPLY and CROSS JOIN?",
+      "a": "CROSS JOIN combines two independent tables — neither side can reference the other. CROSS APPLY executes an inner table expression FOR EACH row of the outer table, and that expression CAN reference outer columns. This makes CROSS APPLY essential for calling table-valued functions per row, or for top-N per group queries where the inner SELECT uses a TOP N ... WHERE id = outer.id pattern."
+    },
+    {
+      "q": "What are the three ways to write \"find customers who have never placed an order\"?",
+      "a": "1) NOT EXISTS (safest): WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id). 2) LEFT JOIN + IS NULL: SELECT c.name FROM customers c LEFT JOIN orders o ON c.id = o.customer_id WHERE o.id IS NULL. 3) NOT IN (risky): WHERE id NOT IN (SELECT customer_id FROM orders) — fails silently if customer_id can be NULL. Prefer NOT EXISTS or LEFT JOIN."
+    }
+  ]
+}

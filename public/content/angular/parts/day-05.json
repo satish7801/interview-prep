@@ -1,0 +1,50 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "Signals — complete API: toSignal, toObservable, resource, model",
+  "exp": "Signals were introduced in v16 and are now the primary state primitive in Angular. At 4 YOE, know the full API including the interop layer (toSignal/toObservable), the resource API (stable v22), and the model() two-way binding signal. These appear in any Angular round that goes beyond basics.",
+  "pts": [
+    "`signal(init)` — read: `count()`. Write: `.set(val)` or `.update(fn)`. Mutation: `.mutate(fn)` for objects (signals track by reference).",
+    "`computed(() => ...)` — pure derived signal; memoized; lazy; re-calculates only when dependencies change and something reads it",
+    "`effect(() => ...)` — side effect that runs when its signal dependencies change; impure; runs at least once; cleanup via returned function",
+    "`linkedSignal({ source, computation })` — writable signal that resets when source changes (stable v20)",
+    "**`toSignal(obs$)`:** converts an Observable to a signal; subscribes automatically; optionally accepts `initialValue` or `requireSync` option",
+    "**`toObservable(signal)`:** converts a signal to an Observable; emits each time the signal's value changes",
+    "**`resource()` / `rxResource()` / `httpResource()`:** reactive data-fetching primitives (stable v22); return `value()`, `isLoading()`, `error()` signals; re-fetch when input signals change",
+    "**`model<T>()`:** a two-way bindable signal input; replaces @Input() + @Output() EventEmitter for parent-child two-way binding; parent binds with `[(myProp)]=\"signal\"`",
+    "**`untracked(fn)`:** call a signal inside an effect or computed without creating a dependency — use when you need to read a signal for its value but don't want the effect to re-run when it changes",
+    "**Signal effects cleanup:** return a cleanup function from effect() for subscriptions, timers, or event listeners that need teardown"
+  ],
+  "code": "// toSignal: convert Observable to signal for template use\n@Component({\n  template: `\n    @if (user()) { <p>{{ user()!.name }}</p> }\n  `\n})\nexport class ProfileComponent {\n  private userService = inject(UserService);\n  // toSignal subscribes for you; initialValue shown until first emission\n  user = toSignal(this.userService.currentUser$, { initialValue: null });\n}\n\n// toObservable: convert signal to Observable to use RxJS operators\n@Injectable({ providedIn: 'root' })\nexport class SearchService {\n  term = signal('');\n  results$ = toObservable(this.term).pipe(\n    debounceTime(300),\n    distinctUntilChanged(),\n    switchMap(t => this.http.get<Result[]>(\\`/api/search?q=\\${t}\\`))\n  );\n}\n\n// httpResource: reactive HTTP — auto-refetches when userId changes\n@Component({\n  template: `\n    @if (userRes.isLoading()) { <spinner /> }\n    @else if (userRes.error()) { <p>Error</p> }\n    @else { <user-card [user]=\"userRes.value()!\" /> }\n  `\n})\nexport class UserDetailComponent {\n  userId = input.required<string>();\n  userRes = httpResource<User>(() => \\`/api/users/\\${this.userId()}\\`);\n  // ↑ re-fetches automatically whenever userId() changes\n}\n\n// model(): two-way signal binding between parent and child\n@Component({ selector: 'app-toggle', template: `<button (click)=\"checked.set(!checked())\">...</button>` })\nexport class ToggleComponent {\n  checked = model(false);  // writable; parent binds with [(checked)]=\"mySignal\"\n}\n\n// effect with cleanup and untracked\neffect((onCleanup) => {\n  const id = setInterval(() => {\n    const count = untracked(() => this.count());  // read without tracking\n    console.log('tick:', count);\n  }, 1000);\n  onCleanup(() => clearInterval(id));  // cleanup when effect re-runs or destroyed\n});",
+  "pr": [
+    "Convert a service that returns Observable<User[]> to use toSignal() in a component",
+    "Implement httpResource() for a detail view that re-fetches when route params change"
+  ],
+  "viz": [
+    {
+      "t": "signalgraph"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What does toSignal() do and when would you use it?",
+      "a": "toSignal(observable$) subscribes to an Observable and returns a signal that reflects its latest emitted value. Angular manages the subscription and unsubscribes on destroy. Use it when you have a service that returns an Observable but your component is signal-based and you want to use the value in a template or computed() without the async pipe. Options: initialValue (value before first emission), requireSync (throws if the Observable doesn't emit synchronously)."
+    },
+    {
+      "q": "What is httpResource() and how does it differ from using HttpClient directly?",
+      "a": "httpResource<T>(urlFn) creates a reactive data loader where the URL is a computed function of signals. It automatically re-fetches when any signal the URL function reads changes. It returns an object with value() (the data), isLoading() (boolean signal), and error() (error signal) — all signals. Compared to HttpClient + switchMap: httpResource needs ~3 lines vs ~10; no pipe, no subscribe, no takeUntilDestroyed. HttpClient + switchMap is still better for complex scenarios needing RxJS operators (debounce, retry, catchError)."
+    },
+    {
+      "q": "What is model() and what does it replace?",
+      "a": "model<T>() is a signal-based alternative to the @Input() + @Output() EventEmitter pattern for two-way binding. In the child: checked = model(false) creates a writable signal that also emits on .set(). In the parent: <toggle [(checked)]=\"mySignal\" /> binds the signal two-ways. It replaces the verbose pattern of @Input() checked and @Output() checkedChange = new EventEmitter<boolean>() with valueChange$. model() is cleaner, type-safe, and signal-native."
+    },
+    {
+      "q": "What is untracked() and when do you use it inside an effect?",
+      "a": "untracked(fn) reads a signal inside an effect or computed without registering it as a dependency. Normally, every signal read inside effect() adds that signal as a dependency — the effect re-runs when any dependency changes. untracked lets you read a signal for its current value without making the effect reactive to that signal. Use it when you need to sample a signal's value at the moment the effect runs, but you don't want that signal to trigger a re-run."
+    },
+    {
+      "q": "What is the difference between computed() and effect() in terms of execution?",
+      "a": "computed() is lazy — it only re-evaluates when something reads it AND at least one of its dependencies changed. It's memoized: if the same dependencies changed but the computed result hasn't changed, Angular may skip re-rendering. effect() is eager — it runs automatically whenever any of its signal dependencies change, whether or not anything is reading its result. effect() is for side effects (logging, local storage writes, imperative DOM), not for deriving values (use computed() for that)."
+    }
+  ]
+}

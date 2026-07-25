@@ -1,0 +1,49 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Routing — resolvers, preloading, animations, named outlets",
+  "exp": "Most developers know basic routing. Senior interviews probe resolvers (data before navigation), preloading strategies (performance), and how to handle complex multi-view layouts with named router outlets. Route animations are occasionally tested for UI roles.",
+  "pts": [
+    "**Functional guards** (`canActivate`, `canDeactivate`, `canMatch`): replace class-based guards — just a function returning `true`, `false`, or a `UrlTree`",
+    "**`canDeactivate`:** warns user before leaving a form with unsaved changes — confirm with signal or user prompt",
+    "**Route resolver:** fetches data BEFORE navigating; the component receives it via `ActivatedRoute.data`; if it throws, navigation is cancelled",
+    "**Functional resolver:** `ResolveFn<T>` — just a function, no class needed (Angular 15+)",
+    "**Preloading strategies:** `NoPreloading` (default, load on demand), `PreloadAllModules` (preload all lazily loaded routes after initial render), custom (preload specific routes based on data/network)",
+    "**`withPreloading(PreloadAllModules)`:** in `provideRouter()` — preloads all lazy routes immediately after the app boots",
+    "**Named router outlets:** `<router-outlet name=\"sidebar\">` — multiple outlets in one template for auxiliary routes (sidepanels, modals)",
+    "**Route animations:** trigger animations on route change by binding `@routeAnimation` to the `outlet` element and reading `activatedRoute.data.animation`",
+    "**`ActivatedRoute`:** inject to access `params`, `queryParams`, `data`, `url`, `snapshot`, `parent` — use `Signal` versions in v17.3+: `route.input('id')`"
+  ],
+  "code": "// Functional guard\nexport const authGuard: CanActivateFn = (route, state) => {\n  const auth = inject(AuthService);\n  const router = inject(Router);\n  return auth.isLoggedIn()\n    ? true\n    : router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });\n};\n\n// canDeactivate guard: warn on unsaved form\nexport const unsavedChangesGuard: CanDeactivateFn<EditComponent> = (component) =>\n  component.hasUnsavedChanges()\n    ? confirm('You have unsaved changes. Leave anyway?')\n    : true;\n\n// Functional resolver: fetch user before navigation\nexport const userResolver: ResolveFn<User> = (route) => {\n  const userService = inject(UserService);\n  return userService.getById(route.paramMap.get('id')!);\n};\n\n// Route with resolver\nconst routes: Routes = [{\n  path: 'users/:id',\n  component: UserDetailComponent,\n  resolve: { user: userResolver },\n  canActivate: [authGuard],\n  data: { animation: 'UserPage' }\n}];\n\n// Access resolved data in component\n@Component({...})\nexport class UserDetailComponent {\n  user = inject(ActivatedRoute).snapshot.data['user'] as User;\n}\n\n// PreloadAllModules\nbootstrapApplication(AppComponent, {\n  providers: [provideRouter(routes, withPreloading(PreloadAllModules))]\n});\n\n// Custom preloading strategy: only preload routes with data.preload = true\nexport const selectivePreload: PreloadingStrategy = {\n  preload: (route, load) => route.data?.['preload'] ? load() : of(null)\n};",
+  "pr": [
+    "Add a resolver to prefetch user data before navigating to a user detail page"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Diagram: navigation timeline showing guard → resolver → component creation vs without resolver (component creates, then loads data)"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a route resolver and why use it instead of loading data in ngOnInit?",
+      "a": "A resolver is a function that fetches data before Angular completes navigation to a route. The component only instantiates after the resolver completes. Benefits: the component always has its data available immediately (no loading spinner, no conditional template), and if the resolver throws or returns an empty observable, navigation is cancelled (the user never sees a broken component). Downside: the route change is delayed until the resolver completes — consider showing a global loading indicator."
+    },
+    {
+      "q": "What is the difference between NoPreloading and PreloadAllModules?",
+      "a": "NoPreloading (default): lazy routes are only loaded when the user navigates to them — best for large apps where most users don't visit all routes. PreloadAllModules: after the initial app loads, Angular immediately begins preloading ALL lazy route bundles in the background — subsequent navigations feel instant because the chunks are already downloaded. Use PreloadAllModules for smaller apps or admin panels where users are likely to visit multiple sections."
+    },
+    {
+      "q": "What are named router outlets and what are they used for?",
+      "a": "Named router outlets allow multiple router-outlet elements in one template, each rendering a different route simultaneously. Syntax: <router-outlet name=\"sidebar\"></router-outlet>. Navigate to a named outlet: router.navigate([{ outlets: { primary: ['home'], sidebar: ['user-info'] } }]). Use for auxiliary views that change independently of the main content — a sidebar with contextual info, a modal that has its own URL, or a split-pane layout."
+    },
+    {
+      "q": "How do functional route guards work compared to class-based guards?",
+      "a": "Functional guards are plain functions typed as CanActivateFn, CanDeactivateFn, etc. They use inject() internally to access services. Advantages: no class boilerplate (no implements, no class declaration), composable (you can call one functional guard from another), and naturally tree-shakeable. Class-based guards still work but require the class to be provided — functional guards are the Angular 15+ standard and the approach in all new Angular docs."
+    },
+    {
+      "q": "How do you access route parameters as signals in Angular 17.3+?",
+      "a": "In Angular 17.3+, ActivatedRoute exposes signal-based accessors: inject(ActivatedRoute).snapshot.paramMap is the static snapshot. For reactive access with signals: use the input() function with routerLink inputs when the component is registered with the router using withComponentInputBinding() in provideRouter(). This maps route params/queryParams directly to component inputs, which can be signal-based inputs: userId = input<string>('userId')."
+    }
+  ]
+}

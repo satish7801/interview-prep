@@ -1,0 +1,48 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Change detection — complete deep dive, zoneless migration strategy",
+  "exp": "Change detection is the most misunderstood Angular internals topic. At 4 YOE, you need to explain not just 'OnPush is faster' but exactly when OnPush triggers, what Zone.js actually does, and how to migrate to zoneless — a question now appearing in senior Angular interviews.",
+  "pts": [
+    "**Zone.js:** monkey-patches all browser async APIs (setTimeout, Promise, fetch, addEventListener) and fires `ApplicationRef.tick()` after each — triggering a full tree check",
+    "**Default strategy:** Angular checks EVERY component on every tick — even components that couldn't possibly have changed. Simple but inefficient at scale.",
+    "**OnPush triggers (exactly 4):** (1) an `@Input` reference changes, (2) an `async` pipe in the template emits a new value, (3) a signal the template reads updates, (4) `ChangeDetectorRef.markForCheck()` is called manually",
+    "**`ChangeDetectorRef.detectChanges()`:** immediately check this component and its children — synchronous; use when you've mutated data outside Angular's awareness",
+    "**`ChangeDetectorRef.markForCheck()`:** mark this component and ancestors as dirty — they will be checked on the NEXT tick; use with OnPush + Observables",
+    "**`NgZone.runOutsideAngular(fn)`:** run code without triggering change detection — use for performance-intensive loops, WebSockets, chart libraries",
+    "**`NgZone.run(fn)`:** re-enter Angular zone from outside — use after an outside-zone callback that needs to update the UI",
+    "**Zoneless (Angular 21+, default for new projects):** no Zone.js dependency; change detection driven entirely by signals; enables true SSR/Web Worker compatibility",
+    "**Zoneless migration:** enable OnPush everywhere → replace property mutations with signal.set() → add provideExperimentalZonelessChangeDetection() → test → remove zone.js from polyfills"
+  ],
+  "code": "// ChangeDetectorRef: manual control\n@Component({ changeDetection: ChangeDetectionStrategy.OnPush, template: `{{ value }}` })\nexport class ManualComponent implements OnInit {\n  value = '';\n  constructor(private cdr: ChangeDetectorRef) {}\n\n  ngOnInit() {\n    // Third-party callback outside Angular zone\n    someExternalLibrary.onData((data: string) => {\n      this.value = data;\n      this.cdr.markForCheck();  // tell Angular to check this component next tick\n    });\n  }\n}\n\n// NgZone: run heavy computation outside Angular to avoid CD thrashing\n@Component({...})\nexport class ChartComponent implements OnInit {\n  constructor(private zone: NgZone) {}\n\n  ngOnInit() {\n    this.zone.runOutsideAngular(() => {\n      // Runs heavy chart animation loop — no CD triggered per frame\n      requestAnimationFrame(() => this.updateChart());\n    });\n  }\n\n  onDataUpdate(data: ChartData) {\n    // Re-enter Angular zone to update template\n    this.zone.run(() => {\n      this.chartData.set(data);  // signal update triggers targeted CD\n    });\n  }\n}\n\n// Zoneless setup (Angular 21+)\nbootstrapApplication(AppComponent, {\n  providers: [provideExperimentalZonelessChangeDetection()]\n  // Remove 'zone.js' import from polyfills.ts\n});\n\n// OnPush + signals: the ideal combination\n@Component({\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `<p>{{ userName() }} has {{ messageCount() }} messages</p>`\n})\nexport class InboxHeaderComponent {\n  userName = input.required<string>();        // signal input\n  messageCount = input<number>(0);            // signal input with default\n  // OnPush automatically tracks these signal reads — no manual markForCheck needed\n}",
+  "pr": [
+    "Add NgZone.runOutsideAngular to a chart library integration in your project"
+  ],
+  "viz": [
+    {
+      "t": "changedet"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What does Zone.js actually do and why is Angular removing it?",
+      "a": "Zone.js monkey-patches browser async APIs at startup: setTimeout, Promise, fetch, XMLHttpRequest, addEventListener, etc. When any patched API completes, Zone.js fires a notification and Angular calls ApplicationRef.tick() — which checks every component in the tree for changes. It's magic: no code changes needed, but it causes performance issues (full-tree check after every async operation, even trivial ones like setTimeout(fn, 0)) and breaks with non-Angular libraries that also patch these APIs. Signals provide a targeted alternative — Angular knows exactly which components to update."
+    },
+    {
+      "q": "What are the four exact conditions that trigger OnPush change detection?",
+      "a": "1) An @Input reference changes (object identity changes, not object mutation). 2) An async pipe in the template emits a new value. 3) A signal that the template reads (signal()) updates — Angular tracks signal reads at the component level. 4) ChangeDetectorRef.markForCheck() is called explicitly. Mutations to objects/arrays without changing reference (arr.push()) do NOT trigger OnPush — you must reassign: this.arr.set([...this.arr(), newItem]) for signals, or this.cdr.markForCheck() for non-signal patterns."
+    },
+    {
+      "q": "What is the difference between ChangeDetectorRef.detectChanges() and markForCheck()?",
+      "a": "detectChanges() is synchronous — it immediately checks the current component and its children right now, in the current call stack. Use when you've updated state from outside Angular's knowledge and need immediate UI update. markForCheck() is asynchronous — it marks the component (and its ancestors in the tree) as dirty, to be checked on the next change detection cycle triggered by Zone.js or ApplicationRef.tick(). Use in OnPush components that receive data via Observables or external callbacks."
+    },
+    {
+      "q": "What is NgZone.runOutsideAngular and when do you use it?",
+      "a": "NgZone.runOutsideAngular(fn) executes code in a context where Zone.js does not trigger change detection. Use it for: requestAnimationFrame loops for canvas/chart animations (prevent CD on every frame), WebSocket message handling that updates a buffer before signaling Angular, third-party library initialization that fires many callbacks, or any computation where you only need to update Angular's view at the end (call zone.run(() => signal.set(result)) when done)."
+    },
+    {
+      "q": "What are the steps to migrate an existing Angular app to zoneless?",
+      "a": "1) Add provideExperimentalZonelessChangeDetection() to the providers array. 2) Enable OnPush on all components. 3) Replace all mutable property assignments that trigger CD with signal.set(). 4) Replace remaining manual markForCheck() calls with signal updates. 5) Test — components that relied on Zone.js detecting property mutations will stop updating (surfaces hidden bugs). 6) Remove zone.js from polyfills.ts and package.json. This can be incremental: Zone.js and zoneless signals coexist during migration."
+    }
+  ]
+}

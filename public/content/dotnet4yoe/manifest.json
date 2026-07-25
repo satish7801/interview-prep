@@ -1,0 +1,123 @@
+{
+  "id": "dotnet4yoe",
+  "name": ".NET · 4 YOE Path",
+  "color": "--dotnet",
+  "sub": "Mid–senior interview path · 14 days",
+  "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, and system-design drills interviewers actually ask around 4 years experience.",
+  "tip": "At 4 YOE, lead with trade-offs and production stories. Depth beats buzzwords — explain why you chose async, a cache TTL, or an isolation level.",
+  "setup": "Cadence: Week 1 — C#/async/DI/ASP.NET/EF.\nWeek 2 — Security, messaging, caching, observability + 3 designs.\nWeek 3 — Mock interviews, resume deep-dives, STAR stories.",
+  "qr": {
+    "h": [
+      "Topic",
+      "4 YOE signal"
+    ],
+    "r": [
+      [
+        "DI lifetimes",
+        "Explain captive dependency + IServiceScopeFactory fix"
+      ],
+      [
+        "N+1",
+        "Include/projection + when split query helps"
+      ],
+      [
+        "Isolation",
+        "RCSI vs locks; when you need a transaction"
+      ],
+      [
+        "Idempotency",
+        "Key on POST for payments/retries"
+      ],
+      [
+        "Outbox",
+        "Avoid dual-write between DB and bus"
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "How 4 YOE interviews work + roadmap",
+      "summary": "Interviewers at ~4 years expect ownership of a vertical slice, production debugging, and clear trade-offs — not Staff-level CLR trivia. Typical loop: screen → t…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "C# essentials — IEnumerable, boxing, Span, records",
+      "summary": "Language questions at 4 YOE test whether you know where work runs (memory vs SQL) and allocation cost — not trivia for its own sake."
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Async — state machine, ValueTask, deadlocks, starvation",
+      "summary": "`async` builds a state machine; it does not spawn a thread. At 4 YOE you must diagnose deadlocks and thread-pool starvation in production language."
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "DI lifetimes, HttpClient, Options pattern",
+      "summary": "Captive dependencies and socket exhaustion are classic 4 YOE gotchas. Know Transient/Scoped/Singleton cold."
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "ASP.NET Core — Kestrel, middleware, Minimal vs MVC",
+      "summary": "Know the request path: Kestrel → middleware → endpoint. Wrong middleware order causes 'auth never runs' bugs."
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "API design — REST, versioning, idempotency, rate limits",
+      "summary": "Design questions at 4 YOE are about practical APIs: versioning, pagination, idempotency keys, and status codes — not HATEOAS purity contests."
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "EF Core & SQL — N+1, indexes, AsNoTracking",
+      "summary": "Data access is where mid-senior candidates separate themselves: N+1, plans, and read vs write patterns."
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Transactions, isolation, concurrency, soft delete",
+      "summary": "Isolation levels and optimistic concurrency are favorite 4 YOE topics — especially RCSI vs locking."
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Security — OAuth2/PKCE, JWT, OWASP",
+      "summary": "Be fluent in auth code + PKCE, JWT validation claims, and the OWASP issues that hit .NET APIs."
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Messaging — RabbitMQ vs Kafka, outbox, saga",
+      "summary": "Know when to pick a broker, what partitions mean, and how to avoid dual-write bugs."
+    },
+    {
+      "id": "day-11",
+      "n": 11,
+      "title": "Observability & resilience — OTel, latency, Polly",
+      "summary": "Logs + metrics + traces, correlated by trace id. Plus timeouts, retries, and circuit breakers used correctly."
+    },
+    {
+      "id": "day-12",
+      "n": 12,
+      "title": "Architecture — clean architecture, caching, microservices honesty",
+      "summary": "Defend layering choices. Don't propose microservices for a simple CRUD app — interviewers reward honesty."
+    },
+    {
+      "id": "day-13",
+      "n": 13,
+      "title": "Cloud & DevOps — App Service vs AKS, CI/CD",
+      "summary": "At 4 YOE, compare hosting options and describe a safe deploy/rollback path."
+    },
+    {
+      "id": "day-14",
+      "n": 14,
+      "title": "System design drills + behavioral finals",
+      "summary": "Practice mid-senior designs (~35 min): URL shortener, notifications, rate limiter, checkout. Close with STAR stories."
+    }
+  ]
+}

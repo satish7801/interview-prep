@@ -1,0 +1,39 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Databricks debugging, monitoring, cost control",
+  "exp": "Running a Databricks job and diagnosing failures end to end -- the direct equivalent of the EMR debugging day.",
+  "pts": [
+    "Debug path: workspace -> Job Runs -> failed run -> click the task -> Logs tab shows stdout/stderr, with a direct Spark UI link on the same page.",
+    "Driver and executor logs are both surfaced in the UI per-run without hunting for a log path manually -- a genuine ergonomic improvement over raw EMR log-hunting.",
+    "Common failures mirror EMR: wrong storage path (FileNotFoundException on abfss://), insufficient memory (OOM), missing RBAC role (authorization error on the storage call).",
+    "Cluster event log shows autoscaling decisions and Spot/low-priority VM reclamation events -- the first place to check for 'why did my job fail partway through.'",
+    "Cost visibility: the account console's usage dashboard breaks down DBU consumption by workspace, cluster, and job -- check this before assuming a slow job is also an expensive one."
+  ],
+  "code": "databricks jobs run-now --job-id 12345\ndatabricks runs get --run-id 67890\ndatabricks runs get-output --run-id 67890 --output json\ndatabricks runs list --job-id 12345 --limit 20\n\nfrom databricks.sdk import WorkspaceClient\nw = WorkspaceClient()\nrun = w.jobs.get_run(run_id=67890)\nif run.state.result_state.value != \"SUCCESS\":\n    for task in run.tasks:\n        output = w.jobs.get_run_output(run_id=task.run_id)\n        print(output.error, output.error_trace)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "databricks jobs run-now",
+        "Job Runs page",
+        "Click failed task",
+        "Logs + error trace",
+        "Spark UI link",
+        "Fix and re-run"
+      ],
+      "cap": "Databricks debugging path -- more consolidated in-UI than EMR log hunting"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the first place to check when a Databricks job fails partway through?",
+      "a": "The cluster event log, visible on the cluster's page. It records autoscaling events and -- critically -- Spot/low-priority VM reclamation with a stated termination reason. If the cluster itself was reclaimed or resized unexpectedly, this is visible before digging into application-level Spark logs."
+    },
+    {
+      "q": "Why might a slow Databricks job not be an expensive one?",
+      "a": "DBU consumption rate differs by cluster type -- all-purpose clusters bill at a higher DBU rate than job clusters for the same VM size. Wall-clock duration alone doesn't determine cost; the account console's usage dashboard, broken down by workspace/cluster/job, is necessary to actually answer a cost question."
+    }
+  ]
+}

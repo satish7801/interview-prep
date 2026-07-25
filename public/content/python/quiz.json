@@ -1,0 +1,101 @@
+{
+  "trackId": "python",
+  "items": [
+    {
+      "dayN": 1,
+      "qi": 0,
+      "q": "What is the most dangerous Python syntax mistake for a C# developer?",
+      "a": "Using a mutable default argument: def f(lst=[]). The list is created ONCE when the function is defined and shared across all calls -- mutations accumulate. Fix: def f(lst=None), then inside: if lst is None: lst = []. This is the single most common Python bug for C# developers."
+    },
+    {
+      "dayN": 1,
+      "qi": 1,
+      "q": "What is a list comprehension?",
+      "a": "[expression for item in iterable if condition] -- compact filter+transform. [x*2 for x in nums if x > 0] equals a for loop with if check and append. Use for simple filter+transform. For complex multi-step logic, a regular for loop is more readable."
+    },
+    {
+      "dayN": 1,
+      "qi": 2,
+      "q": "What does @dataclass eliminate?",
+      "a": "@dataclass auto-generates __init__, __repr__, and __eq__ from annotated fields. Without it a class with 5 fields needs a 5-line __init__, __repr__ for debugging, and __eq__ for comparison -- all boilerplate. Use field(default_factory=list) for mutable defaults."
+    },
+    {
+      "dayN": 2,
+      "qi": 0,
+      "q": "Why convert CSV values before comparing?",
+      "a": "csv.DictReader reads every value as a string. '1500' > 1000 raises TypeError in Python 3. Convert explicitly: float(row['amount']) > 1000. Add type conversion as the first step after reading any CSV."
+    },
+    {
+      "dayN": 2,
+      "qi": 1,
+      "q": "json.loads vs json.load?",
+      "a": "json.loads('string') parses a JSON STRING -- the s stands for string. json.load(file) reads from a FILE OBJECT directly. Similarly dumps serializes to string, dump writes to a file handle."
+    },
+    {
+      "dayN": 3,
+      "qi": 0,
+      "q": "How does pandas boolean indexing compare to SQL WHERE?",
+      "a": "df[df['amount'] > 1000] is equivalent to WHERE amount > 1000. The expression produces a boolean Series (True/False per row). Combine with & (AND) and | (OR) -- not Python's and/or. Always wrap conditions in parentheses: df[(df['a'] > 1) & (df['b'] == 'active')]."
+    },
+    {
+      "dayN": 3,
+      "qi": 1,
+      "q": "When use pandas vs PySpark?",
+      "a": "Pandas for data that fits in memory (up to a few hundred MB). Use PySpark when data does not fit on one machine, you need distributed processing, or you are in an EMR/Databricks environment."
+    },
+    {
+      "dayN": 4,
+      "qi": 0,
+      "q": "What is a generator and why use one over a list?",
+      "a": "A generator produces values one at a time on demand without computing all values upfront. Loading a 10GB CSV into a list crashes. A generator reads one batch at a time using constant memory regardless of file size. Use generators whenever processing data larger than available RAM."
+    },
+    {
+      "dayN": 4,
+      "qi": 1,
+      "q": "How does a context manager guarantee cleanup?",
+      "a": "The code after yield in a @contextmanager always runs when the with block exits -- whether normally or via an exception. Use for file handles, database connections, threading locks -- anything that must be released even on error."
+    },
+    {
+      "dayN": 5,
+      "qi": 0,
+      "q": "What is SQL injection and how does ? placeholder prevent it?",
+      "a": "SQL injection is when user input is concatenated into SQL and executed as code. The ? placeholder passes the value separately as pure data -- the driver never interprets it as executable SQL regardless of content. This is the #1 database security question in every senior interview."
+    },
+    {
+      "dayN": 5,
+      "qi": 1,
+      "q": "When use pyodbc vs SQLAlchemy?",
+      "a": "pyodbc for fine-grained control: transactions, stored procedure OUTPUT parameters. SQLAlchemy for pandas integration (pd.read_sql, df.to_sql) and ORM features. For data analysis, SQLAlchemy + pandas is the standard."
+    },
+    {
+      "dayN": 6,
+      "qi": 0,
+      "q": "What is a virtual environment and why mandatory?",
+      "a": "A venv is an isolated Python installation per project. Without one, pip install affects the system Python -- if project A needs pandas 1.5 and project B needs pandas 2.0, they conflict. With a venv each project has its own packages at the exact version it needs."
+    },
+    {
+      "dayN": 7,
+      "qi": 0,
+      "q": "Why is timeout mandatory in every requests.get()?",
+      "a": "Without a timeout, requests.get() waits forever if the server hangs. In a pipeline running at 2am, a hung call blocks indefinitely with no error. Always set timeout=10 to get a requests.exceptions.Timeout you can catch and handle."
+    },
+    {
+      "dayN": 7,
+      "qi": 1,
+      "q": "How do you distinguish transient from permanent API failures?",
+      "a": "Transient: 429 (rate limit), 500-504 (server temporarily unavailable), Timeout -- worth retrying. Permanent: 404 (not found), 400 (bad request), 403 (auth failure) -- retrying won't fix these; skip, fix, or escalate."
+    },
+    {
+      "dayN": 8,
+      "qi": 0,
+      "q": "What is a pytest fixture?",
+      "a": "A fixture is a function decorated with @pytest.fixture providing reusable test setup. Pytest injects fixtures by matching function parameter names to fixture names. Shared fixtures go in conftest.py -- discovered automatically without importing."
+    },
+    {
+      "dayN": 8,
+      "qi": 1,
+      "q": "What should you prioritize testing in a data pipeline?",
+      "a": "Transformation logic: given this input DataFrame, produce this exact output. These are pure functions, fast to test, highest-consequence if wrong. Second priority: edge cases -- empty DataFrames, nulls in key columns, duplicate rows. Avoid testing framework code (pandas, SQLAlchemy) -- only test YOUR logic."
+    }
+  ]
+}

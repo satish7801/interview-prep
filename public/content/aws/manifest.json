@@ -1,0 +1,151 @@
+{
+  "id": "aws",
+  "name": "AWS + Cloud",
+  "color": "--cloud",
+  "sub": "S3, EMR, CloudWatch, Grafana, orchestration - 14 days",
+  "desc": "The cloud infrastructure and observability layer for your data pipeline. Goes deep on CloudWatch and Grafana -- the exact AWS-native monitoring stack the JD's near-real-time dashboard implies -- plus serverless orchestration, Glue/Athena, and cost control.",
+  "tip": "The most expensive AWS mistake is forgetting to terminate a cluster -- set a $20 budget alert immediately. For Grafana specifically, the strongest interview answer isn't 'I built a dashboard' but 'I provisioned it as Terraform-managed JSON so it reproduces across environments and survives a workspace rebuild.'",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Key point"
+    ],
+    "r": [
+      [
+        "IAM least privilege",
+        "Grant only permissions actually needed. Never AdministratorAccess for an app."
+      ],
+      [
+        "S3 bucket naming",
+        "Globally unique. Cannot change once created. Plan carefully."
+      ],
+      [
+        "Core vs Task nodes",
+        "Core = compute + HDFS storage. Task = compute only. Spot on task nodes."
+      ],
+      [
+        "TERMINATE the cluster",
+        "EMR runs 24/7 until stopped. Terminate immediately after the job finishes."
+      ],
+      [
+        "VPC endpoint for S3",
+        "Free private route from EMR to S3. Saves NAT gateway costs per GB."
+      ],
+      [
+        "EMR vs Glue",
+        "EMR = managed cluster you control. Glue = serverless ETL for simple jobs."
+      ],
+      [
+        "S3 lifecycle rules",
+        "Auto-move old data to cheaper tiers. Prevents unbounded S3 costs."
+      ],
+      [
+        "Shared responsibility",
+        "AWS secures infrastructure. YOU secure IAM, encryption, bucket access."
+      ],
+      [
+        "CloudWatch namespace",
+        "Container for related metrics, e.g. AWS/EMR, AWS/S3, or a custom Pipeline/ namespace."
+      ],
+      [
+        "Amazon Managed Grafana IAM",
+        "The WORKSPACE needs an IAM role to read CloudWatch -- not your personal credentials."
+      ],
+      [
+        "Grafana multi-dim alerting",
+        "One rule definition can fire many alert instances -- one per label combination, e.g. per source."
+      ],
+      [
+        "Athena cost lever",
+        "$5 per TB scanned. Partition pruning (filter on the partition column) is the #1 cost control."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "AWS core -- IAM, S3, VPC, cost management",
+      "summary": "Three concepts underpin everything in AWS: IAM (who can do what), S3 (where data lives), and cost control. Get these wrong and your pipeline breaks, data is exp…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "S3 -- lifecycle, versioning, presigned URLs, events",
+      "summary": "S3 looks simple but has depth that matters for production. Lifecycle rules, versioning, and event notifications directly affect cost and automation."
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "EMR -- cluster setup, node types, cost management",
+      "summary": "EMR is AWS's managed Spark service. It costs money every second it runs. The most important command is terminate-cluster."
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "AWS SDK for .NET, CI/CD, shared responsibility",
+      "summary": "As a .NET developer joining a data engineering team, you bridge the .NET API layer with the AWS data pipeline."
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "EMR debugging, monitoring, cost control",
+      "summary": "Running your first EMR job and diagnosing failures end to end -- script upload to output verification and the debugging path when something breaks."
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Cost control, EMR Serverless, architecture trade-offs",
+      "summary": "Cost and architecture decisions distinguish a developer who built a Spark job from one who can own a production data platform. These are Lead I questions."
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "CloudWatch deep dive -- metrics, namespaces, custom metrics, alarms",
+      "summary": "CloudWatch is AWS's native observability service and the foundation everything else, including Grafana, builds on. Before connecting Grafana to anything, you ne…"
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "CloudWatch Logs Insights + X-Ray distributed tracing",
+      "summary": "Logs Insights is how you query structured logs at scale without standing up Elasticsearch. X-Ray is AWS-native distributed tracing -- useful once your pipeline …"
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Grafana on AWS -- Amazon Managed Grafana vs self-hosted",
+      "summary": "Before building a single dashboard, you need to choose how Grafana itself runs on AWS. This decision affects IAM design, cost, and how much operational burden y…"
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Grafana + CloudWatch -- building the pipeline dashboard",
+      "summary": "With the workspace and IAM role in place, this is where you actually wire up CloudWatch as a data source and build the panels that show whether the 50-source pi…"
+    },
+    {
+      "id": "day-11",
+      "n": 11,
+      "title": "Grafana unified alerting -- multi-dimensional rules and notification policies",
+      "summary": "Grafana's alerting engine (unified alerting, the modern default since v9) evaluates queries on a schedule and routes firing alerts through a policy tree to noti…"
+    },
+    {
+      "id": "day-12",
+      "n": 12,
+      "title": "Dashboards and alerts as code -- Terraform provider for Grafana",
+      "summary": "Clicking through the Grafana UI to build a dashboard doesn't survive a workspace rebuild and can't be code-reviewed. Provisioning dashboards, data sources, and …"
+    },
+    {
+      "id": "day-13",
+      "n": 13,
+      "title": "Serverless orchestration -- Step Functions, EventBridge, Lambda",
+      "summary": "NiFi handles data movement, but something needs to trigger and sequence the overall daily run. Step Functions and EventBridge are AWS's native orchestration ans…"
+    },
+    {
+      "id": "day-14",
+      "n": 14,
+      "title": "Glue Data Catalog, Athena, and the observability capstone",
+      "summary": "Glue's Data Catalog and Athena complete the AWS-native picture: a schema registry for your Parquet data and a serverless SQL engine over S3. This closes the AWS…"
+    }
+  ]
+}

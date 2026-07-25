@@ -1,0 +1,33 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "Scaling, API versioning, CI/CD, observability",
+  "exp": "These are the \"have you shipped anything real\" topics. Your compliance platform (multi-tenant, 10+ integrations) and SCIM provisioning give you real answers here.",
+  "pts": [
+    "**SQL Server scaling:** read replicas for read-heavy loads; partitioning for very large tables; row-level security for multi-tenant; cache query results at app layer before scaling DB",
+    "**API versioning:** URL `/v2/users` — obvious, discoverable. Header `API-Version: 2` — clean URLs. No perfect choice — pick one and apply consistently. Each version is a maintenance burden",
+    "**Healthy CI/CD:** Commit → Build → Unit test → Integration test → Staging → Smoke tests → Approval → Prod",
+    "**Observability triangle:** Logging (discrete events), Metrics (aggregated numbers over time), Tracing (path of one request across services). Need all three: metrics alert, logs debug, traces diagnose"
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "cicd"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between horizontal and vertical scaling?",
+      "a": "Vertical (scale up): add more CPU/RAM to existing servers — simple, no code changes, but there's a ceiling and it's expensive. Horizontal (scale out): add more server instances behind a load balancer — requires stateless services (session in Redis, not memory), but scales further and is more cost-efficient. Start with vertical (cheap and easy), switch to horizontal when you need more than the largest VM or when availability requires redundancy."
+    },
+    {
+      "q": "What are the trade-offs of URL versioning vs header versioning for APIs?",
+      "a": "URL versioning (/v2/users): visible in browser, easy to test, cacheable by CDNs, but pollutes URLs. Header versioning (Accept: application/vnd.api.v2+json): clean URLs, strict REST, but invisible to humans and harder to test. Prefer URL versioning for public APIs (discoverability matters), header versioning for internal APIs where consumers are controlled services."
+    },
+    {
+      "q": "What are the three pillars of observability and when do you use each?",
+      "a": "Logging: structured events with context — used for debugging specific issues after the fact. Metrics: aggregated numbers over time (request rate, error rate, p99 latency) — used for alerting and dashboards. Tracing: the path of a single request across multiple services with timing at each step — used for diagnosing latency issues in distributed systems. Metrics tell you something is wrong, logs tell you what, traces tell you where."
+    }
+  ]
+}

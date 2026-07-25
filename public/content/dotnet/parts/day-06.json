@@ -1,0 +1,35 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "EF Core — change tracking, N+1, migrations, EF Core 10",
+  "exp": "EF Core questions at 4 YOE are almost never \"how do you add a migration.\" They're \"explain how change tracking works\" and \"what is the N+1 problem.\" These connect directly to your production work.",
+  "pts": [
+    "**Change tracking:** EF monitors all queried entities by default, comparing snapshots on `SaveChanges()`. Only modified properties generate SQL",
+    "**`AsNoTracking()`:** disables change tracking — typically 20–40% faster for read-only queries",
+    "**N+1 problem:** load N entities, access navigation property in a loop → 1+N database round-trips. Fix: `.Include(o => o.Customer)`",
+    "**EF Core 10 — named query filters:** multiple `HasQueryFilter()` per entity type, selectively disable individual filters",
+    "**EF Core 10 — native JSON columns:** model JSON columns directly without manual serialization — great for metadata in a compliance platform",
+    "`DbContext` is already a Unit of Work — `SaveChanges()` flushes all changes in one transaction"
+  ],
+  "code": "// N+1 PROBLEM — DON'T do this\nvar orders = context.Orders.ToList();         // 1 query\nforeach (var o in orders) {\n  Console.WriteLine(o.Customer.Name);         // 1 query PER order! ← N+1\n}\n\n// FIX: eager load with Include\nvar orders = context.Orders\n  .Include(o => o.Customer)                   // single JOIN query\n  .ToList();\n\n// AsNoTracking for read-only API endpoints\nvar report = await context.Evidences\n  .AsNoTracking()\n  .Where(e => e.FrameworkId == id)\n  .Select(e => new { e.Title, e.Status })\n  .ToListAsync();\n\n// EF Core 10: multiple named query filters\nmodelBuilder.Entity<Evidence>()\n  .HasQueryFilter(\"Tenant\", e => e.TenantId == currentTenantId)\n  .HasQueryFilter(\"SoftDelete\", e => !e.IsDeleted);\n// Selectively disable one:\ncontext.Evidences.IgnoreQueryFilters(\"SoftDelete\").ToList();",
+  "pr": [],
+  "viz": [
+    {
+      "t": "n1diagram"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the N+1 problem in EF Core and how do you fix it?",
+      "a": "N+1 happens when you load N entities and then access a navigation property on each in a loop — triggering 1 additional query per entity (total: 1 + N queries). Fix with .Include(e => e.RelatedEntity) to eagerly load in a single JOIN query. Detect it by enabling EF Core query logging — you'll see the same query repeated N times."
+    },
+    {
+      "q": "When should you use AsNoTracking()?",
+      "a": "For read-only queries where you won't call SaveChanges() on the retrieved entities — API responses, reports, exports. EF Core skips creating change-tracking snapshots, reducing memory usage and processing time by typically 20–40%. Never use it if you need to update those entities afterward."
+    },
+    {
+      "q": "How does EF Core's DbContext relate to the Repository and Unit of Work patterns?",
+      "a": "DbContext already implements both. It's a Unit of Work because SaveChanges() flushes all pending changes in a single transaction. It's a Repository because DbSet<T> provides query, add, update, and delete operations. Adding an extra Repository wrapper usually just adds indirection without benefit — unless you need to support multiple ORMs or deep unit-test isolation."
+    }
+  ]
+}

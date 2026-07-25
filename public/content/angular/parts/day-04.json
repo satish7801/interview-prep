@@ -1,0 +1,51 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "RxJS operators — comprehensive deep dive",
+  "exp": "Most Angular developers know map, filter, switchMap. Senior interviews probe the less-common operators: combineLatest, forkJoin, exhaustMap, shareReplay, catchError with retry. Each has specific semantics that matter — using the wrong operator causes subtle bugs.",
+  "pts": [
+    "`switchMap`: on each source emission, unsubscribes from previous inner observable, subscribes to new one. Use: search-as-you-type, navigation (cancel previous request on new route).",
+    "`mergeMap` (=`flatMap`): all inner observables run concurrently. Use: parallel uploads, fire-and-forget side effects.",
+    "`concatMap`: queues inner observables, waits for each to complete before starting next. Use: sequential operations where ORDER matters (save then notify).",
+    "`exhaustMap`: ignores new emissions while current inner observable is active. Use: login button (ignore double-clicks while login is in progress).",
+    "`combineLatest([a$, b$])`: emits when ANY source emits, combining latest values from ALL sources. Use: combining filter selection with data stream.",
+    "`forkJoin([a$, b$])`: waits for ALL observables to complete, then emits an array of their LAST values. Use: parallel HTTP calls that must all finish before proceeding (like Promise.all).",
+    "`zip([a$, b$])`: emits only when ALL sources have each emitted a new value — pairs nth emissions. Rarely needed.",
+    "`shareReplay(1)`: multicasts the observable to multiple subscribers AND replays the last emission to late subscribers — use to share HTTP responses without re-fetching.",
+    "`catchError(err => of(fallback))`: handle errors inline, return a replacement observable to continue the stream.",
+    "`retry(n)` / `retryWhen(errors => errors.pipe(delay(1000)))`: retry on error with optional backoff.",
+    "`debounceTime(300)`: emit only after n ms of silence — search input. `throttleTime(1000)`: emit immediately, then ignore for n ms — scroll events."
+  ],
+  "code": "// switchMap: cancel previous search request on new keystroke\nsearchControl.valueChanges.pipe(\n  debounceTime(300),\n  distinctUntilChanged(),\n  switchMap(term => this.search.query(term).pipe(\n    catchError(() => of([]))   // don't break the stream on error\n  ))\n).subscribe(results => this.results.set(results));\n\n// exhaustMap: ignore button clicks while login is in progress\nfromEvent(loginBtn, 'click').pipe(\n  exhaustMap(() => this.auth.login(this.form.value))\n).subscribe(user => this.router.navigate(['/dashboard']));\n\n// concatMap: process items sequentially (order preserved)\nfrom(fileList).pipe(\n  concatMap(file => this.upload.send(file))\n).subscribe(result => console.log('uploaded:', result.name));\n\n// forkJoin: parallel HTTP calls — wait for all to complete\nforkJoin({\n  user: this.http.get<User>('/api/user'),\n  perms: this.http.get<Permission[]>('/api/permissions'),\n  config: this.http.get<Config>('/api/config')\n}).subscribe(({ user, perms, config }) => {\n  this.store.init(user, perms, config);\n});\n\n// combineLatest: react to ANY filter change\ncombineLatest([this.dateRange$, this.status$, this.searchTerm$]).pipe(\n  debounceTime(100),          // debounce rapid multi-filter changes\n  switchMap(([range, status, term]) => this.api.search({ range, status, term }))\n).subscribe(data => this.data.set(data));\n\n// shareReplay: share one HTTP call between multiple subscribers\nreadonly user$ = this.http.get<User>('/api/me').pipe(\n  shareReplay(1)   // cache and replay to late subscribers — only one HTTP call\n);\n\n// catchError with retry and backoff\nthis.http.get('/api/data').pipe(\n  retry({ count: 3, delay: (err, i) => timer(i * 1000) }),   // 1s, 2s, 3s backoff\n  catchError(err => { console.error(err); return of(null); })\n).subscribe(data => this.data.set(data));",
+  "pr": [
+    "LeetCode equivalents: build a type-ahead search using switchMap + debounceTime",
+    "Build a multi-filter data table using combineLatest"
+  ],
+  "viz": [
+    {
+      "t": "marbles"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between switchMap, mergeMap, concatMap, and exhaustMap?",
+      "a": "All four project source emissions to inner observables but handle concurrency differently. switchMap: cancels the previous inner observable when a new source emission arrives — use for search/autocomplete. mergeMap: runs all inner observables simultaneously — use for parallel independent operations. concatMap: queues inner observables, starts the next only after the previous completes — use when order matters. exhaustMap: ignores new source emissions while an inner observable is active — use for preventing duplicate requests (login button, submit forms)."
+    },
+    {
+      "q": "What is the difference between forkJoin and combineLatest?",
+      "a": "forkJoin waits for all source observables to COMPLETE, then emits once with an array/object of their final values — like Promise.all(). Use for parallel HTTP calls that must all finish. combineLatest emits whenever ANY source emits, combining the LATEST value from all sources — it never \"finishes.\" Use for reactive forms, filter combinations, or any scenario where you need the latest from multiple ongoing streams combined into one."
+    },
+    {
+      "q": "What does shareReplay(1) do and why is it important for services?",
+      "a": "shareReplay(1) multicasts an observable (so multiple subscribers share one upstream subscription) and caches the last n emissions, replaying them to new late subscribers. Without it, if two components both subscribe to this.http.get('/api/me'), Angular makes two HTTP calls. With shareReplay(1), the first subscriber triggers the HTTP call; subsequent subscribers get the cached response immediately without another network request. Essential for any service-level data stream that is shared across the app."
+    },
+    {
+      "q": "How do you handle errors in an RxJS pipeline without breaking the stream?",
+      "a": "Use catchError inside a switchMap or mergeMap (not at the top level): source$.pipe(switchMap(x => apiCall(x).pipe(catchError(() => of(fallback)))). This way, an error in one inner call returns a fallback value, and the outer stream continues listening. If you put catchError at the top level, an error terminates the entire stream (including the outer subscription). The of(fallback) is typically of([]) for lists or of(null) for optional data."
+    },
+    {
+      "q": "When would you use debounceTime vs throttleTime?",
+      "a": "debounceTime(n): wait until n milliseconds of silence, then emit — use for search inputs where you want to wait until the user stops typing before making an API call. throttleTime(n): emit immediately, then ignore emissions for n milliseconds — use for scroll or resize events where you want immediate response but need to limit the rate. debounceTime delays all emissions; throttleTime passes the first and drops the rest during the throttle window."
+    }
+  ]
+}

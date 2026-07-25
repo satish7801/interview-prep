@@ -1,0 +1,49 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "Components deep dive — content projection, ViewChild, dynamic loading",
+  "exp": "Standalone components are the standard. But senior interviews test the less-common features: multi-slot content projection, ViewChild for DOM access, TemplateRef for structural patterns, and dynamic component loading with ViewContainerRef. These appear in component library and advanced UI questions.",
+  "pts": [
+    "Standalone components (`standalone: true`, default v19+) import their own dependencies — no NgModule declaration needed",
+    "`@Component` metadata: selector, template/templateUrl, styles/styleUrls, changeDetection, encapsulation",
+    "**Content projection:** `<ng-content>` projects content from the parent into the child. **Multi-slot:** `<ng-content select=\"[header]\">` projects only elements matching the CSS selector",
+    "**`ng-container`:** grouping element that renders no DOM node — useful with `@if` / `@for` to avoid extra wrapper divs",
+    "**`ng-template`:** defines a template fragment that is not rendered by default; referenced by `TemplateRef`; used with structural directives and `ViewContainerRef`",
+    "**`@ViewChild(ref)`:** queries a child in the current component's VIEW — available in `ngAfterViewInit`. `@ViewChildren` for a list of children.",
+    "**`@ContentChild(ref)`:** queries a child projected via `<ng-content>` — available in `ngAfterContentInit`. `@ContentChildren` for a list.",
+    "**`ElementRef`:** wraps a native DOM element. Prefer Renderer2 for DOM manipulation to stay cross-platform (SSR/Web Worker safe).",
+    "**Dynamic component loading:** `ViewContainerRef.createComponent(ComponentClass)` instantiates a component at runtime — used for modals, toasts, dynamic dashboards",
+    "View encapsulation: `Emulated` (default, scoped CSS via attribute), `None` (global CSS), `ShadowDom` (native shadow DOM)"
+  ],
+  "code": "// Multi-slot content projection\n@Component({\n  selector: 'app-card',\n  template: `\n    <div class=\"card\">\n      <header><ng-content select=\"[card-header]\"></ng-content></header>\n      <main><ng-content></ng-content></main>  <!-- default slot -->\n      <footer><ng-content select=\"[card-footer]\"></ng-content></footer>\n    </div>\n  `\n})\nexport class CardComponent {}\n\n// Usage:\n// <app-card>\n//   <h2 card-header>Title</h2>\n//   <p>Body content goes to default slot</p>\n//   <button card-footer>Save</button>\n// </app-card>\n\n// ViewChild: access a child component or DOM element\n@Component({ template: `<canvas #myCanvas></canvas>` })\nexport class ChartComponent implements AfterViewInit {\n  @ViewChild('myCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;\n\n  ngAfterViewInit() {\n    // Safe to access DOM here — view is rendered\n    const ctx = this.canvasRef.nativeElement.getContext('2d');\n  }\n}\n\n// Dynamic component loading\n@Component({ template: `<ng-container #host></ng-container>` })\nexport class ModalHostComponent {\n  @ViewChild('host', { read: ViewContainerRef }) host!: ViewContainerRef;\n\n  open<T>(component: Type<T>, inputs?: Partial<T>) {\n    this.host.clear();\n    const ref = this.host.createComponent(component);\n    if (inputs) Object.assign(ref.instance as object, inputs);\n  }\n}\n\n// ng-template with TemplateRef\n@Component({\n  template: `\n    <ng-template #loadingTpl><spinner /></ng-template>\n    @if (data()) { <data-view /> } @else { <ng-container *ngTemplateOutlet=\"loadingTpl\" /> }\n  `\n})\nexport class DataComponent {\n  data = signal<Data | null>(null);\n}",
+  "pr": [
+    "Build a reusable card component with header/body/footer content projection slots"
+  ],
+  "viz": [
+    {
+      "t": "lifecycle"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between @ViewChild and @ContentChild?",
+      "a": "@ViewChild queries elements in the component's own template (its VIEW) — the DOM it creates itself. Available after ngAfterViewInit. @ContentChild queries elements that were PROJECTED into the component via <ng-content> — content that came from the parent. Available after ngAfterContentInit. Practical: @ViewChild for finding a child component you defined in your template; @ContentChild for finding what the parent injected into your slots."
+    },
+    {
+      "q": "What is multi-slot content projection and how do you implement it?",
+      "a": "Multi-slot content projection lets a component define multiple named slots for projected content using CSS selectors on <ng-content>. Add a select attribute: <ng-content select=\"[header]\"> only projects elements with the header attribute, <ng-content select=\".footer\"> projects elements with the footer CSS class, <ng-content> (no select) is the default slot for everything else. The parent marks its projected elements with the matching attribute or class."
+    },
+    {
+      "q": "What is ViewContainerRef and what can you do with it?",
+      "a": "ViewContainerRef is an injection token representing a position in the DOM where views (component or template instances) can be inserted. You can use it to: createComponent(Type) — dynamically instantiate and insert a component; createEmbeddedView(TemplateRef) — render an ng-template at that position; clear() — remove all dynamically created views. It's the foundation for modals, dynamic dashboards, and structural directives."
+    },
+    {
+      "q": "What is the difference between ng-container and ng-template?",
+      "a": "ng-container renders NO DOM element — it's a logical grouping element for applying @if, @for, or directives without adding a wrapper div. ng-template defines a template fragment that is NOT rendered at all by default — it's a blueprint that must be explicitly instantiated via ngTemplateOutlet, ViewContainerRef.createEmbeddedView(), or a structural directive. Think: ng-container is \"invisible wrapper,\" ng-template is \"stored-but-not-rendered blueprint.\""
+    },
+    {
+      "q": "When would you use ElementRef vs Renderer2 for DOM manipulation?",
+      "a": "ElementRef gives you direct access to the native DOM element via nativeElement — simple but platform-specific (breaks in Server-Side Rendering or Web Workers). Renderer2 provides an abstraction layer for DOM manipulation (createElement, setAttribute, setStyle, listen) that works across all Angular platforms including SSR. Use ElementRef for read-only access or when you're certain you're in a browser context; use Renderer2 for all DOM writes to ensure SSR compatibility."
+    }
+  ]
+}

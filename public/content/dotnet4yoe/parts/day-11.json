@@ -1,0 +1,29 @@
+{
+  "id": "day-11",
+  "n": 11,
+  "title": "Observability & resilience — OTel, latency, Polly",
+  "exp": "Logs + metrics + traces, correlated by trace id. Plus timeouts, retries, and circuit breakers used correctly.",
+  "pts": [
+    "OpenTelemetry hooks .NET `Activity`, `Meter`, `ILogger`.",
+    "Latency checklist: P95/P99, traces, ThreadPool/GC counters, N+1, sync-over-async.",
+    "Polly: timeout, retry (transient only), circuit breaker, bulkhead — retries must be idempotent.",
+    "Health: live vs ready (DB/Redis/bus).",
+    "Don't log secrets; prefer structured Serilog properties."
+  ],
+  "code": "",
+  "pr": [
+    "Add Activity tags for orderId",
+    "Design live vs ready probes"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "How do you debug increasing API latency over days?",
+      "a": "Check metrics (P95, errors, dependency times), distributed traces for slow spans, runtime counters (thread pool queue, GC), recent deploys/config, and classics: N+1, missing index, sync-over-async, cache stampede, chatty logging."
+    },
+    {
+      "q": "When should a retry policy NOT retry?",
+      "a": "On non-transient errors (400 validation, 401/403), non-idempotent POSTs without idempotency keys, and after a circuit is open. Retry timeouts/5xx/connection resets with jittered backoff."
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "S&P Global domain -- financial data, pipeline architecture",
+  "exp": "Understanding what S&P Global does and what fundamentals data means lets you give concrete contextualised answers. The architecture questions are directly about the pipeline in the JD.",
+  "pts": [
+    "S&P Global provides financial data, analytics, ratings, and platforms to financial institutions.",
+    "Fundamentals data: revenue, EBITDA, EPS, P/E ratio, debt levels from company filings (10-K, 10-Q). Used for valuation.",
+    "Market data: real-time/historical prices. Different from fundamentals -- changes millisecond vs quarterly.",
+    "The 50-source pipeline: each provider has its own schema, delivery mechanism, and quirks.",
+    "Config-driven ingestion: each source is metadata, not hardcoded logic. Adding source 51 is a config entry.",
+    "Data quality matters -- wrong data affects trading decisions. Dead-letter queues and validation alerts are non-negotiable.",
+    "Idempotency: re-running on the same data produces the same result -- mode('overwrite') for safe reruns."
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "50 sources (NiFi)",
+        "S3 raw landing",
+        "Spark validate",
+        "Dead-letter invalid",
+        "S3 processed Parquet",
+        "Dashboard pre-agg"
+      ],
+      "cap": "50-source S&P pipeline -- each layer separately scalable and observable"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Design a pipeline ingesting fundamentals from 50 sources daily, serving batch analytics and a near-real-time dashboard.",
+      "a": "Three layers: (1) Ingestion -- NiFi fetches data and lands raw files in S3, config-driven per source. (2) Processing -- Spark validates types and business rules; invalid records go to dead-letter S3 with alerts; valid records become Parquet partitioned by date. (3) Serving -- Spark batch jobs query processed data for full analytics; pre-aggregated daily rollups feed the dashboard so it does not hit the heavy pipeline on every page load."
+    },
+    {
+      "q": "How do you design so adding source 51 doesn't require a code change?",
+      "a": "Config-driven: store per-source metadata in a config table (DynamoDB or S3 JSON) -- URL, auth, format, schema, validation rules, schedule. The ingestion code reads this at runtime and operates generically. Adding source 51 is adding a config row. Zero code changes, zero deploy."
+    },
+    {
+      "q": "What is idempotency and why is it essential?",
+      "a": "An idempotent pipeline produces the same result regardless of how many times it runs on the same input. Re-running today's pipeline should not duplicate records. Implement via mode('overwrite') on Parquet partitions, MERGE statements in SQL, date-partitioned output paths. Enables safe reruns -- how you fix bugs without corrupting data."
+    }
+  ]
+}

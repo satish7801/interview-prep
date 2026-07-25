@@ -1,0 +1,31 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "GCP client libraries for .NET, CI/CD, shared responsibility",
+  "exp": "Google's .NET client libraries follow a slightly different idiom than the AWS/Azure SDKs -- worth knowing the specific authentication pattern (Application Default Credentials) since it's genuinely GCP's own concept.",
+  "pts": [
+    "Google.Cloud.Storage.V1 NuGet package: StorageClient is the entry point -- created via StorageClient.Create(), which resolves credentials automatically rather than requiring an explicit credential object passed to the constructor the way AWS/Azure SDKs typically do.",
+    "Application Default Credentials (ADC): GCP's version of the adaptive credential chain -- checks a local service account key file path (GOOGLE_APPLICATION_CREDENTIALS env var) first, then falls back to the metadata server's attached service account when running on GCP compute, then gcloud CLI login for local development.",
+    "Never download and embed a service account JSON key file in application code or a container image -- attach a Service Account directly to the Compute Engine instance, GKE workload, or Cloud Run service instead, letting ADC resolve credentials via the metadata server with no key file at all.",
+    "Shared responsibility: Google secures the physical infrastructure and the managed service internals; you secure IAM bindings, encryption key choices, VPC firewall rules, and anything you deploy.",
+    "Workload Identity Federation (covered on Day 2) is also the correct GitHub Actions CI/CD pattern here -- authenticate by impersonating a Service Account via a federated identity, no downloaded JSON key stored as a CI secret."
+  ],
+  "code": "// .NET C# -- Cloud Storage client\nusing Google.Cloud.Storage.V1;\n\n// Application Default Credentials resolved automatically -- no explicit credential object\nvar client = await StorageClient.CreateAsync();\n\nusing var fileStream = File.OpenRead(\"C:/data/orders.csv\");\nawait client.UploadObjectAsync(\"satish-pipeline-orders\", \"2024/01/orders.csv\", null, fileStream);\n\nvar objects = client.ListObjectsAsync(\"satish-pipeline-orders\", \"processed/2024/\");\nawait foreach (var obj in objects)\n    Console.WriteLine($\"{obj.Name} ({obj.Size:N0} bytes)\");\n\n// GitHub Actions -- Workload Identity Federation, no downloaded JSON key\n// - uses: google-github-actions/auth@v2\n//   with:\n//     workload_identity_provider: projects/.../workloadIdentityPools/github-pool/providers/github-provider\n//     service_account: pipeline-sa@orders-pipeline-prod.iam.gserviceaccount.com",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "ADC chain: .NET/Python code -> checks GOOGLE_APPLICATION_CREDENTIALS env var -> checks metadata server attached Service Account -> checks gcloud CLI login -> returns valid token."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is Application Default Credentials and how does its resolution order compare to AWS/Azure's default credential chains?",
+      "a": "ADC checks, in order: a service account key file path in the GOOGLE_APPLICATION_CREDENTIALS environment variable, then the attached Service Account via the Compute Engine/GKE/Cloud Run metadata server when running on GCP, then gcloud CLI login credentials for local development. Conceptually identical in purpose to AWS's default credential chain and Azure's DefaultAzureCredential -- the same code authenticates correctly across local dev and production with zero branching -- just GCP-specific environment variable and metadata server details underneath."
+    },
+    {
+      "q": "Why is downloading and embedding a service account JSON key file in a container image specifically discouraged?",
+      "a": "A JSON key file is a long-lived, static credential -- if the container image is ever pushed to a public registry, checked into source control by accident, or the image layer is otherwise exposed, that credential is compromised indefinitely until manually rotated. Attaching a Service Account directly to the compute resource (Compute Engine instance, GKE workload via Workload Identity, Cloud Run service) lets ADC resolve short-lived, auto-rotated credentials via the metadata server instead, with no static secret to leak in the first place -- the same principle behind avoiding hardcoded keys on any cloud."
+    }
+  ]
+}

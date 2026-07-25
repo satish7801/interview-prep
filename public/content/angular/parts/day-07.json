@@ -1,0 +1,49 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Forms deep dive — ControlValueAccessor, async validators, complex patterns",
+  "exp": "Beyond the basics, interviewers test ControlValueAccessor (create a custom form control), async validators (server-side email check), and cross-field validation. These are the patterns that appear in UI library and enterprise form-heavy Angular work.",
+  "pts": [
+    "`FormGroup`, `FormControl`, `FormArray` — the three building blocks of Reactive Forms",
+    "**Typed Forms** (Angular 14+): `FormGroup<{email: FormControl<string>}>` — TypeScript knows the shape of each control; use `nonNullable: true` to avoid `T | null` types",
+    "**`FormBuilder`** shorthand: `this.fb.nonNullable.group({ email: ['', [Validators.required, Validators.email]] })`",
+    "**Custom validator:** `ValidatorFn` that returns `ValidationErrors | null` — return `null` for valid, an object for invalid",
+    "**Cross-field validator:** set on a `FormGroup`, receives the entire group — use to compare two fields (passwords match, date range valid)",
+    "**Async validator:** `AsyncValidatorFn` returning `Observable<ValidationErrors | null>` — debounce to avoid hammering the server on every keystroke",
+    "**`updateOn`:** control when validation runs: `updateOn: 'change'` (default), `'blur'` (after leaving field), `'submit'` (on form submit only)",
+    "**`ControlValueAccessor`:** interface that makes a custom component work as a native form control — implement `writeValue`, `registerOnChange`, `registerOnTouched`, provide `NG_VALUE_ACCESSOR`",
+    "**Status:** `VALID`, `INVALID`, `PENDING` (async validator running), `DISABLED`",
+    "**`getRawValue()` vs `value`:** `value` excludes disabled controls; `getRawValue()` includes them — use getRawValue() when submitting to avoid losing disabled field data"
+  ],
+  "code": "// Typed Reactive Form with nonNullable\ninterface RegisterForm {\n  email: FormControl<string>;\n  password: FormControl<string>;\n  confirmPassword: FormControl<string>;\n}\n\nthis.form = new FormGroup<RegisterForm>({\n  email: new FormControl('', {\n    nonNullable: true,\n    validators: [Validators.required, Validators.email],\n    asyncValidators: [this.emailExistsValidator()],\n    updateOn: 'blur'\n  }),\n  password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),\n  confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] })\n}, { validators: [passwordMatchValidator] });\n\n// Cross-field validator\nfunction passwordMatchValidator(group: AbstractControl): ValidationErrors | null {\n  const pw = group.get('password')?.value;\n  const confirm = group.get('confirmPassword')?.value;\n  return pw === confirm ? null : { passwordMismatch: true };\n}\n\n// Async validator: check email uniqueness\nemailExistsValidator(): AsyncValidatorFn {\n  return (ctrl: AbstractControl) =>\n    of(ctrl.value).pipe(\n      debounceTime(400),\n      distinctUntilChanged(),\n      switchMap(email => this.authService.checkEmailExists(email)),\n      map(exists => exists ? { emailTaken: true } : null),\n      catchError(() => of(null))  // don't break form on API error\n    );\n}\n\n// ControlValueAccessor: custom star-rating form control\n@Component({\n  selector: 'star-rating',\n  template: \\`<button *ngFor=\"let s of stars\" (click)=\"setValue(s)\">{{ s <= value ? '★' : '☆' }}</button>\\`,\n  providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: StarRatingComponent, multi: true }]\n})\nexport class StarRatingComponent implements ControlValueAccessor {\n  stars = [1, 2, 3, 4, 5];\n  value = 0;\n  onChange = (_: number) => {};\n  onTouched = () => {};\n\n  writeValue(val: number) { this.value = val ?? 0; }\n  registerOnChange(fn: (v: number) => void) { this.onChange = fn; }\n  registerOnTouched(fn: () => void) { this.onTouched = fn; }\n  setValue(star: number) { this.value = star; this.onChange(star); this.onTouched(); }\n}",
+  "pr": [
+    "Build a star rating ControlValueAccessor that works with Reactive Forms"
+  ],
+  "viz": [
+    {
+      "t": "formstruct"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is ControlValueAccessor and when do you need to implement it?",
+      "a": "ControlValueAccessor is an interface that bridges a custom component to Angular's form API, making it usable as a form control with both Reactive Forms and template-driven Forms. You implement it when you're building a custom input component (star rating, color picker, address form, rich text editor) that should participate in form validation and value binding. Implement writeValue (receive value from form), registerOnChange (notify form of changes), registerOnTouched (notify form of blur), and provide NG_VALUE_ACCESSOR via multi-provider."
+    },
+    {
+      "q": "What is the difference between form.value and form.getRawValue()?",
+      "a": "form.value excludes disabled controls — their values are omitted from the object. form.getRawValue() includes all controls including disabled ones. This matters when you disable a field for UI reasons (e.g., \"confirmation email is read-only\") but still need its value when submitting. If you use form.value to build the submit payload, you'll silently lose the disabled field's value. Always use getRawValue() when building the submit payload."
+    },
+    {
+      "q": "How do you implement an async validator that checks if an email is already taken?",
+      "a": "Create an AsyncValidatorFn that returns an Observable<ValidationErrors | null>: take the control value, debounce to avoid hitting the API on every keystroke, call the API, map the response to null (valid) or { emailTaken: true } (invalid). Always add catchError(() => of(null)) so an API failure doesn't break the form. The form control shows status PENDING while the async validator is running. Attach it with asyncValidators in the FormControl constructor."
+    },
+    {
+      "q": "What is a cross-field validator and how do you apply it?",
+      "a": "A cross-field validator is a ValidatorFn applied to a FormGroup (not a single FormControl) that can compare multiple fields. Example: passwords match validator receives the entire FormGroup, reads group.get('password')?.value and group.get('confirmPassword')?.value, returns null if they match or { passwordMismatch: true } if not. Apply it in the FormGroup constructor's second argument: new FormGroup({...}, { validators: [passwordMatchValidator] }). Check the error on the group: form.errors?.'passwordMismatch'."
+    },
+    {
+      "q": "What is updateOn and what are the three options?",
+      "a": "updateOn controls when Angular runs validation and updates the form control value. 'change' (default): validates on every keystroke — good for instant feedback. 'blur': validates when the user leaves the field — reduces unnecessary validation noise during typing. 'submit': validates only when the form is submitted — best for sensitive fields where showing errors while typing feels intrusive. Set it per-control: new FormControl('', { updateOn: 'blur' }) or per-group: new FormGroup({...}, { updateOn: 'blur' })."
+    }
+  ]
+}

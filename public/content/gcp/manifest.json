@@ -1,0 +1,155 @@
+{
+  "id": "gcp",
+  "name": "GCP",
+  "color": "--gcp",
+  "sub": "Map AWS to GCP - 14 days",
+  "desc": "Google Cloud's take on the same pipeline stack -- Cloud Storage, Dataproc (managed Spark), Cloud Monitoring, and Grafana on GCP. Google's IAM model and BigQuery are the two areas with the most genuine conceptual difference from AWS.",
+  "tip": "GCP's IAM model has one real trap: permissions are almost always additive across every level (Organization, Folder, Project) with no narrower-scope-wins rule like AWS/Azure -- a broad Editor role granted at the Organization level applies everywhere beneath it, full stop. Naming this explicitly is what separates genuine GCP experience from a surface-level AWS-to-GCP word swap.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "AWS concept",
+      "GCP equivalent"
+    ],
+    "r": [
+      [
+        "Account",
+        "Project (grouped under a Folder/Organization)"
+      ],
+      [
+        "S3",
+        "Cloud Storage"
+      ],
+      [
+        "EC2",
+        "Compute Engine"
+      ],
+      [
+        "EMR",
+        "Dataproc"
+      ],
+      [
+        "Lambda",
+        "Cloud Functions"
+      ],
+      [
+        "IAM",
+        "Cloud IAM"
+      ],
+      [
+        "RDS",
+        "Cloud SQL"
+      ],
+      [
+        "Redshift / Athena",
+        "BigQuery"
+      ],
+      [
+        "CloudFormation",
+        "Deployment Manager / Terraform"
+      ],
+      [
+        "EKS",
+        "GKE"
+      ],
+      [
+        "Step Functions / Glue",
+        "Cloud Composer / Workflows"
+      ],
+      [
+        "Secrets Manager",
+        "Secret Manager"
+      ],
+      [
+        "CloudWatch",
+        "Cloud Monitoring + Cloud Logging"
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "GCP fundamentals -- Projects, Folders, Organizations, billing",
+      "summary": "GCP's resource hierarchy is conceptually close to Azure's Management Group/Subscription structure, but the Project is the true fundamental unit -- almost everyt…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "Cloud IAM -- the additive permission model",
+      "summary": "This is the single highest-value day in the GCP track. GCP IAM has a genuine structural difference from both AWS and Azure that trips up even experienced multi-…"
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Cloud Storage -- buckets, classes, lifecycle, signed URLs",
+      "summary": "Cloud Storage is GCP's S3 -- genuinely the closest 1:1 naming match of any storage service across the three clouds, since GCP kept the term 'bucket' itself."
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "Dataproc -- managed Spark clusters, jobs, cost management",
+      "summary": "Dataproc is GCP's managed Hadoop/Spark service -- the direct equivalent of EMR, sharing much of EMR's cluster-lifecycle vocabulary since both are built on the s…"
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "GCP client libraries for .NET, CI/CD, shared responsibility",
+      "summary": "Google's .NET client libraries follow a slightly different idiom than the AWS/Azure SDKs -- worth knowing the specific authentication pattern (Application Defau…"
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Dataproc debugging, monitoring, cost control",
+      "summary": "Running a Dataproc job and diagnosing failures -- the direct equivalent of the EMR and Databricks debugging days."
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Cloud Monitoring + Cloud Logging -- metrics, custom metrics, alerting policies",
+      "summary": "Cloud Monitoring and Cloud Logging together are GCP's CloudWatch equivalent -- two distinctly named services covering the metrics and logs halves respectively, …"
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Grafana on GCP -- Google Cloud Managed Service for Grafana",
+      "summary": "Same managed-vs-self-hosted decision as AWS and Azure, now on GCP. The identity wiring detail is the same lesson for the third time -- which itself is worth say…"
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Grafana + Cloud Monitoring -- building the pipeline dashboard",
+      "summary": "With the Service Account and role in place, wire up Cloud Monitoring (and Cloud Logging) as Grafana data sources and build the same panel set as the AWS and Azu…"
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Cloud Composer + Workflows -- orchestration",
+      "summary": "Cloud Composer is managed Apache Airflow -- a genuinely different orchestration philosophy from Step Functions/ADF's state-machine/pipeline-JSON approach, since…"
+    },
+    {
+      "id": "day-11",
+      "n": 11,
+      "title": "BigQuery -- the serverless data warehouse and query engine",
+      "summary": "BigQuery is GCP's most distinctive data service and genuinely the biggest conceptual leap from Athena -- not just a query-over-files engine, but a full serverle…"
+    },
+    {
+      "id": "day-12",
+      "n": 12,
+      "title": "Terraform on GCP -- google provider, state, modules",
+      "summary": "The same Terraform discipline transfers a third time, targeting GCP resources via the google provider -- remote state, plan-before-apply, and modules all carry …"
+    },
+    {
+      "id": "day-13",
+      "n": 13,
+      "title": "GCP security -- Secret Manager, Security Command Center, VPC Service Controls",
+      "summary": "The GCP equivalents of Secrets Manager, Security Hub, and PrivateLink -- rounding out the security-layer comparison across all three clouds."
+    },
+    {
+      "id": "day-14",
+      "n": 14,
+      "title": "GCP capstone -- putting the full stack together",
+      "summary": "Ties every GCP day into the same end-to-end shape as the AWS and Azure capstones -- three confident, concrete answers to 'how would this pipeline look on your c…"
+    }
+  ]
+}

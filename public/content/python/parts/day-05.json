@@ -1,0 +1,30 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "Python + SQL Server -- pyodbc, SQLAlchemy, parameterized queries",
+  "exp": "Connecting Python to SQL Server safely is the bridge between Python and SQL skills. Parameterized queries are a near-certain interview question.",
+  "pts": [
+    "cursor.execute('SELECT * FROM Orders WHERE id = ?', customer_id) -- ? is the placeholder. Always use parameterized queries.",
+    "NEVER use f-strings to build SQL: f'WHERE id = {user_input}' allows SQL injection.",
+    "sqlalchemy.create_engine(url) -- enables pd.read_sql() and df.to_sql().",
+    "pd.read_sql('SELECT ...', engine) -- executes SQL and returns a DataFrame in one call."
+  ],
+  "code": "import pyodbc, pandas as pd, os\nfrom sqlalchemy import create_engine\n\nconn_str = (f'DRIVER={{ODBC Driver 17 for SQL Server}};'\n            f'SERVER={os.environ[\"DB_SERVER\"]};'\n            f'DATABASE={os.environ[\"DB_NAME\"]};'\n            f'UID={os.environ[\"DB_USER\"]};PWD={os.environ[\"DB_PASSWORD\"]};')\n\n# SAFE: parameterized query\nconn = pyodbc.connect(conn_str)\ncid = 12345\nconn.cursor().execute('SELECT * FROM Orders WHERE CustomerID = ?', cid)\n\n# UNSAFE -- SQL injection -- NEVER do this:\n# cursor.execute(f'SELECT * FROM Orders WHERE CustomerID = {cid}')\n\n# SQLAlchemy + pandas\nengine = create_engine(\n    f'mssql+pyodbc://{os.environ[\"DB_USER\"]}:{os.environ[\"DB_PASSWORD\"]}'\n    f'@{os.environ[\"DB_SERVER\"]}/{os.environ[\"DB_NAME\"]}'\n    '?driver=ODBC+Driver+17+for+SQL+Server')\n\ndf = pd.read_sql(\"SELECT * FROM Orders WHERE Status = 'Active'\", engine)\nsummary = df.groupby('CustomerID')['Amount'].sum().reset_index()\nsummary.to_sql('CustomerSpend', engine, if_exists='replace', index=False,\n               method='multi', chunksize=1000)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Safe: user input -> ? parameter -> DB treats as DATA. Unsafe: user input -> string concat -> DB executes as SQL -> injection."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is SQL injection and how does ? placeholder prevent it?",
+      "a": "SQL injection is when user input is concatenated into SQL and executed as code. The ? placeholder passes the value separately as pure data -- the driver never interprets it as executable SQL regardless of content. This is the #1 database security question in every senior interview."
+    },
+    {
+      "q": "When use pyodbc vs SQLAlchemy?",
+      "a": "pyodbc for fine-grained control: transactions, stored procedure OUTPUT parameters. SQLAlchemy for pandas integration (pd.read_sql, df.to_sql) and ORM features. For data analysis, SQLAlchemy + pandas is the standard."
+    }
+  ]
+}

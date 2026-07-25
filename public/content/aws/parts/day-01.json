@@ -1,0 +1,39 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "AWS core -- IAM, S3, VPC, cost management",
+  "exp": "Three concepts underpin everything in AWS: IAM (who can do what), S3 (where data lives), and cost control. Get these wrong and your pipeline breaks, data is exposed, or your bill is 10x expected.",
+  "pts": [
+    "IAM: Users (people), Roles (assumed by services), Policies (JSON listing allowed actions).",
+    "Least privilege: grant only what is needed -- s3:GetObject on one specific bucket, not s3:* everywhere.",
+    "S3 buckets are globally unique. Objects have a key (path-like string). No real folders.",
+    "Same-region S3-to-EMR transfer is free. Cross-region charged per GB.",
+    "Spot Instances: spare capacity at 90% discount; reclaimed with 2-minute notice. Safe only for task nodes.",
+    "Set a CloudWatch billing alarm immediately when starting an AWS account."
+  ],
+  "code": "# AWS CLI -- daily toolkit\naws configure   # set credentials, region, output format\n\naws s3 mb s3://satish-pipeline-unique\naws s3 cp file.csv s3://bucket/prefix/\naws s3 ls s3://bucket/prefix/\naws s3 sync ./data/ s3://bucket/data/ --delete\n\n# IAM policy -- least privilege for EMR reading S3\n# {\n#   \"Version\": \"2012-10-17\",\n#   \"Statement\": [{\n#     \"Effect\": \"Allow\",\n#     \"Action\": [\"s3:GetObject\",\"s3:PutObject\",\"s3:ListBucket\"],\n#     \"Resource\": [\"arn:aws:s3:::satish-pipeline-unique\",\n#                  \"arn:aws:s3:::satish-pipeline-unique/*\"]\n#   }]\n# }\n\n# Billing alarm\naws cloudwatch put-metric-alarm \\\n  --alarm-name \"SpendingAlert-20USD\" \\\n  --namespace \"AWS/Billing\" --metric-name EstimatedCharges \\\n  --statistic Maximum --period 86400 --threshold 20 \\\n  --comparison-operator GreaterThanThreshold",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "IAM Role",
+        "EMR Cluster",
+        "VPC Endpoint",
+        "S3 Bucket",
+        "Parquet Output"
+      ],
+      "cap": "Secure pipeline: EMR assumes IAM role, accesses S3 privately via VPC endpoint"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is IAM least privilege and why does it matter?",
+      "a": "Grant only the exact permissions needed -- not broad wildcards. An EMR cluster reading one S3 bucket should have s3:GetObject on that specific bucket ARN, not s3:* on all resources. If the cluster is compromised, the blast radius is limited to only what the role can access. Over-permissioned roles are the most common AWS audit finding."
+    },
+    {
+      "q": "Why should EMR and S3 be in the same region?",
+      "a": "S3 data transfer between regions is charged per GB (~$0.02/GB). On a petabyte-scale pipeline this adds up quickly. Within the same region, transfer from S3 to EMR is free via a VPC endpoint. Always create EMR clusters in the same region as the S3 buckets they read."
+    }
+  ]
+}

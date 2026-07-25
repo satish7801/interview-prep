@@ -1,0 +1,48 @@
+{
+  "id": "day-14",
+  "n": 14,
+  "title": "Performance tuning, execution plans, parameter sniffing, full mock",
+  "exp": "Performance tuning at 4 YOE means being able to read an execution plan, explain parameter sniffing, and suggest concrete fixes. These questions appear whenever the interviewer asks 'this query is slow — what would you do?'",
+  "pts": [
+    "**Execution plan operators to know:** Table Scan (no usable index), Index Scan (index exists but reads all rows), Index Seek (selective filter uses the index), Key Lookup (extra trip to the base table for non-covered columns), Hash Join (large inputs), Nested Loop (small/indexed inputs)",
+    "**Cost percentage in the plan:** an operator with 80% cost is your bottleneck — focus optimisation there",
+    "**Parameter sniffing:** SQL Server compiles a stored procedure with the first parameter values it sees, reuses that plan for all subsequent calls. If later calls have very different parameters (high vs low cardinality), the cached plan may be suboptimal.",
+    "**Fix parameter sniffing:** `OPTION (RECOMPILE)` forces recompile per execution (use for queries with wildly varying parameters). `WITH RECOMPILE` on the stored proc (always recompiles — use sparingly). Local variables (capture parameter into a local variable — breaks sniffing but also loses the first-call optimisation).",
+    "**OPTION (MAXDOP n):** limits degree of parallelism for a specific query",
+    "**Query Store:** tracks query plans and performance over time; lets you force a specific plan; available in SQL Server 2016+",
+    "**Statistics:** the optimizer uses statistics to estimate row counts. Outdated statistics cause bad plans. `UPDATE STATISTICS table` or `sp_updatestats` refreshes them.",
+    "Always measure with SET STATISTICS TIME ON and SET STATISTICS IO ON before and after any optimisation change"
+  ],
+  "code": "-- Read execution plan\n-- In SSMS: Query → Include Actual Execution Plan\n-- Look for: Table Scan (bad), Key Lookup (add INCLUDE), high-cost nodes\n\n-- Enable I/O and time stats\nSET STATISTICS IO ON;\nSET STATISTICS TIME ON;\nSELECT * FROM orders WHERE customer_id = 42;\n-- Output: logical reads = 1200 → consider an index on customer_id\n\n-- Parameter sniffing: stored proc compiled for rare case, bad for common case\nCREATE PROCEDURE GetOrders @status NVARCHAR(20)\nAS\n  SELECT * FROM orders WHERE status = @status;\n-- First call: @status = 'cancelled' (few rows → nested loop plan compiled)\n-- Later calls: @status = 'pending' (millions of rows → needs hash join, but gets nested loop)\n\n-- Fix 1: OPTION (RECOMPILE)\nSELECT * FROM orders WHERE status = @status OPTION (RECOMPILE);\n\n-- Fix 2: local variable to break sniffing\nDECLARE @local_status NVARCHAR(20) = @status;\nSELECT * FROM orders WHERE status = @local_status;\n\n-- Query Store: view top queries by CPU\nSELECT TOP 10\n  qsq.query_id,\n  SUBSTRING(qsqt.query_sql_text, 1, 100) AS query_text,\n  qsrs.avg_cpu_time, qsrs.avg_logical_io_reads\nFROM sys.query_store_query qsq\nJOIN sys.query_store_query_text qsqt ON qsq.query_text_id = qsqt.query_text_id\nJOIN sys.query_store_plan qsp ON qsq.query_id = qsp.query_id\nJOIN sys.query_store_runtime_stats qsrs ON qsp.plan_id = qsrs.plan_id\nORDER BY qsrs.avg_cpu_time DESC;\n\n-- Force a specific plan via Query Store\nEXEC sp_query_store_force_plan @query_id = 12, @plan_id = 3;",
+  "pr": [
+    "Take a slow query from your current work and walk through its execution plan — identify one improvement"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "In SSMS: press Ctrl+M before running any query to capture the actual execution plan. Look for Table Scans and Key Lookups first."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is parameter sniffing and when is it a problem?",
+      "a": "Parameter sniffing is SQL Server's behaviour of compiling a stored procedure's execution plan using the first parameter values it encounters, then reusing that plan for all subsequent calls. It's a problem when parameter values have wildly different cardinalities: a plan compiled for @status = 'cancelled' (100 rows → nested loop) is a terrible plan for @status = 'pending' (10 million rows → should be hash join). The cached plan causes dramatically poor performance for the high-cardinality case."
+    },
+    {
+      "q": "What are the three ways to fix parameter sniffing?",
+      "a": "1) OPTION (RECOMPILE) hint on the query: forces recompilation on every execution using the actual parameter values — best when execution frequency is low or parameter variance is extreme. 2) WITH RECOMPILE on the stored procedure: always recompiles — use when every parameter variation needs a fresh plan but execution frequency is manageable. 3) Local variables: DECLARE @local = @param; SELECT ... WHERE col = @local — SQL Server can't sniff local variables so it uses a generic plan (may not be optimal but is consistent)."
+    },
+    {
+      "q": "What execution plan operators indicate performance problems?",
+      "a": "Table Scan: no usable index — add an index on the filter column. Index Scan: index exists but reads all rows — either the filter is not selective enough, or wrong index. Key Lookup: non-clustered index doesn't cover all needed columns — add INCLUDE clause. Hash Spill to disk: insufficient memory for the hash join — reduce parallelism or fix statistics. Parallelism (arrows on operators): sometimes queries use unnecessary parallelism — add OPTION (MAXDOP 1) for OLTP queries that shouldn't parallelize."
+    },
+    {
+      "q": "What is the Query Store in SQL Server 2016+ and what problem does it solve?",
+      "a": "Query Store automatically captures query text, execution plans, and runtime statistics over time — essentially a flight recorder for SQL Server. It solves the \"plan regression\" problem: when a new plan is adopted after a statistics update or index change and performs worse, Query Store lets you identify the regression and force the old plan with sp_query_store_force_plan. It also shows the top CPU, I/O, and duration consumers to prioritise optimisation work."
+    },
+    {
+      "q": "What is the difference between SET STATISTICS IO and SET STATISTICS TIME?",
+      "a": "SET STATISTICS IO ON outputs the number of logical reads (reads from the buffer cache) and physical reads (reads from disk) for each table in the query. Logical reads are your primary measure of query efficiency — fewer reads = better plan. SET STATISTICS TIME ON outputs the CPU time and elapsed time for query compilation and execution. Use both together before and after any optimisation change to measure concrete improvement rather than relying on perceived speed."
+    }
+  ]
+}

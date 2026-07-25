@@ -1,0 +1,54 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Grafana + Azure Monitor -- building the pipeline dashboard",
+  "exp": "With the workspace and identity in place, wire up Azure Monitor as a Grafana data source and build the same panel set from the AWS track, now against Metrics and Log Analytics.",
+  "pts": [
+    "Azure Monitor Metrics query editor requires: resource (or resource group + type), metric namespace, metric name, aggregation -- structurally the same four pieces CloudWatch requires, different field names.",
+    "Azure Monitor Logs (KQL) as a Grafana query type: paste KQL directly into a panel. A summarize with a numeric aggregate renders as a time series; a raw project renders as a table/logs view.",
+    "Grafana's built-in math expression feature combines multiple queries -- same error-rate-as-percentage pattern as CloudWatch Metric Math, since Azure Monitor has no server-side Metric Math equivalent of its own.",
+    "Template variables sourced from a KQL query returning distinct Source_s values populate a $source dropdown -- same purpose as the CloudWatch dimension_values() pattern, different syntax underneath.",
+    "Same practical panel set as the AWS dashboard: records per source (Stat), duration trend (Time series), error rate % (Stat, expression), cluster low-CPU signal (Stat), last successful run per source (Table)."
+  ],
+  "code": "// Azure Monitor Metrics query (simplified JSON)\n{\n  \"datasource\": \"Azure Monitor\",\n  \"namespace\": \"Microsoft.Databricks/workspaces\",\n  \"metricName\": \"ClusterCpuUtilization\",\n  \"aggregation\": \"Average\",\n  \"timeGrain\": \"PT5M\"\n}\n\n// KQL embedded directly in a Grafana panel\nPipelineRecordsProcessed_CL\n| where Source_s == \"$source\"\n| summarize TotalRecords = sum(RecordCount_d) by bin(TimeGenerated, 1h)\n\n// Error rate -- Grafana math expression combining query A and B\n$A / $B * 100\n\n// Template variable: Name=source, Type=Query, Data source=Azure Monitor (Logs)\n// Query: PipelineRecordsProcessed_CL | distinct Source_s",
+  "pr": [
+    "Build a Grafana panel using a math expression that computes error rate as a percentage from two Log Analytics KQL queries"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Panel",
+        "Azure query type"
+      ],
+      "r": [
+        [
+          "Records per source",
+          "KQL, summarize sum() by Source_s"
+        ],
+        [
+          "Job duration trend",
+          "Metrics, Time series"
+        ],
+        [
+          "Error rate %",
+          "Grafana math expression"
+        ],
+        [
+          "Cluster low-CPU signal",
+          "Metrics, Average aggregation"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does a KQL panel render as a time series instead of a raw table in Grafana?",
+      "a": "Include a summarize aggregation with a bin(TimeGenerated, ...) time grouping -- the same requirement as the Logs Insights stats-with-bin() pattern. Without aggregation, Grafana renders raw rows as a table; with a time-bucketed numeric aggregate, it plots as a standard time-series chart."
+    },
+    {
+      "q": "How does Grafana's math expression replicate CloudWatch Metric Math for Azure Monitor, given Azure has no native equivalent?",
+      "a": "Define two separate queries (error count, total count), then add a third query as a math expression referencing them by letter: $A / $B * 100. Grafana evaluates this after retrieving both results and renders it as its own panel series -- functionally identical output to CloudWatch Metric Math, just computed client-side in Grafana rather than server-side in the cloud platform, since Azure Monitor itself has no built-in cross-query math feature."
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "HTTP, interceptors, retry logic, and caching",
+  "exp": "HTTP interceptors — now functional in Angular 15+ — are asked in every enterprise Angular interview. Auth token injection, global error handling, and retry-with-backoff are the three patterns you must implement fluently.",
+  "pts": [
+    "**`HttpClient`:** Angular's HTTP service; all methods return Observables; supports typed responses: `http.get<User[]>('/api/users')`",
+    "**Functional interceptors** (`HttpInterceptorFn`, Angular 15+): replace class-based interceptors; registered with `withInterceptors([fn1, fn2])` in `provideHttpClient()`",
+    "**Interceptor order:** request flows through interceptors in registration order; response flows in reverse (like middleware)",
+    "**Auth interceptor:** clone the request to add Authorization header — `req.clone({ setHeaders: { Authorization: 'Bearer ' + token } })`",
+    "**Error interceptor:** catch HTTP errors globally, show toast, refresh token on 401, redirect to login on 403",
+    "**Retry with exponential backoff:** `retryWhen(errors => errors.pipe(delayWhen((e, i) => timer(Math.pow(2,i)*1000))))` or the newer `retry({ count: 3, delay: ... })`",
+    "**Caching interceptor:** check a Map before passing through; store response in Map; return cached response for subsequent identical GET requests",
+    "**Loading interceptor:** increment/decrement a counter signal to show/hide a global spinner without modifying individual components",
+    "**`HttpContext`:** pass metadata into interceptors without modifying the service call; use `HttpContextToken<T>` to tag specific requests"
+  ],
+  "code": "// Setup: register functional interceptors\nbootstrapApplication(AppComponent, {\n  providers: [\n    provideHttpClient(\n      withInterceptors([authInterceptor, errorInterceptor, loadingInterceptor])\n    )\n  ]\n});\n\n// Auth interceptor: add Bearer token\nconst authInterceptor: HttpInterceptorFn = (req, next) => {\n  const auth = inject(AuthService);\n  const token = auth.getToken();\n  if (!token) return next(req);\n  return next(req.clone({\n    setHeaders: { Authorization: \\`Bearer \\${token}\\` }\n  }));\n};\n\n// Error interceptor: handle 401 (token refresh) and 403 (redirect)\nconst errorInterceptor: HttpInterceptorFn = (req, next) => {\n  const auth = inject(AuthService);\n  const router = inject(Router);\n  return next(req).pipe(\n    catchError((err: HttpErrorResponse) => {\n      if (err.status === 401) return auth.refreshToken().pipe(\n        switchMap(token => next(req.clone({ setHeaders: { Authorization: \\`Bearer \\${token}\\` } })))\n      );\n      if (err.status === 403) router.navigate(['/forbidden']);\n      return throwError(() => err);\n    })\n  );\n};\n\n// Loading interceptor: global spinner via signal\nconst loadingInterceptor: HttpInterceptorFn = (req, next) => {\n  const loader = inject(LoadingService);\n  loader.increment();\n  return next(req).pipe(\n    finalize(() => loader.decrement())\n  );\n};\n\n// HttpContext: skip auth for specific requests\nconst SKIP_AUTH = new HttpContextToken<boolean>(() => false);\n// In service:\nthis.http.get('/public/data', { context: new HttpContext().set(SKIP_AUTH, true) });\n// In interceptor:\nif (req.context.get(SKIP_AUTH)) return next(req);\n\n// Retry with backoff using RxJS retry operator\nthis.http.get('/api/data').pipe(\n  retry({ count: 3, delay: (err, retryCount) => timer(retryCount * 1000) })\n);",
+  "pr": [
+    "Write a functional auth interceptor that adds a Bearer token and handles 401 with token refresh"
+  ],
+  "viz": [
+    {
+      "t": "pipeline2"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between class-based and functional HTTP interceptors?",
+      "a": "Class-based interceptors implement HttpInterceptor with an intercept(req, next) method and are provided with { provide: HTTP_INTERCEPTORS, useClass: ..., multi: true }. Functional interceptors are plain functions of type HttpInterceptorFn = (req, next) => Observable<HttpEvent<unknown>> and are registered with withInterceptors([fn]) in provideHttpClient(). Functional interceptors are cleaner (no class boilerplate), work with inject() for dependencies, are the Angular 15+ standard, and are what new Angular docs use."
+    },
+    {
+      "q": "Why must you clone the request in an interceptor instead of modifying it directly?",
+      "a": "HttpRequest objects are immutable by design — Angular makes requests immutable so that interceptors in a chain cannot interfere with each other through shared mutation. req.clone({ setHeaders: {...} }) creates a new request with the modified properties while copying everything else. This ensures each interceptor gets a clean, unmodified request, and later interceptors see the modifications from earlier ones as intended, not accidental side effects."
+    },
+    {
+      "q": "How do you implement token refresh on a 401 response in an interceptor?",
+      "a": "Catch the 401 in catchError, call auth.refreshToken() to get a new token, then retry the original request with the new token using switchMap. The key: save the original request before the error, and re-clone it with the new Authorization header in the switchMap. Edge case: if the refresh itself returns 401 (refresh token also expired), catch that error and redirect to login. Also consider preventing parallel refresh calls if multiple requests 401 simultaneously (use a BehaviorSubject or share() to broadcast the single refresh)."
+    },
+    {
+      "q": "What is HttpContext and why is it useful for interceptors?",
+      "a": "HttpContext lets you attach metadata to an HTTP request that interceptors can read, without modifying the request URL or headers. Define a token: const SKIP_AUTH = new HttpContextToken<boolean>(() => false). Pass it: http.get(url, { context: new HttpContext().set(SKIP_AUTH, true) }). Read in interceptor: req.context.get(SKIP_AUTH). Use cases: skip auth for public endpoints, skip caching for specific calls, mark a request as high-priority, or pass any interceptor-specific configuration without polluting the service call signature."
+    },
+    {
+      "q": "How do you implement a caching interceptor for GET requests?",
+      "a": "Maintain a Map<string, HttpResponse> in a singleton service. In the interceptor: if the request is a GET and the URL is in the cache, return of(cachedResponse) and skip next(req). Otherwise, call next(req), tap the response to store it in the cache, and return the response. Add cache invalidation: either time-based (TTL via Date.now()), or explicit (clear the cache entry when a related mutation request succeeds). Only cache GET requests — POST/PUT/DELETE should never be cached."
+    }
+  ]
+}

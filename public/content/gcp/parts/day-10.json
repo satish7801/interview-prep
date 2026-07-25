@@ -1,0 +1,44 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Cloud Composer + Workflows -- orchestration",
+  "exp": "Cloud Composer is managed Apache Airflow -- a genuinely different orchestration philosophy from Step Functions/ADF's state-machine/pipeline-JSON approach, since Airflow DAGs are defined in Python code.",
+  "pts": [
+    "Cloud Composer: a managed Airflow environment. DAGs (Directed Acyclic Graphs) are defined as Python files, not JSON/visual pipeline definitions -- a real philosophical difference from both Step Functions and ADF, closer to writing actual orchestration code than configuring a pipeline visually.",
+    "Airflow's TaskGroup or dynamic task mapping (expand()) achieves the same parallel fan-out as a Step Functions Map state or an ADF ForEach -- running the same sub-task across an array of inputs, GCP's take expressed in Python rather than JSON.",
+    "Airflow Operators are pre-built task types for common actions -- DataprocSubmitJobOperator to run a Spark job, GCSToBigQueryOperator to load data, PythonOperator for custom glue logic -- roughly analogous to ADF's typed activities or a Step Functions Task pointing at a specific AWS service integration.",
+    "Cloud Workflows (distinct from Cloud Composer) is a lighter-weight, YAML-defined orchestration service for simpler sequences of API calls -- closer in spirit and weight to Step Functions or a simple Logic App than to the heavier, Python-DAG-based Cloud Composer.",
+    "Retry policies are set per-task in Airflow (retries=3, retry_delay=timedelta(seconds=30)) -- the same per-step retry concept as Step Functions' Retry block or ADF's per-activity policy, expressed as Python task parameters.",
+    "Choosing between Cloud Composer and Cloud Workflows mirrors choosing between Step Functions and a simple Lambda-triggered-by-EventBridge, or between ADF and Logic Apps -- heavier, code-first orchestration for complex data pipelines versus lightweight, simple-sequence orchestration for glue logic."
+  ],
+  "code": "from airflow import DAG\nfrom airflow.providers.google.cloud.operators.dataproc import DataprocSubmitJobOperator\nfrom airflow.operators.python import PythonOperator\nfrom datetime import datetime, timedelta\n\ndefault_args = {\"retries\": 3, \"retry_delay\": timedelta(seconds=30)}\n\nwith DAG(\n    \"daily_orders_pipeline\",\n    schedule_interval=\"0 6 * * *\",   # 6am daily, same shape as an EventBridge cron\n    start_date=datetime(2024, 1, 1),\n    default_args=default_args,\n    catchup=False,\n) as dag:\n\n    # Dynamic task mapping -- the Airflow equivalent of a Map state / ForEach\n    fetch_sources = PythonOperator.partial(\n        task_id=\"fetch_source\",\n        python_callable=fetch_one_source,\n    ).expand(op_args=[[s] for s in SOURCE_LIST])   # fans out across all 50 sources\n\n    validate = DataprocSubmitJobOperator(\n        task_id=\"validate_and_transform\",\n        job={\"pyspark_job\": {\"main_python_file_uri\": \"gs://bucket/scripts/validate.py\"}},\n        region=\"us-central1\",\n        project_id=\"orders-pipeline-prod\",\n    )\n\n    notify = PythonOperator(task_id=\"notify_complete\", python_callable=send_slack_notification)\n\n    fetch_sources >> validate >> notify\n\n# Cloud Workflows -- lighter-weight YAML alternative for simple sequences\n# main:\n#   steps:\n#     - fetchData:\n#         call: http.get\n#         args: { url: \"https://api.example.com/data\" }\n#     - notify:\n#         call: http.post\n#         args: { url: \"https://hooks.slack.com/...\" }",
+  "pr": [
+    "Write the Airflow DAG skeleton for the 50-source pipeline using dynamic task mapping, a DataprocSubmitJobOperator, and a final notify task"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "Composer DAG schedule 6am",
+        "expand() 50 parallel fetches",
+        "DataprocSubmitJobOperator validate",
+        "PythonOperator notify"
+      ],
+      "cap": "Cloud Composer orchestration -- Python-native DAG, the same fan-out shape as Step Functions/ADF"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the fundamental philosophical difference between Cloud Composer and both Step Functions and Azure Data Factory?",
+      "a": "Cloud Composer DAGs are defined as actual Python code files, not JSON state machine definitions or visual/JSON pipeline configurations. This means orchestration logic on Composer is written and version-controlled the same way application code is -- with real Python control flow, imports, and testing patterns available -- rather than being expressed in a more declarative, visually-oriented configuration format. It's a genuinely different orchestration philosophy, not just a syntax difference, and worth naming explicitly as the one clear differentiator in this otherwise-parallel section of the three clouds."
+    },
+    {
+      "q": "How does Airflow's dynamic task mapping (.expand()) achieve the same fan-out as a Step Functions Map state?",
+      "a": "expand() takes a base task definition and a list of inputs, generating one task instance per input at DAG-run time, each running independently with its own retry and failure handling -- functionally identical to Map's per-item parallel branch behavior. The Python expression op_args=[[s] for s in SOURCE_LIST] generates one task per source in the list, achieving the same 50-parallel-independent-branches shape as the Step Functions and ADF versions of this exact pattern, just expressed as a Python list comprehension rather than a JSON ItemsPath reference."
+    },
+    {
+      "q": "When would you choose Cloud Workflows over Cloud Composer for a piece of orchestration?",
+      "a": "Cloud Workflows suits simple, mostly-linear sequences of API calls -- lighter weight, YAML-defined, no persistent Airflow environment to manage or pay for. Cloud Composer is justified once you need genuine DAG complexity, Python-native task logic, a rich library of pre-built Operators for GCP services, or a scheduling/retry/monitoring feature set built for data pipeline orchestration specifically. The same heavier-orchestration-vs-lightweight-glue trade-off as Step Functions-vs-simple-Lambda or ADF-vs-Logic-Apps applies here."
+    }
+  ]
+}

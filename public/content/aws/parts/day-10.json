@@ -1,0 +1,73 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Grafana + CloudWatch -- building the pipeline dashboard",
+  "exp": "With the workspace and IAM role in place, this is where you actually wire up CloudWatch as a data source and build the panels that show whether the 50-source pipeline is healthy.",
+  "pts": [
+    "Adding the CloudWatch data source inside Grafana: select the default region and the auth method (the workspace's attached IAM role handles this automatically on AMG -- no access keys to paste in).",
+    "The CloudWatch metrics query editor has four required fields: namespace, metric name, dimensions (filters down to one specific resource), and statistic (Average, Maximum, Sum, etc.) over a period.",
+    "CloudWatch Logs as a Grafana query type: you can paste a Logs Insights query directly into a panel. With a `stats` aggregation producing numeric output, Grafana renders it as a time series; without one, it renders as a raw log list.",
+    "Metric Math lets you combine two queries into a third: query A = error count, query B = total count, query C = 100*(A/B) renders directly as an error-rate percentage panel.",
+    "Template variables sourced from a CloudWatch dimension value (e.g. a $source dropdown built from the Source dimension on your custom Pipeline/Orders metric) let one dashboard serve all 50 sources without 50 separate dashboards.",
+    "Practical panel set for the 50-source pipeline: records processed per source (Stat), job duration trend (Time series), error rate % (Stat, Metric Math), EMR IsIdle (Stat, cost signal), last successful run timestamp per source (Table)."
+  ],
+  "code": "// Example Grafana panel target -- CloudWatch metrics query (simplified JSON)\n{\n  \"datasource\": \"CloudWatch\",\n  \"namespace\": \"Pipeline/Orders\",\n  \"metricName\": \"RecordsProcessed\",\n  \"dimensions\": { \"Source\": \"$source\" },     // driven by template variable\n  \"statistic\": \"Sum\",\n  \"period\": \"3600\"\n}\n\n// Metric Math -- error rate as a percentage (query C combines A and B)\n// Query A: Pipeline/Orders ValidationErrors, statistic Sum\n// Query B: Pipeline/Orders RecordsProcessed, statistic Sum\n// Query C (Metric Math expression):\n100 * (A / B)\n\n// CloudWatch Logs Insights embedded directly in a Grafana panel\nfields @timestamp, source, duration_ms\n| filter source = \"$source\"\n| stats avg(duration_ms) as avg_duration by bin(1h)\n\n// Template variable definition (Dashboard Settings -> Variables)\n// Name: source\n// Type: Query\n// Data source: CloudWatch\n// Query: dimension_values(us-east-1, Pipeline/Orders, RecordsProcessed, Source)\n\n// \"No data in 25 hours\" detection query for a Stat panel\n// (used later for alerting too)\nfields @timestamp, source\n| filter source = \"$source\"\n| stats latest(@timestamp) as last_seen\n// Grafana's Stat panel can show \"time since\" relative to last_seen",
+  "pr": [
+    "Build a Grafana panel using Metric Math that computes error rate as a percentage from two CloudWatch metrics"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Panel",
+        "CloudWatch query type",
+        "Why"
+      ],
+      "r": [
+        [
+          "Records per source",
+          "Metrics, Stat statistic Sum",
+          "Quick current-state number"
+        ],
+        [
+          "Job duration trend",
+          "Metrics, Time series",
+          "Spot regressions over time"
+        ],
+        [
+          "Error rate %",
+          "Metric Math (A/B*100)",
+          "Single normalized signal across sources"
+        ],
+        [
+          "EMR cluster idle",
+          "Metrics, IsIdle Maximum",
+          "Cost-waste early warning"
+        ],
+        [
+          "Per-source error log",
+          "Logs Insights, no aggregation",
+          "Drill into the actual exception text"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What four things does a CloudWatch metrics query in Grafana require?",
+      "a": "Namespace (which metric family, e.g. Pipeline/Orders), metric name (RecordsProcessed), dimensions (which specific resource -- e.g. Source=Bloomberg), and statistic over a period (Sum, Average, Maximum, etc. aggregated per time bucket). All four are required to fully specify which numbers to retrieve -- omitting dimensions returns an aggregate across all resources in that namespace, which is rarely what you want."
+    },
+    {
+      "q": "How do you turn a CloudWatch Logs Insights query into a time-series panel instead of a raw log table?",
+      "a": "Include a stats aggregation with a bin() time grouping in the query, e.g. stats avg(duration_ms) as avg_duration by bin(1h). Without an aggregation, Grafana renders the matched log lines as a scrolling list (the Logs panel view). With one, it produces numeric values per time bucket that Grafana can plot as a line or bar chart, exactly like a metrics query."
+    },
+    {
+      "q": "What is Metric Math in Grafana's CloudWatch integration and give a concrete pipeline example?",
+      "a": "Metric Math lets you define a query that's a mathematical expression over other queries in the same panel, referenced by their letter (A, B, C...). For an error-rate panel: query A pulls ValidationErrors (Sum), query B pulls RecordsProcessed (Sum), and query C is the expression 100*(A/B), which Grafana evaluates server-side via CloudWatch and renders as a single error-rate-percentage time series -- no client-side math needed."
+    },
+    {
+      "q": "How does a CloudWatch-dimension-driven template variable avoid building 50 separate dashboards?",
+      "a": "A template variable of type Query, pointed at the CloudWatch data source's dimension_values() function, populates a dropdown (e.g. $source) from the actual Source dimension values present in your metrics -- Bloomberg, ICE, Refinitiv, etc. Every panel in the dashboard references $source instead of a hardcoded value, so switching the dropdown re-filters all panels simultaneously. Adding a 51st source requires zero dashboard changes -- it just appears in the dropdown once it starts publishing metrics."
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "day-11",
+  "n": 11,
+  "title": "Indexing deep dive — covering, filtered, fragmentation, missing index DMVs",
+  "exp": "Index questions at 4 YOE go beyond 'clustered vs non-clustered.' Interviewers expect you to know covering indexes, filtered indexes, when indexes hurt, and how to find missing indexes using DMVs. These come up whenever the interviewer asks 'how would you optimize this query?'",
+  "pts": [
+    "Clustered index: defines the physical sort order of the table (the table IS the B-tree); one per table; lookup is a direct B-tree traversal",
+    "Non-clustered index: separate B-tree with key columns + pointer (row locator) to the clustered index or heap; many per table",
+    "**Covering index:** an index that includes ALL columns needed by a query (SELECT + WHERE + ORDER BY) — no Key Lookup needed, fastest for read-only queries",
+    "**Filtered index:** a non-clustered index with a WHERE clause (e.g., `WHERE status = 'active'`) — smaller, faster, more selective for a subset of data",
+    "**Key Lookup:** expensive operation in the execution plan when a non-clustered index is used but the query needs columns not in the index — fix by adding an INCLUDE clause",
+    "**INCLUDE clause:** adds non-key columns to the leaf level of a non-clustered index for covering without affecting key order: `CREATE INDEX ix ON orders (status) INCLUDE (amount, date)`",
+    "**Index fragmentation:** caused by page splits during inserts/updates. Internal fragmentation (pages not full) → REORGANIZE. External fragmentation (page order out of sequence) → REBUILD.",
+    "`sys.dm_db_missing_index_details` / `sys.dm_db_missing_index_groups` — DMVs that track queries the optimizer wanted an index for but none existed",
+    "**Index maintenance:** REBUILD (offline, full rewrite) vs REORGANIZE (online, incremental defrag). Rebuild when fragmentation > 30%, Reorganize when 10–30%.",
+    "Too many indexes hurt write performance — each INSERT/UPDATE/DELETE must update every index on that table"
+  ],
+  "code": "-- Covering index: include all columns the query needs\nCREATE INDEX ix_orders_status_covering\nON orders (status)\nINCLUDE (customer_id, amount, order_date);\n-- Now: SELECT customer_id, amount, order_date FROM orders WHERE status = 'pending'\n-- uses index-only scan — no Key Lookup\n\n-- Filtered index: only active orders\nCREATE INDEX ix_orders_active\nON orders (customer_id, order_date)\nWHERE status = 'active';  -- smaller index, faster for active-only queries\n\n-- Check fragmentation\nSELECT\n  OBJECT_NAME(ips.object_id) AS table_name,\n  i.name AS index_name,\n  ips.avg_fragmentation_in_percent,\n  ips.page_count\nFROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, 'SAMPLED') ips\nJOIN sys.indexes i ON ips.object_id = i.object_id AND ips.index_id = i.index_id\nWHERE ips.avg_fragmentation_in_percent > 10\nORDER BY ips.avg_fragmentation_in_percent DESC;\n\n-- Rebuild (offline) when fragmentation > 30%\nALTER INDEX ix_orders_status ON orders REBUILD;\n\n-- Reorganize (online) when fragmentation 10-30%\nALTER INDEX ix_orders_status ON orders REORGANIZE;\n\n-- Missing index recommendations\nSELECT\n  mid.statement AS table_name,\n  mid.equality_columns, mid.inequality_columns, mid.included_columns,\n  migs.avg_user_impact,  -- % query improvement estimated\n  migs.user_seeks + migs.user_scans AS usage_count\nFROM sys.dm_db_missing_index_details mid\nJOIN sys.dm_db_missing_index_groups mig ON mid.index_handle = mig.index_handle\nJOIN sys.dm_db_missing_index_group_stats migs ON mig.index_group_handle = migs.group_handle\nORDER BY migs.avg_user_impact DESC;",
+  "pr": [
+    "Use SSMS execution plan on a slow query you wrote this week",
+    "Create a covering index for the top-N per group query"
+  ],
+  "viz": [
+    {
+      "t": "indexdiag"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a covering index and how does it eliminate Key Lookups?",
+      "a": "A covering index contains all the columns a specific query needs — the WHERE clause key columns plus all columns in the SELECT list and ORDER BY. When a query can be satisfied entirely from the index, the optimizer performs an index-only scan without going back to the base table (no Key Lookup). You create one by adding an INCLUDE clause: CREATE INDEX ix ON orders (status) INCLUDE (amount, date) — status is the key, amount and date are stored at the leaf level for covering."
+    },
+    {
+      "q": "What is a filtered index and when would you use one?",
+      "a": "A filtered index is a non-clustered index with a WHERE clause that limits which rows are included. Example: CREATE INDEX ix_orders_pending ON orders (customer_id) WHERE status = 'pending'. This creates a small, highly selective index covering only pending orders. Benefits: smaller size, faster reads for the filtered subset, less write overhead than a full index. Use when a large table has a frequently-queried subset (active records, non-null values, specific status)."
+    },
+    {
+      "q": "What is the difference between REBUILD and REORGANIZE for index maintenance?",
+      "a": "REBUILD drops and recreates the index — removes both internal and external fragmentation, updates statistics, but is an offline operation by default (blocks reads/writes) unless WITH ONLINE = ON (Enterprise edition). REORGANIZE physically reorders the leaf pages in-place — removes external fragmentation, cannot remove internal fragmentation, always online, slower for high-fragmentation cases. Rule of thumb: REORGANIZE for fragmentation 10-30%, REBUILD for > 30%."
+    },
+    {
+      "q": "How do you find missing indexes in SQL Server?",
+      "a": "Query sys.dm_db_missing_index_details joined with sys.dm_db_missing_index_group_stats. These DMVs track every time the query optimizer wanted an index that didn't exist, including the equality columns, inequality columns, and include columns it would have wanted. The avg_user_impact column shows the estimated % improvement. Warning: treat these as suggestions, not commands — creating every suggested index harms write performance."
+    },
+    {
+      "q": "Why do too many indexes hurt performance?",
+      "a": "Every INSERT must add a row to every non-clustered index on that table. Every UPDATE to indexed columns must update those indexes. Every DELETE must remove the row from every index. A table with 10 non-clustered indexes effectively writes to 11 places (base + 10 indexes) for every INSERT. This is why OLTP tables should have fewer, carefully chosen indexes, and OLAP/reporting tables (fewer writes) can have more."
+    }
+  ]
+}

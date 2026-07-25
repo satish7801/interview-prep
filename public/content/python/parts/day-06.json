@@ -1,0 +1,27 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "OOP, type hints, virtual environments",
+  "exp": "Python OOP at professional level. Virtual environments are mandatory for any real project.",
+  "pts": [
+    "@dataclass auto-generates __init__, __repr__, __eq__. Use field(default_factory=list) for mutable defaults.",
+    "@property makes a method callable without parentheses -- like C# auto-properties.",
+    "Abstract base class: from abc import ABC, abstractmethod. Equivalent to a C# interface.",
+    "Virtual environment: python -m venv .venv then activate. Isolates package versions per project.",
+    "pip freeze > requirements.txt to lock versions. pip install -r requirements.txt to reproduce."
+  ],
+  "code": "from dataclasses import dataclass, field\nfrom abc import ABC, abstractmethod\n\n@dataclass\nclass Order:\n    customer_id: int\n    amount: float\n    status: str = 'pending'\n    tags: list = field(default_factory=list)\n\n    @property\n    def is_large(self) -> bool: return self.amount > 1000\n\nclass DataSource(ABC):\n    @abstractmethod\n    def read(self, path: str) -> list: pass\n    @abstractmethod\n    def write(self, data: list, path: str) -> None: pass\n\nclass CsvSource(DataSource):\n    def read(self, path: str) -> list:\n        import csv\n        with open(path) as f: return list(csv.DictReader(f))\n    def write(self, data: list, path: str) -> None:\n        import csv\n        with open(path, 'w', newline='') as f:\n            w = csv.DictWriter(f, fieldnames=data[0].keys())\n            w.writeheader(); w.writerows(data)\n\n# Venv setup:\n# python -m venv .venv\n# .venv\\Scripts\\activate    (Windows)\n# source .venv/bin/activate  (Mac/Linux)\n# pip install pandas sqlalchemy pyodbc\n# pip freeze > requirements.txt",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Venv isolation: project A (pandas 1.5) and project B (pandas 2.0) both isolated from system Python and from each other."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a virtual environment and why mandatory?",
+      "a": "A venv is an isolated Python installation per project. Without one, pip install affects the system Python -- if project A needs pandas 1.5 and project B needs pandas 2.0, they conflict. With a venv each project has its own packages at the exact version it needs."
+    }
+  ]
+}

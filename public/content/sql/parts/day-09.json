@@ -1,0 +1,50 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "CTEs deep dive — recursive, multiple, CTE vs temp table vs table variable",
+  "exp": "CTEs are fundamental for readable SQL but the performance trade-offs between CTEs, temp tables, and table variables are a genuine senior-level question. Recursive CTEs for hierarchy traversal appear in almost every data engineering interview.",
+  "pts": [
+    "Basic CTE: `WITH cte AS (...)` — named result set scoped to one statement; can reference earlier CTEs in a multi-CTE chain",
+    "SQL Server may or may not materialize a CTE — it can inline it like a subquery, meaning multiple references re-execute it multiple times",
+    "**Temp table `#temp`:** physically materialized in tempdb; has statistics; can be indexed; persists for the session",
+    "**Table variable `@table`:** in-memory by default for small sets; limited statistics; cannot be indexed (except PK); auto-scoped to batch",
+    "**When CTE > temp table:** readability, single use, recursive traversal",
+    "**When temp table > CTE:** large intermediate result sets that are referenced multiple times in the same query; when statistics matter for optimizer; when you need indexes on the intermediate result",
+    "Recursive CTE anatomy: **anchor member** (base case, runs once) `UNION ALL` **recursive member** (references the CTE, runs until no new rows)",
+    "`OPTION (MAXRECURSION n)` — default is 100; use 0 for unlimited depth but always have a clear termination condition",
+    "Recursive CTE use cases: org charts, bill-of-materials, category trees, date generation, sequence filling"
+  ],
+  "code": "-- Multi-CTE: each can reference the previous\nWITH dept_avg AS (\n  SELECT dept, AVG(salary) AS avg_sal FROM employees GROUP BY dept\n),\nabove_avg AS (\n  SELECT e.name, e.salary, e.dept, d.avg_sal\n  FROM employees e JOIN dept_avg d ON e.dept = d.dept\n  WHERE e.salary > d.avg_sal\n)\nSELECT * FROM above_avg ORDER BY dept, salary DESC;\n\n-- CTE referenced twice = executed twice (unlike a temp table)\nWITH expensive AS (SELECT * FROM sales WHERE amount > 10000)\nSELECT * FROM expensive e1\nJOIN expensive e2 ON e1.customer_id = e2.customer_id AND e1.id != e2.id;\n-- expensive is evaluated TWICE above → use #temp for large sets\n\n-- Recursive CTE: org chart\nWITH OrgChart AS (\n  -- Anchor: root nodes (no manager)\n  SELECT id, name, manager_id, 0 AS depth,\n         CAST(name AS VARCHAR(MAX)) AS path\n  FROM employees WHERE manager_id IS NULL\n\n  UNION ALL\n\n  -- Recursive: one level deeper\n  SELECT e.id, e.name, e.manager_id, oc.depth + 1,\n         oc.path + ' > ' + e.name\n  FROM employees e\n  JOIN OrgChart oc ON e.manager_id = oc.id\n)\nSELECT id, name, depth, path FROM OrgChart\nORDER BY path\nOPTION (MAXRECURSION 0);\n\n-- Generate date series with recursive CTE\nWITH dates AS (\n  SELECT CAST('2024-01-01' AS DATE) AS dt\n  UNION ALL\n  SELECT DATEADD(DAY, 1, dt) FROM dates WHERE dt < '2024-12-31'\n)\nSELECT dt FROM dates OPTION (MAXRECURSION 366);",
+  "pr": [
+    "LeetCode: Tree Node",
+    "LeetCode: Find Subtree Sizes",
+    "HackerRank: SQL Project Planning"
+  ],
+  "viz": [
+    {
+      "t": "tree"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the performance difference between a CTE referenced multiple times vs a temp table?",
+      "a": "A CTE is inlined by SQL Server — if you reference the same CTE twice in a query, it executes twice. A temp table (#temp) is physically materialized in tempdb once: subsequent references read the already-computed result. For a CTE that is large or expensive to compute and is referenced more than once, using a SELECT INTO #temp first and then joining to it twice is significantly faster."
+    },
+    {
+      "q": "What is the difference between a temp table and a table variable in SQL Server?",
+      "a": "Temp table (#temp): physically materialized in tempdb, has statistics (helps the optimizer), can be indexed, visible to nested stored procedures, persists for the session (or until dropped). Table variable (@table): in-memory for small sets, almost no statistics (optimizer assumes 1 row — bad for large sets), no explicit indexes (PK only), scoped to the current batch. Use @table for small sets (< ~100 rows); use #temp for larger intermediate results."
+    },
+    {
+      "q": "What are the two required parts of a recursive CTE?",
+      "a": "The anchor member (base case): runs exactly once and returns the starting rows — typically WHERE manager_id IS NULL for org charts. The recursive member: references the CTE itself using UNION ALL, runs repeatedly joining the CTE to the underlying table to get one more level of descendants. Recursion stops when the recursive member returns zero new rows. Never use UNION (without ALL) in a recursive CTE — the deduplication check prevents recursion."
+    },
+    {
+      "q": "What is MAXRECURSION and when do you change it?",
+      "a": "SQL Server limits recursive CTEs to 100 iterations by default (OPTION (MAXRECURSION 100)) to prevent infinite loops. If your hierarchy or sequence is deeper than 100 levels, you get error 530. Set OPTION (MAXRECURSION 0) for unlimited, but always ensure your recursive member has a clear termination condition (like WHERE dt < '2024-12-31'). Always test that the recursion terminates before removing the default limit."
+    },
+    {
+      "q": "When would you use a recursive CTE for date generation?",
+      "a": "To generate a complete calendar table or fill gaps in time-series data without a helper table. The pattern: anchor = SELECT CAST('2024-01-01' AS DATE), recursive = SELECT DATEADD(DAY,1,dt) WHERE dt < '2024-12-31'. This produces every date in the range. Then LEFT JOIN your data to this date series to find days with no data (gaps). Without a recursive CTE or numbers table, gap-filling requires complex tricks."
+    }
+  ]
+}

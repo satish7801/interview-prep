@@ -1,0 +1,61 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "Joins — all types, algorithms, and the hidden traps",
+  "exp": "Joins are the most-tested SQL topic. At interview depth, it's not enough to know the types — you must understand the hidden LEFT JOIN + WHERE trap, when to use CROSS/OUTER APPLY, and how the optimizer chooses join algorithms. Each of these appears in senior-level rounds.",
+  "pts": [
+    "INNER JOIN — only matching rows from both sides; non-matching rows from either side are dropped entirely",
+    "LEFT JOIN — all rows from left table; right side is NULL where no match exists",
+    "RIGHT JOIN — all rows from right table; left side is NULL where no match exists",
+    "FULL OUTER JOIN — all rows from both sides; NULLs on whichever side had no match",
+    "CROSS JOIN — Cartesian product: every row in A paired with every row in B; use with care (N×M rows)",
+    "SELF JOIN — table joined to itself with two aliases; classic for employee-manager hierarchies",
+    "**LEFT JOIN + WHERE trap:** `WHERE t2.col = x` on a LEFT JOIN drops all NULL rows silently, turning it into an INNER JOIN. Move the filter to the `ON` clause to preserve outer-join behaviour",
+    "**CROSS APPLY:** like CROSS JOIN but the inner query can reference columns from the outer query; equivalent to INNER JOIN for set-returning functions; useful for top-N per group without a window function",
+    "**OUTER APPLY:** like CROSS APPLY but preserves outer rows with no inner match (equivalent to LEFT JOIN for set-returning functions)",
+    "**Join algorithms:** optimizer chooses Nested Loop (small sets / indexed lookups), Hash Join (large unordered sets), or Merge Join (both inputs sorted on join key). Visible in the execution plan.",
+    "Implicit JOIN syntax (`FROM a, b WHERE a.id = b.id`) is old-style — always use explicit JOIN keywords for clarity",
+    "**Multi-table joins:** the optimizer can reorder joins freely; the written order affects readability, not semantics (unless hints are used)"
+  ],
+  "code": "-- LEFT JOIN trap: accidentally becomes INNER JOIN\nSELECT o.id, c.name FROM orders o\nLEFT JOIN customers c ON o.customer_id = c.id\nWHERE c.country = 'IN';              -- ❌ drops NULL rows (no customer match)\n\n-- Fix: move filter into ON\nSELECT o.id, c.name FROM orders o\nLEFT JOIN customers c ON o.customer_id = c.id AND c.country = 'IN'; -- ✓\n\n-- SELF JOIN: employee with manager name\nSELECT e.name AS employee, m.name AS manager\nFROM employees e\nLEFT JOIN employees m ON e.manager_id = m.id;\n\n-- CROSS APPLY: top 1 most recent order per customer\nSELECT c.name, o.order_date, o.total\nFROM customers c\nCROSS APPLY (\n  SELECT TOP 1 order_date, total\n  FROM orders WHERE customer_id = c.id\n  ORDER BY order_date DESC\n) o;   -- CROSS APPLY can reference c.id — a JOIN cannot do this\n\n-- OUTER APPLY: same but keep customers with no orders\nSELECT c.name, o.order_date, o.total\nFROM customers c\nOUTER APPLY (\n  SELECT TOP 1 order_date, total\n  FROM orders WHERE customer_id = c.id\n  ORDER BY order_date DESC\n) o;   -- NULL for order_date/total where no orders exist",
+  "pr": [
+    "LeetCode: Combine Two Tables",
+    "LeetCode: Employees Earning More Than Their Managers",
+    "LeetCode: Managers with at Least 5 Direct Reports"
+  ],
+  "viz": [
+    {
+      "t": "venn",
+      "items": [
+        "inner",
+        "left",
+        "right",
+        "full",
+        "cross",
+        "self"
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the LEFT JOIN + WHERE trap and how do you fix it?",
+      "a": "When you filter on a right-table column in the WHERE clause of a LEFT JOIN, you drop all the NULL-producing rows because NULL ≠ any value. This silently turns the LEFT JOIN into an INNER JOIN. Fix: move the filter from WHERE to the ON clause so rows with no match are preserved with NULL values in the right-side columns."
+    },
+    {
+      "q": "What is the difference between CROSS APPLY and CROSS JOIN?",
+      "a": "CROSS JOIN pairs every row from two static tables — neither side can reference the other. CROSS APPLY executes a table expression (a subquery or function) for each row of the left input, and that expression CAN reference columns from the outer (left) row. APPLY is essential for top-N per group and calling table-valued functions per row."
+    },
+    {
+      "q": "What are the three join algorithms SQL Server uses and when does the optimizer choose each?",
+      "a": "Nested Loop: for small inputs or when the inner side has an index on the join key — O(n×log m). Hash Join: for large inputs with no useful index — builds a hash table from the smaller input, probes with the larger. Merge Join: when both inputs are already sorted on the join key — most efficient if data is pre-sorted. The optimizer chooses based on estimated row counts and available indexes."
+    },
+    {
+      "q": "When would you use a SELF JOIN and what is the alternative?",
+      "a": "SELF JOIN when you need to compare or link rows within the same table — classic: employee-manager hierarchy. The alternative for modern hierarchies is a recursive CTE, which handles arbitrary depth without multiple self-joins. SELF JOIN is simpler for a single level (employee and their direct manager); recursive CTE is needed for a full tree traversal."
+    },
+    {
+      "q": "What is OUTER APPLY and when do you use it instead of LEFT JOIN?",
+      "a": "OUTER APPLY executes an inner table expression per outer row and preserves outer rows with no inner match (like LEFT JOIN). Use OUTER APPLY when the inner expression references the outer row's columns (which a LEFT JOIN cannot do), or when calling a table-valued function per row — for example, getting the most recent order per customer while keeping customers with no orders."
+    }
+  ]
+}

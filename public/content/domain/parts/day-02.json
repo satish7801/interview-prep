@@ -1,0 +1,30 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "Production debugging and technical trade-offs",
+  "exp": "These questions test whether you own production problems or defer them. The strongest answers describe something REAL from your work.",
+  "pts": [
+    "Check data first, then code, then infrastructure. The most common root cause of a 10x slowdown is a data change.",
+    "Bug corrupting 2% of records for 3 months: order matters -- stop damage, scope blast radius, communicate, plan backfill.",
+    "SQL Server vs Spark: RDBMS for transactional/small/ACID workloads. Spark when data doesn't fit on one machine.",
+    "Technical debt: deliberate and documented debt is fine. Silent debt is what compounds into a crisis."
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Debugging order: data first (volume? skew? type change?) -> code (recent deploy?) -> infrastructure (Spot? OOM?). Never assume infrastructure first."
+    }
+  ],
+  "qa": [
+    {
+      "q": "A Spark job that ran fine for 6 months suddenly takes 10x longer. Walk through your investigation.",
+      "a": "Check data first: did input volume change? Did a new skewed key appear? Did a source send malformed records causing type coercion? Only after ruling out data: did a recent deploy change the query? In Spark UI: which stage got slow, is one task an outlier (skew), did a new Exchange appear in the plan?"
+    },
+    {
+      "q": "You discover a bug corrupting 2% of records for 3 months. What order do you act in?",
+      "a": "(1) Deploy the fix to stop further corruption. (2) Scope the blast radius -- which records, sources, time period, downstream consumers. (3) Communicate proactively before being asked. (4) Plan and execute backfill. Don't do all at once -- stop the bleeding, understand scope, communicate, fix history, in that order."
+    }
+  ]
+}

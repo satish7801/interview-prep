@@ -1,0 +1,75 @@
+{
+  "id": "day-12",
+  "n": 12,
+  "title": "Testing in .NET -- xUnit, mocking, integration tests, WebApplicationFactory",
+  "exp": "Testing questions at 4 YOE probe whether you write tests that actually catch regressions, not just tests that exist. This day covers the specific patterns and pitfalls that come up in code review of test code itself.",
+  "pts": [
+    "xUnit is the most common modern .NET testing framework: `[Fact]` for a single test case, `[Theory]` with `[InlineData]`/`[MemberData]` for parametrized tests running the same logic against multiple inputs.",
+    "Arrange-Act-Assert (AAA) is the standard test structure -- Arrange sets up inputs and dependencies, Act invokes the method under test exactly once, Assert verifies the outcome. Tests mixing multiple Act steps or asserting mid-arrangement are a common code review flag.",
+    "Moq (or NSubstitute) creates mock implementations of interfaces for unit testing in isolation -- `mockRepo.Setup(r => r.GetById(1)).ReturnsAsync(testOrder)` configures the mock's behavior, `mockRepo.Verify(r => r.Save(It.IsAny<Order>()), Times.Once)` asserts a specific interaction occurred.",
+    "**Over-mocking** is a real anti-pattern: a test that mocks so many dependencies it no longer tests any real logic, just verifies that mocked methods were called in the expected order -- this couples the test tightly to implementation details and breaks on any refactor, even one that doesn't change behavior.",
+    "WebApplicationFactory<TEntryPoint> spins up an in-memory instance of an entire ASP.NET Core application (real middleware pipeline, real DI container, real routing) for integration testing -- HTTP requests are sent in-process without a real network call, but everything else behaves like production.",
+    "Test doubles have a spectrum: Dummy (never actually used, just satisfies a parameter), Stub (returns canned data, no verification), Mock (verifies specific interactions occurred), Fake (a lightweight working implementation, like an in-memory database standing in for a real one). Conflating these terms in an interview is a minor but noticeable signal.",
+    "EF Core's in-memory provider (`UseInMemoryDatabase`) is convenient for fast tests but does NOT enforce the same constraints as a real relational database (foreign keys, unique constraints, certain LINQ translations) -- a test passing against the in-memory provider is not a guarantee the same code works correctly against SQL Server. SQLite in-memory mode is a closer, though still imperfect, substitute when relational behavior actually matters to the test.",
+    "Test data builders (a fluent builder pattern for constructing complex test entities with sensible defaults, only overriding what a specific test cares about) reduce test brittleness compared to constructing a full entity inline in every test method."
+  ],
+  "code": "// xUnit -- Fact vs Theory\npublic class OrderValidatorTests\n{\n    [Fact]\n    public void ValidOrder_PassesValidation()\n    {\n        // Arrange\n        var order = new Order { Amount = 500, CustomerId = 1 };\n        var validator = new OrderValidator();\n\n        // Act\n        var result = validator.Validate(order);\n\n        // Assert\n        Assert.True(result.IsValid);\n    }\n\n    [Theory]\n    [InlineData(-100)]\n    [InlineData(0)]\n    public void NegativeOrZeroAmount_FailsValidation(decimal amount)\n    {\n        var order = new Order { Amount = amount, CustomerId = 1 };\n        var result = new OrderValidator().Validate(order);\n        Assert.False(result.IsValid);\n    }\n}\n\n// Moq -- isolate the unit under test from its dependencies\n[Fact]\npublic async Task ProcessOrder_SavesOrderAndSendsNotification()\n{\n    var mockRepo = new Mock<IOrderRepository>();\n    var mockNotifier = new Mock<INotificationService>();\n    mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new Order { Id = 1, Amount = 500 });\n\n    var service = new OrderProcessor(mockRepo.Object, mockNotifier.Object);\n    await service.ProcessAsync(1);\n\n    mockRepo.Verify(r => r.SaveAsync(It.IsAny<Order>()), Times.Once);\n    mockNotifier.Verify(n => n.SendAsync(It.IsAny<string>()), Times.Once);\n}\n\n// WebApplicationFactory -- real in-process integration test\npublic class OrdersApiTests : IClassFixture<WebApplicationFactory<Program>>\n{\n    private readonly HttpClient _client;\n    public OrdersApiTests(WebApplicationFactory<Program> factory) => _client = factory.CreateClient();\n\n    [Fact]\n    public async Task GetOrder_ReturnsOk_ForExistingOrder()\n    {\n        var response = await _client.GetAsync(\"/api/orders/1\");\n        response.EnsureSuccessStatusCode();\n    }\n}\n\n// Test data builder -- reduces brittleness vs inline entity construction everywhere\npublic class OrderBuilder\n{\n    private Order _order = new Order { Amount = 100, Status = \"Pending\", CustomerId = 1 };\n    public OrderBuilder WithAmount(decimal amount) { _order.Amount = amount; return this; }\n    public OrderBuilder WithStatus(string status) { _order.Status = status; return this; }\n    public Order Build() => _order;\n}\n// Usage: var order = new OrderBuilder().WithAmount(5000).WithStatus(\"Active\").Build();",
+  "pr": [
+    "Write an over-mocked test, identify why it's fragile, then rewrite it to test behavior instead of implementation details"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Test double",
+        "Returns data?",
+        "Verified?",
+        "Real behavior?"
+      ],
+      "r": [
+        [
+          "Dummy",
+          "No",
+          "No",
+          "No -- just satisfies a parameter"
+        ],
+        [
+          "Stub",
+          "Yes, canned",
+          "No",
+          "No"
+        ],
+        [
+          "Mock",
+          "Yes, canned",
+          "Yes -- interactions verified",
+          "No"
+        ],
+        [
+          "Fake",
+          "Yes, computed",
+          "Optional",
+          "Yes -- lightweight real implementation"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is over-mocking and why does it make tests worse rather than better?",
+      "a": "Over-mocking happens when a test mocks so many of a class's dependencies that the test no longer exercises any real logic -- it just verifies that certain mocked methods were called, in a certain order, with certain arguments. This tightly couples the test to the CURRENT implementation details rather than the class's observable BEHAVIOR, meaning a refactor that preserves correct behavior but changes internal call order or structure breaks the test even though nothing is actually wrong. Tests should verify outcomes and meaningful interactions with true external dependencies, not micromanage every internal call."
+    },
+    {
+      "q": "Why is a passing test against EF Core's in-memory database provider not a guarantee the same code works correctly against SQL Server?",
+      "a": "The in-memory provider doesn't enforce real relational database constraints -- foreign key violations, unique constraints, certain check constraints -- that SQL Server would reject. It also doesn't translate LINQ expressions through the same SQL generation path, so a query using a SQL Server-specific function or a translation edge case could succeed against in-memory but fail or behave differently against the real database. SQLite in-memory mode is a closer substitute since it's an actual relational database with real constraint enforcement, though it still isn't a perfect stand-in for SQL Server-specific behavior."
+    },
+    {
+      "q": "What is the difference between a Stub, a Mock, and a Fake in test double terminology?",
+      "a": "A Stub returns predetermined canned data when called but the test never verifies HOW it was called -- it's there purely to let the test proceed with known inputs. A Mock additionally records and allows verification of interactions -- the test explicitly asserts a specific method was called a specific number of times with specific arguments. A Fake is a lightweight but genuinely working implementation of the dependency -- an in-memory list standing in for a real database repository, for instance -- that behaves correctly rather than just returning scripted responses. Using the term 'mock' loosely for all three is common in casual conversation but conflating them in a technical interview signals less precision about testing concepts."
+    },
+    {
+      "q": "What does WebApplicationFactory actually spin up, and how does that differ from a pure unit test with mocked dependencies?",
+      "a": "It hosts a real instance of your ASP.NET Core application in-process -- the actual Startup/Program configuration, the real DI container with real service registrations, the real middleware pipeline and routing -- and lets you send HTTP requests to it without a real network call or a separately running process. This is fundamentally different from a unit test with mocked dependencies: it verifies your actual wiring (DI registrations, middleware order, routing configuration) works correctly end-to-end, catching classes of bugs (a missing service registration, a misconfigured middleware order) that pure unit tests with mocks structurally cannot catch, since those tests bypass the real composition root entirely."
+    }
+  ]
+}

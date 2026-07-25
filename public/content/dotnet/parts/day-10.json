@@ -1,0 +1,70 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Threading and concurrency primitives -- lock, SemaphoreSlim, Interlocked, thread pool",
+  "exp": "async/await (Day 2) handles the common case of I/O-bound concurrency. This day covers what happens when you need actual thread-safety for shared mutable state, or CPU-bound parallelism -- a different problem async/await alone doesn't solve.",
+  "pts": [
+    "`lock (obj)` is syntactic sugar over Monitor.Enter/Monitor.Exit -- it ensures only one thread executes the protected block at a time. Always lock on a private, readonly object reference dedicated to that purpose -- never lock on `this`, a public field, or a string literal, since external code could accidentally lock on the same object and cause unexpected contention or deadlocks.",
+    "A lock statement CANNOT contain an `await` -- holding a lock across an asynchronous suspension point is a compile error (in modern C#) because the thread that re-enters after the await may not be the same thread that acquired the lock, breaking Monitor's thread-affinity requirement.",
+    "SemaphoreSlim is the async-compatible alternative to lock when you need to limit concurrent access and potentially await inside the protected section -- `await semaphore.WaitAsync()` then `semaphore.Release()` in a finally block.",
+    "Interlocked.Increment/Decrement/CompareExchange perform atomic operations on a single variable without needing a full lock -- far cheaper than Monitor for simple counter increments shared across threads, since it compiles to a single CPU-level atomic instruction rather than acquiring and releasing a lock.",
+    "The Thread Pool is a shared, managed pool of worker threads that both Task.Run() and the async/await machinery's continuations use by default -- understanding this explains why blocking a thread pool thread (calling .Result or .Wait() on a Task) can starve the pool under load, since it ties up a thread that could otherwise serve other work.",
+    "Task.Run() is for CPU-bound work you want to offload to a background thread. It is NOT the right tool for I/O-bound work -- wrapping an I/O call in Task.Run() just occupies a thread pool thread waiting on I/O that could have completed without any dedicated thread at all via true async I/O (like HttpClient's native async methods).",
+    "Parallel.For / Parallel.ForEach partition a CPU-bound loop across multiple threads automatically -- appropriate for pure computation over a large in-memory collection, not for I/O-bound work where async/await is the correct tool instead.",
+    "Race conditions and deadlocks are different failure modes: a race condition produces inconsistent/wrong results because operations interleave unpredictably; a deadlock produces a hang because two or more threads are each waiting on a resource the other holds, with neither able to proceed."
+  ],
+  "code": "// lock -- protects a critical section, single-threaded access guaranteed\nprivate readonly object _lockObj = new object();  // dedicated, private lock object\nprivate int _counter;\n\npublic void Increment()\n{\n    lock (_lockObj)\n    {\n        _counter++;   // safe -- only one thread executes this at a time\n    }\n}\n\n// Interlocked -- cheaper than lock for simple atomic operations\nprivate int _atomicCounter;\npublic void IncrementFast() => Interlocked.Increment(ref _atomicCounter);\n\n// SemaphoreSlim -- the async-compatible alternative to lock\nprivate readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);\n\npublic async Task DoWorkAsync()\n{\n    await _semaphore.WaitAsync();\n    try\n    {\n        await SomeAsyncOperation();   // ✓ can await while \"locked\" -- lock statement cannot do this\n    }\n    finally\n    {\n        _semaphore.Release();         // always release, even on exception\n    }\n}\n\n// Task.Run() for CPU-bound work -- correct usage\nvar result = await Task.Run(() => ComputeExpensiveHash(largeByteArray));\n\n// Task.Run() for I/O-bound work -- WRONG, wastes a thread pool thread\n// var result = await Task.Run(() => httpClient.GetAsync(url).Result);  // ❌ don't do this\nvar result2 = await httpClient.GetAsync(url);  // ✓ true async I/O, no dedicated thread needed\n\n// Parallel.ForEach -- CPU-bound parallelism over an in-memory collection\nParallel.ForEach(largeOrderList, order =>\n{\n    ValidateOrderChecksum(order);   // pure CPU work, safe to parallelize\n});\n\n// Deadlock example -- classic .Result-on-async-method trap in a UI/ASP.NET context\n// public void BadMethod() { var result = SomeAsyncMethod().Result; }  // can deadlock\n// if SomeAsyncMethod's continuation needs to resume on the same captured context\n// that BadMethod is currently blocking",
+  "pr": [
+    "Write a method with a race condition on a shared counter using no synchronization, then fix it two ways: with lock and with Interlocked"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Tool",
+        "Use case",
+        "Async-compatible?"
+      ],
+      "r": [
+        [
+          "lock / Monitor",
+          "Simple critical section, no await inside",
+          "No -- await inside is a compile error"
+        ],
+        [
+          "SemaphoreSlim",
+          "Critical section that needs to await",
+          "Yes -- WaitAsync()/Release()"
+        ],
+        [
+          "Interlocked",
+          "Single atomic operation (increment, compare-exchange)",
+          "N/A -- no blocking involved"
+        ],
+        [
+          "Task.Run()",
+          "Offload CPU-bound work to a background thread",
+          "N/A -- wrong tool for I/O-bound work"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why can't a lock statement contain an await, and what should you use instead when you need both?",
+      "a": "Monitor (which lock is sugar for) has thread affinity -- the same thread that calls Monitor.Enter must call Monitor.Exit. After an await, execution may resume on a completely different thread pool thread than the one that entered the lock, which would violate this requirement. The compiler prevents this with an error. SemaphoreSlim is the correct alternative -- its WaitAsync()/Release() pair has no thread-affinity requirement, making it safe to use around code that awaits."
+    },
+    {
+      "q": "Why is Interlocked.Increment preferred over a full lock for a simple shared counter?",
+      "a": "Interlocked operations compile down to a single atomic CPU instruction (like a hardware-level compare-and-swap), avoiding the overhead of acquiring and releasing a Monitor lock entirely -- no kernel-level synchronization object, no possibility of contention causing a thread to be suspended. For simple operations on a single variable (increment, decrement, compare-and-swap), Interlocked is both simpler and measurably faster than wrapping the same operation in a lock block."
+    },
+    {
+      "q": "Why is wrapping an I/O-bound call in Task.Run() considered a mistake, even though it 'works'?",
+      "a": "Task.Run() schedules the wrapped work onto a thread pool thread. If that work is I/O-bound (an HTTP call, a database query), the thread pool thread sits idle, blocked waiting for the I/O to complete, when it could have been freed to do other work entirely -- true async I/O (via HttpClient's async methods, for example) doesn't consume a thread at all while waiting, since the OS notifies .NET via a completion port when the I/O finishes. Task.Run() around I/O work doesn't add parallelism; it just wastes a thread pool thread that could serve other requests, which becomes a real scalability problem under load in a server application."
+    },
+    {
+      "q": "What is the difference between a race condition and a deadlock, and what specific symptom distinguishes them in production?",
+      "a": "A race condition occurs when multiple threads access shared mutable state without proper synchronization, producing inconsistent or incorrect results depending on unpredictable timing -- the symptom is wrong data, not a hang, and it's often intermittent and hard to reproduce. A deadlock occurs when two or more threads are each waiting on a resource the other holds, with neither able to proceed -- the symptom is the application (or a specific request) hanging indefinitely with no progress and no exception thrown, until a timeout (if any) eventually fires."
+    }
+  ]
+}

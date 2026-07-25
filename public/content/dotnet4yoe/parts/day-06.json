@@ -1,0 +1,29 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "API design — REST, versioning, idempotency, rate limits",
+  "exp": "Design questions at 4 YOE are about practical APIs: versioning, pagination, idempotency keys, and status codes — not HATEOAS purity contests.",
+  "pts": [
+    "Resources + verbs: `POST/GET/PATCH /orders`; filter via query.",
+    "Version via URL `/v1` or header — be consistent.",
+    "**Idempotency-Key** on mutating POSTs (payments) to make retries safe.",
+    "Cursor pagination > offset at scale; return 429 + Retry-After for rate limits.",
+    "REST vs gRPC vs GraphQL: public HTTP vs internal contracts vs flexible queries (with N+1 risk)."
+  ],
+  "code": "",
+  "pr": [
+    "Design Orders API with versioning + idempotency",
+    "Sketch rate-limit placement (gateway vs app)"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "How do you make POST /orders safe under client retries?",
+      "a": "Require an Idempotency-Key header. Persist key → response (or request hash). On replay, return the original result instead of creating a second order. Combine with unique constraints for defense in depth."
+    },
+    {
+      "q": "When would you pick gRPC over REST?",
+      "a": "Internal service-to-service calls needing strong contracts, binary efficiency, and streaming. Prefer REST for public HTTP APIs, browser clients, and HTTP caching."
+    }
+  ]
+}

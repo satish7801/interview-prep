@@ -1,0 +1,72 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Grafana on AWS -- Amazon Managed Grafana vs self-hosted",
+  "exp": "Before building a single dashboard, you need to choose how Grafana itself runs on AWS. This decision affects IAM design, cost, and how much operational burden you take on.",
+  "pts": [
+    "Amazon Managed Grafana (AMG): a fully managed workspace -- AWS and Grafana Labs jointly operate the Grafana server, patching, and scaling. You never SSH into anything.",
+    "AMG authentication: integrates with IAM Identity Center (formerly AWS SSO) or SAML, so your existing corporate identity provider controls who can log in -- no separate Grafana user database to manage.",
+    "AMG pricing is per active user per month (editor vs viewer tiers), billed through AWS Marketplace -- predictable but can add up for large viewer populations.",
+    "Self-hosted alternative: run Grafana OSS on EC2, ECS/Fargate, or via Docker. Full control over plugins (some community plugins aren't available in AMG) and no per-user licensing cost, at the price of patching and uptime being your responsibility.",
+    "Critical IAM detail: the Grafana WORKSPACE itself needs an IAM role to query CloudWatch -- this is separate from the IAM Identity Center login that controls who can access Grafana. Without this service role attached, every CloudWatch panel fails with an authorization error.",
+    "AMG workspace creation specifies which data source types it's allowed to connect to (CLOUDWATCH, PROMETHEUS, XRAY, etc.) -- this is a workspace-level allowlist, not just a per-data-source setting.",
+    "VPC connectivity: if a data source lives inside a private VPC (a self-hosted Prometheus, an RDS-backed metrics store), AMG needs VPC configuration (subnets, security groups) to reach it -- public CloudWatch and X-Ray don't need this."
+  ],
+  "code": "# Amazon Managed Grafana -- Terraform setup\nresource \"aws_iam_role\" \"grafana\" {\n  name = \"AmazonGrafanaServiceRole\"\n  assume_role_policy = jsonencode({\n    Version = \"2012-10-17\"\n    Statement = [{\n      Effect    = \"Allow\"\n      Principal = { Service = \"grafana.amazonaws.com\" }\n      Action    = \"sts:AssumeRole\"\n    }]\n  })\n}\n\n# Grafana's WORKSPACE role needs read access to CloudWatch -- separate from user login\nresource \"aws_iam_role_policy_attachment\" \"grafana_cloudwatch\" {\n  role       = aws_iam_role.grafana.name\n  policy_arn = \"arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess\"\n}\n\nresource \"aws_iam_role_policy_attachment\" \"grafana_xray\" {\n  role       = aws_iam_role.grafana.name\n  policy_arn = \"arn:aws:iam::aws:policy/AWSXrayReadOnlyAccess\"\n}\n\nresource \"aws_grafana_workspace\" \"pipeline\" {\n  name                     = \"sp-pipeline-observability\"\n  account_access_type      = \"CURRENT_ACCOUNT\"\n  authentication_providers = [\"AWS_SSO\"]\n  permission_type          = \"SERVICE_MANAGED\"\n  role_arn                 = aws_iam_role.grafana.arn\n  data_sources             = [\"CLOUDWATCH\", \"XRAY\"]\n}\n\noutput \"grafana_endpoint\" {\n  value = aws_grafana_workspace.pipeline.endpoint\n}\n\n# Self-hosted alternative -- minimal Docker setup for comparison/local dev\n# docker run -d -p 3000:3000 \\\n#   -e \"GF_AWS_PROFILES=default\" \\\n#   -e \"GF_AWS_default_ACCESS_KEY_ID=...\" \\\n#   grafana/grafana",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "",
+        "Amazon Managed Grafana",
+        "Self-hosted"
+      ],
+      "r": [
+        [
+          "Patching/uptime",
+          "AWS-managed",
+          "Your responsibility"
+        ],
+        [
+          "Auth",
+          "IAM Identity Center / SAML",
+          "Grafana's own user DB (or your own SSO setup)"
+        ],
+        [
+          "Cost model",
+          "Per active user/month",
+          "EC2/ECS compute cost, no licensing"
+        ],
+        [
+          "Plugin support",
+          "Curated subset",
+          "Any community plugin"
+        ],
+        [
+          "Best for",
+          "Teams wanting zero ops burden",
+          "Teams needing specific plugins or zero licensing cost"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the key IAM detail people miss when setting up Amazon Managed Grafana?",
+      "a": "The Grafana WORKSPACE needs its own IAM role with CloudWatch read permissions -- this is separate from IAM Identity Center, which only controls who can log into Grafana. People often set up SSO correctly, log in successfully, then hit 'access denied' on every CloudWatch panel because they forgot to attach a service role (like CloudWatchReadOnlyAccess) to the workspace itself."
+    },
+    {
+      "q": "When would you choose self-hosted Grafana over Amazon Managed Grafana?",
+      "a": "Self-hosted when: you need a community plugin not supported in AMG, you want zero per-user licensing cost and are willing to own patching, or you need Grafana inside a fully air-gapped/on-prem environment. AMG when: you want zero operational burden, you already use IAM Identity Center for SSO, and predictable per-user billing is acceptable. For most teams building on AWS, AMG's reduced operational burden outweighs the licensing cost."
+    },
+    {
+      "q": "What does the data_sources allowlist on an AMG workspace control?",
+      "a": "It's a workspace-level setting listing which data source TYPES the workspace is permitted to connect to (CLOUDWATCH, PROMETHEUS, XRAY, ATHENA, etc.) -- not a per-instance configuration. You must include a type in this list before you can add an individual data source of that type inside the Grafana UI. It's a coarse-grained guardrail set at provisioning time, separate from the fine-grained IAM permissions on the workspace role."
+    },
+    {
+      "q": "Why would a self-hosted Grafana instance need VPC configuration but a CloudWatch-only AMG workspace might not?",
+      "a": "CloudWatch and X-Ray are public AWS service APIs reachable over the internet (or a VPC endpoint) -- AMG can query them without any special networking. But if your data source is a Prometheus server or an RDS instance running inside a private VPC with no public endpoint, Grafana needs network connectivity into that VPC -- via VPC configuration (subnet IDs, security group) on the AMG workspace, or simply by running self-hosted Grafana on an EC2 instance already inside that VPC."
+    }
+  ]
+}

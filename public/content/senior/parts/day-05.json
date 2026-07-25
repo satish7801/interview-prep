@@ -1,0 +1,34 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "Full mock — senior-style round",
+  "exp": "Thirty minutes, mixed format. Score on reasoning clarity, trade-off commitment, and use of real examples. Generic answers score low; real project examples score high.",
+  "pts": [
+    "**System design (15 min):** \"Design a compliance alert notification service — triggers when a control goes out of compliance\"",
+    "**Debugging (10 min):** \"A SCIM batch job completes but some users aren't being provisioned. No errors in logs. Walk through your investigation\"",
+    "**Behavioral (5 min):** \"Tell me about a technical decision you'd make differently today\"",
+    "**Scoring:** 1pt = stated the problem clearly, 1pt = named trade-offs explicitly, 1pt = used a real example or concrete implementation detail"
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "After the mock, ask your AI for a strengths-vs-gaps summary so you know exactly what to revisit before the real interview."
+    }
+  ],
+  "qa": [
+    {
+      "q": "Sample: Design the compliance alert notification system.",
+      "a": "Requirements: alert when control status → non-compliant, deliver via email/Slack, at-least-once delivery, no duplicate alerts for same issue. Architecture: Status Change → DB event/app event → Message Queue (Azure Service Bus) → Alert Worker (checks dedup in Redis by alert key + TTL) → Notification Service (SendGrid + Slack webhook). Key decisions: queue for at-least-once delivery; Redis dedup to prevent spam; notification history table for audit trail."
+    },
+    {
+      "q": "Sample: SCIM batch job completes silently but users aren't provisioned.",
+      "a": "1) Check batch job logs — is it logging success per user? If yes: issue is downstream. 2) Check IdP response — are SCIM calls returning 2xx? 3) Add request/response logging if missing. 4) Check downstream system logs — is it receiving provisioning events? 5) Check for silent filter — user attribute check silently skipping users who don't match a condition. 6) Trace one specific user manually — follow the data. This is a \"data not flowing\" problem."
+    },
+    {
+      "q": "Sample: A technical decision you'd make differently today.",
+      "a": "(Use a real one.) Example: \"On the BMS migration, I did a big-bang cutover rather than a strangler-fig pattern due to schedule pressure. It led to a 48-hour stabilisation period. Today I'd advocate harder for phased rollout — the extra time is almost always less than incident response time if something goes wrong in a big-bang cutover.\""
+    }
+  ]
+}

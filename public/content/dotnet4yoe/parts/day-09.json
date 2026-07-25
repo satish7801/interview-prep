@@ -1,0 +1,29 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Security — OAuth2/PKCE, JWT, OWASP",
+  "exp": "Be fluent in auth code + PKCE, JWT validation claims, and the OWASP issues that hit .NET APIs.",
+  "pts": [
+    "Auth Code + PKCE for public clients; exchange code for tokens server-side or with verifier.",
+    "Validate JWT: issuer, audience, lifetime, signature (and preferably `typ`).",
+    "OWASP: parameterized SQL/EF, encode XSS, antiforgery for cookies, secrets in Key Vault, DTOs against over-posting.",
+    "Password hashing: Identity / PBKDF2 / Argon2 / bcrypt — never raw SHA.",
+    "AuthN vs AuthZ: who you are vs what you can do (policies/roles)."
+  ],
+  "code": "",
+  "pr": [
+    "List JWT claims you validate",
+    "Threat-model a login + password-reset flow"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "Explain Authorization Code flow with PKCE.",
+      "a": "Client sends authorize request with code_challenge; user authenticates; AS returns a code; client exchanges code + code_verifier for tokens. PKCE stops intercepted codes from being redeemed by attackers who lack the verifier."
+    },
+    {
+      "q": "Name five OWASP mitigations you'd apply to an ASP.NET API.",
+      "a": "Parameterized queries/EF; output encoding; CSRF protection for cookie sessions; secrets out of source; least-privilege authZ policies; strict DTOs; security headers; dependency scanning."
+    }
+  ]
+}

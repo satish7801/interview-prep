@@ -1,0 +1,133 @@
+{
+  "id": "dotnet",
+  "name": ".NET / C#",
+  "color": "--dotnet",
+  "sub": "Incl. .NET 10 & C# 14 - 15 days",
+  "desc": "OOP depth, async mastery, C# 14 new features, ASP.NET Core, EF Core — tied to your SCIM and compliance platform work.",
+  "tip": "When designing something live, narrate your decisions — \"I'd make this Scoped because it needs a fresh DbContext per request.\" At 4 YOE, reasoning is what's graded.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Key point"
+    ],
+    "r": [
+      [
+        "abstract vs interface",
+        "Abstract = state + partial impl. Interface = contract (C# 8+ has default methods but no fields)."
+      ],
+      [
+        "async void",
+        "Never — exceptions crash the process. Always use async Task."
+      ],
+      [
+        "Captive dependency",
+        "Scoped injected into Singleton breaks per-request isolation. ASP.NET Core throws in dev."
+      ],
+      [
+        "AsNoTracking()",
+        "Read-only queries — typically 20–40% faster, no change tracking overhead."
+      ],
+      [
+        "N+1 problem",
+        "Loop accessing navigation property = 1 query per iteration. Fix with .Include()."
+      ],
+      [
+        "DbContext as UoW",
+        "EF Core DbContext is already a Unit of Work. Extra wrapper is usually redundant."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "C# OOP & SOLID — be precise, not encyclopaedic",
+      "summary": "OOP questions at 4 YOE are not \"define polymorphism.\" They're \"show me you understand virtual/override vs new, and give me a real SOLID example from your own co…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "LINQ, delegates, async/await, generics",
+      "summary": "These four are grouped together because they test whether you really understand C# beyond syntax. The most common trip-ups: forgetting LINQ is deferred, and usi…"
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "C# 14 / .NET 10 — what's actually new",
+      "summary": "C# 14 ships with .NET 10 (Nov 2025, current LTS). The theme is reducing boilerplate. Three features matter most for interviews: field keyword, extension members…"
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "ASP.NET Core — middleware, DI lifetimes, Minimal APIs",
+      "summary": "The middleware pipeline and DI lifetimes are the two most-asked ASP.NET Core concepts. The captive dependency trap is a classic interview gotcha — know not just…"
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "ASP.NET Core 10 — what's new",
+      "summary": "You're already running a .NET 10 Web API on the SCIM project — that's a talking point most candidates don't have. Know what's new so you can say \"I've used X di…"
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "EF Core — change tracking, N+1, migrations, EF Core 10",
+      "summary": "EF Core questions at 4 YOE are almost never \"how do you add a migration.\" They're \"explain how change tracking works\" and \"what is the N+1 problem.\" These conne…"
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Architecture, patterns, GC, deadlocks — review",
+      "summary": "Day 7 consolidates architecture-level thinking. At 4 YOE, interviewers expect you to have opinions — not just know that patterns exist, but know when they're wo…"
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Collections internals -- List, Dictionary, HashSet under the hood",
+      "summary": "Knowing WHAT List<T> and Dictionary<K,V> do is table stakes. Knowing HOW they work internally -- resizing behavior, hash bucket collisions, when to reach for a …"
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Memory and GC deep dive -- stack vs heap, boxing, IDisposable, Span<T>",
+      "summary": "Day 7's GC generations content covered the mental model. This day goes deeper into the specific memory decisions that show up in code review and performance-sen…"
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Threading and concurrency primitives -- lock, SemaphoreSlim, Interlocked, thread pool",
+      "summary": "async/await (Day 2) handles the common case of I/O-bound concurrency. This day covers what happens when you need actual thread-safety for shared mutable state, …"
+    },
+    {
+      "id": "day-11",
+      "n": 11,
+      "title": "EF Core query internals -- IQueryable, deferred execution, split queries, compiled queries",
+      "summary": "Day 6 covered the practical N+1 problem. This day goes into HOW EF Core actually translates your LINQ into SQL, and the specific query-shaping decisions that se…"
+    },
+    {
+      "id": "day-12",
+      "n": 12,
+      "title": "Testing in .NET -- xUnit, mocking, integration tests, WebApplicationFactory",
+      "summary": "Testing questions at 4 YOE probe whether you write tests that actually catch regressions, not just tests that exist. This day covers the specific patterns and p…"
+    },
+    {
+      "id": "day-13",
+      "n": 13,
+      "title": ".NET security -- authentication, authorization, data protection, common vulnerabilities",
+      "summary": "Security questions at 4 YOE go beyond 'don't concatenate SQL strings' (covered in the SQL track). This day covers the ASP.NET Core-specific security surface: au…"
+    },
+    {
+      "id": "day-14",
+      "n": 14,
+      "title": ".NET architecture capstone -- Clean Architecture, microservices trade-offs, review",
+      "summary": "The final .NET day ties every prior day into an architecture-level conversation -- the kind of question a Lead I candidate gets asked after the trivia is done: …"
+    },
+    {
+      "id": "day-15",
+      "n": 15,
+      "title": "CLR & runtime internals -- Staff-level depth (IL, JIT, GC segments)",
+      "summary": "Days 8-9 covered collections and memory at a practical, interview-answer level. This day goes one layer deeper -- the actual IL instructions and CLR mechanics b…"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "id": "spark",
+  "name": "PySpark + Scala",
+  "color": "--spark",
+  "sub": "Distributed data engineering - 7 days",
+  "desc": "Spark processes data that doesn't fit on one machine. Every PySpark concept maps to something you already know from Python and SQL.",
+  "tip": "Interviewers test Spark by asking why is this job slow. Know the answers: shuffles, collect() on large data, missing broadcast, data skew. The Spark UI shows all of these.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Key point"
+    ],
+    "r": [
+      [
+        "Transformation vs Action",
+        "Transformations lazy (filter,select,groupBy). Actions trigger execution (show,collect,write)."
+      ],
+      [
+        "collect() danger",
+        "Pulls ALL data to the driver. Crashes on large data. Only collect small aggregated results."
+      ],
+      [
+        "Broadcast join",
+        "Copies small table to every executor. Eliminates shuffling the large table."
+      ],
+      [
+        "Data skew",
+        "One key has far more rows. One executor runs forever. Fix with salting."
+      ],
+      [
+        "cache() vs persist()",
+        "cache()=memory only. persist(StorageLevel)=configurable. Both avoid recomputing."
+      ],
+      [
+        "Parquet over CSV",
+        "Columnar, compressed, schema-aware. 10x+ faster for analytics."
+      ],
+      [
+        "explain()",
+        "BroadcastHashJoin=no shuffle. SortMergeJoin=shuffle. Check before running slow jobs."
+      ],
+      [
+        "val vs var (Scala)",
+        "val=immutable reference (like C# readonly). var=mutable."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "Spark architecture -- Driver, Executors, lazy evaluation",
+      "summary": "Every Spark performance question flows from understanding the Driver/Executor model and lazy evaluation. Understand this before writing a single line of code."
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "DataFrames -- read, transform, write",
+      "summary": "The DataFrame API deliberately mirrors SQL and pandas. Key differences: laziness, Parquet output, and explicit schema for production."
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Joins, aggregations, broadcast -- performance fundamentals",
+      "summary": "Broadcast joins eliminate the most expensive shuffle in many pipelines. Understanding when Spark chooses broadcast vs sort-merge is where most Spark optimizatio…"
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "Window functions, caching, persistence",
+      "summary": "PySpark window functions use identical PARTITION BY / ORDER BY semantics as SQL -- vocabulary, not new concepts. Caching avoids recomputing expensive transforma…"
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Performance -- skew, salting, partitioning, AQE",
+      "summary": "The answer to every slow Spark job is almost always: data skew, missing broadcast, too many shuffles, or wrong partition count."
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Scala basics for PySpark developers",
+      "summary": "Reading fluency only. Once you know PySpark, Scala Spark is mostly vocabulary. The JD mentions Scala so expect can-you-read-this questions."
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Production Spark -- EMR deployment, Spark UI, Structured Streaming",
+      "summary": "Reading the Spark UI is the difference between guessing at performance problems and diagnosing them."
+    }
+  ]
+}

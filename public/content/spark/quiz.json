@@ -1,0 +1,77 @@
+{
+  "trackId": "spark",
+  "items": [
+    {
+      "dayN": 1,
+      "qi": 0,
+      "q": "What is the difference between a transformation and an action?",
+      "a": "Transformations (filter, select, groupBy, join) are lazy -- they build a DAG of operations. Actions (show, collect, count, write) trigger actual execution -- Spark optimizes the full DAG and submits tasks. Laziness enables optimization: Spark can push filters down and choose join strategies across the entire plan before executing anything."
+    },
+    {
+      "dayN": 1,
+      "qi": 1,
+      "q": "What is a shuffle and why is it expensive?",
+      "a": "A shuffle redistributes data across partitions so matching keys end up on the same executor. Occurs during groupBy, join, repartition. Requires intermediate files on disk and network transfer between nodes. The shuffle is the primary optimization target -- reduce its size (filter before groupBy), eliminate it (broadcast small tables)."
+    },
+    {
+      "dayN": 2,
+      "qi": 0,
+      "q": "Why write Parquet instead of CSV?",
+      "a": "Parquet is columnar -- analytical queries reading only a few columns read only those from disk. CSV reads entire rows. Parquet also compresses effectively, stores schema (no type inference needed), and supports partition pruning. Typically 10-100x faster to read than CSV for analytics queries."
+    },
+    {
+      "dayN": 2,
+      "qi": 1,
+      "q": "What is the too-many-small-files problem?",
+      "a": "Spark creates one file per partition. With 200 partitions you get 200 small files. Reading 200 small S3 files is much slower than 4-10 larger ones due to per-file overhead. Fix: df.coalesce(4) before writing -- merges partitions without a full shuffle. repartition(4) also works but triggers a full shuffle."
+    },
+    {
+      "dayN": 3,
+      "qi": 0,
+      "q": "What is a broadcast join and when should you use it?",
+      "a": "A broadcast join copies the smaller table to every executor -- the large table never moves. Eliminates the shuffle on the large table, typically 5-20x speedup. Use broadcast() explicitly for tables Spark does not auto-broadcast (above 10MB but below ~100MB). Check explain() to confirm BroadcastHashJoin appears in the plan."
+    },
+    {
+      "dayN": 4,
+      "qi": 0,
+      "q": "When should you cache a Spark DataFrame?",
+      "a": "Cache when the same DataFrame is used in MORE than one action in the same job AND upstream transformations are expensive (multiple joins, UDFs). Do not cache when used only once, too large for executor memory, or when the source is fast to read."
+    },
+    {
+      "dayN": 5,
+      "qi": 0,
+      "q": "What is data skew and how do you detect it?",
+      "a": "Data skew is when one key in a groupBy or join has far more rows than others -- one task becomes the bottleneck. Detect in Spark UI: Tasks tab of the slow stage, look for one task with duration or input size 100x larger than the median."
+    },
+    {
+      "dayN": 5,
+      "qi": 1,
+      "q": "What does Adaptive Query Execution do?",
+      "a": "AQE allows Spark to modify the execution plan mid-query based on runtime statistics. After filtering, Spark may discover a table is now small enough to broadcast and switches join strategy mid-execution. Also auto-coalesces shuffle partitions. Default in Spark 3.2+."
+    },
+    {
+      "dayN": 6,
+      "qi": 0,
+      "q": "What is the difference between val and var in Scala?",
+      "a": "val declares an immutable reference -- once assigned, cannot be reassigned (like C# readonly field). var is mutable. Scala style strongly prefers val for predictability and thread safety."
+    },
+    {
+      "dayN": 6,
+      "qi": 1,
+      "q": "How does the Spark DataFrame API differ between PySpark and Scala?",
+      "a": "The method names are nearly identical: .filter(), .groupBy(), .agg(), .join(), .write.parquet() are the same. Main differences: column reference uses col() or $'colName' in Scala; reader options use .option() chains; sum does not need to be renamed (no conflict with Python built-in). Reading Scala Spark code requires mostly just adjusting for different syntax, not different concepts."
+    },
+    {
+      "dayN": 7,
+      "qi": 0,
+      "q": "What to look for in the Spark UI for a slow job?",
+      "a": "Jobs tab: which job is slow. Stages tab: find slow stage. In that stage Tasks tab: median vs max task duration (big gap = skew), input size per task (outlier = skew). DAG Visualization: Exchange nodes (shuffles). A healthy stage has all tasks completing within 2-3x of each other."
+    },
+    {
+      "dayN": 7,
+      "qi": 1,
+      "q": "Why is checkpointing mandatory in Structured Streaming?",
+      "a": "The checkpoint directory records the stream offset (how far the job has processed) and aggregation state. On crash and restart, Spark reads the checkpoint and resumes exactly where it stopped -- not reprocessing everything. Without checkpointing, a restart reprocesses all data or loses progress."
+    }
+  ]
+}

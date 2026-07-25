@@ -1,0 +1,84 @@
+{
+  "id": "day-15",
+  "n": 15,
+  "title": "Gotchas everyone forgets -- the traps that compile fine and break at runtime",
+  "exp": "Angular's gotchas are worse than SQL's in one specific way: most of these compile without any warning and appear to work in a quick manual test, then silently misbehave once the app is under real usage patterns. This day is a deliberate top-up of exactly the mistakes that survive code review.",
+  "pts": [
+    "**Mutating an array/object doesn't trigger OnPush:** `this.items.push(x)` mutates the existing array in place -- the reference never changes, so an OnPush component's change detection never fires and the template silently doesn't update. Must reassign: `this.items = [...this.items, x]`, or use a signal's `.update()`.",
+    "**@for without track (Angular 17+) won't even compile:** unlike the old `*ngFor` where `trackBy` was optional, `@for` requires `track item.id` -- but the deeper gotcha is picking a BAD track expression, like `track $index`, which defeats the entire purpose (Angular re-associates the wrong DOM node to the wrong data item when the array reorders).",
+    "**Reading @Input() in the constructor is always too early:** input values are not yet set when the constructor runs -- only guaranteed to exist by ngOnInit. Code that reads `this.myInput` in the constructor silently gets undefined, and this bug often doesn't surface until the component is used in a context where the input value actually matters immediately.",
+    "**Forgetting to unsubscribe = the subscription keeps firing after the component is gone:** a `.subscribe()` call in ngOnInit with no cleanup keeps the callback alive even after the component is destroyed and removed from the DOM -- classic memory leak, and if the callback touches component state, it can throw errors on a destroyed component.",
+    "**switchMap silently cancels an in-flight request you actually wanted to keep:** using switchMap for a save/submit action means a second click cancels the first save mid-flight. This is exactly backwards from search-as-you-type, where cancelling the stale request is the whole point. Save/submit wants exhaustMap (ignore new clicks while one is in flight) or concatMap (queue them).",
+    "**combineLatest emits NOTHING until every source has fired at least once:** if one of the combined observables is slow (a rarely-updating config stream, for example), the entire combined panel shows nothing until that slow source's first emission arrives -- easy to miss in local dev where everything is fast, and only shows up as a real bug against a slower production API.",
+    "**Two-way binding [(ngModel)] silently requires FormsModule import:** a component using `[(ngModel)]` without importing FormsModule (in a standalone component's `imports` array) fails with a cryptic template parse error that doesn't obviously point at the missing import.",
+    "**Async pipe subscribing to the SAME observable multiple times in a template re-triggers the source:** `{{ (data$ | async)?.name }}` and `{{ (data$ | async)?.email }}` in the same template subscribes TWICE if data$ isn't a hot/shared observable -- causing the underlying HTTP call to fire twice. Fix with `as` syntax: `*ngIf=\\\"data$ | async as data\\\"` to subscribe once and reuse.",
+    "**Signals read inside effect() create a dependency you might not want:** reading a signal inside effect() automatically makes the effect re-run whenever that signal changes -- even if you only wanted to read its current value once at a specific moment. Use untracked() to read without subscribing to future changes.",
+    "**Pure pipes cache by reference, not by value:** a pure pipe won't re-run if you mutate an object/array in place and pass the same reference back in -- the same root cause as the OnPush mutation gotcha, but inside a pipe instead of a component."
+  ],
+  "code": "// MUTATION doesn't trigger OnPush -- classic silent bug\n@Component({ changeDetection: ChangeDetectionStrategy.OnPush })\nexport class ListComponent {\n  items = signal<Item[]>([]);\n\n  addItemWrong(item: Item) {\n    this.items().push(item);        // ❌ mutates in place -- template never updates\n  }\n\n  addItemRight(item: Item) {\n    this.items.update(list => [...list, item]);   // ✓ new reference -- triggers update\n  }\n}\n\n// @for with a BAD track expression -- compiles fine, wrong at runtime\n@for (item of items(); track $index) {   // ❌ index-based tracking breaks on reorder\n  <item-card [item]=\"item\" />\n}\n@for (item of items(); track item.id) {  // ✓ stable identity survives reordering\n  <item-card [item]=\"item\" />\n}\n\n// Reading @Input() too early\nexport class UserCard {\n  user = input.required<User>();\n  constructor() {\n    console.log(this.user());   // ❌ throws or is undefined -- inputs not resolved yet\n  }\n  ngOnInit() {\n    console.log(this.user());   // ✓ safe -- inputs are guaranteed set by now\n  }\n}\n\n// switchMap on a SAVE action -- silently cancels the first save\nsaveBtn.click$.pipe(\n  switchMap(() => this.api.save(this.form.value))   // ❌ 2nd click cancels 1st save\n).subscribe();\n\nsaveBtn.click$.pipe(\n  exhaustMap(() => this.api.save(this.form.value))  // ✓ ignores clicks while saving\n).subscribe();\n\n// async pipe subscribing twice -- fires the HTTP call twice\n// ❌\n// <p>{{ (user$ | async)?.name }}</p>\n// <p>{{ (user$ | async)?.email }}</p>\n\n// ✓ subscribe once, reuse\n// @if (user$ | async; as user) {\n//   <p>{{ user.name }}</p>\n//   <p>{{ user.email }}</p>\n// }\n\n// effect() creating an unwanted dependency\neffect(() => {\n  const count = this.count();               // subscribes -- re-runs every count change\n  const label = untracked(() => this.label()); // reads WITHOUT subscribing to label changes\n  console.log(count, label);\n});",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Gotcha",
+        "What actually happens",
+        "Fix"
+      ],
+      "r": [
+        [
+          "array.push() in OnPush component",
+          "Change detection never fires",
+          "Reassign with spread or signal.update()"
+        ],
+        [
+          "@for track $index",
+          "Wrong DOM node reused on reorder",
+          "track item.id (stable identity)"
+        ],
+        [
+          "@Input() read in constructor",
+          "Value is undefined -- too early",
+          "Read in ngOnInit instead"
+        ],
+        [
+          "switchMap on save/submit",
+          "2nd click cancels the 1st save",
+          "Use exhaustMap or concatMap"
+        ],
+        [
+          "async pipe used twice on same source",
+          "HTTP call fires twice",
+          "Capture once with the as syntax"
+        ],
+        [
+          "combineLatest with a slow source",
+          "Whole panel shows nothing until it fires",
+          "Know this before it surprises you in prod"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why does calling this.items().push(newItem) inside an OnPush component silently do nothing visible?",
+      "a": "OnPush change detection only re-runs when an @Input reference changes, an async pipe emits, or a signal updates via .set()/.update() -- it specifically does NOT re-run just because the contents of an existing array or object were mutated in place. push() mutates the array without changing which array object it is, so from OnPush's perspective, nothing changed. The fix is always to produce a new reference: spread into a new array, or use the signal's own .update() method."
+    },
+    {
+      "q": "What's wrong with @for (item of items(); track $index) even though it compiles without error?",
+      "a": "Tracking by index means Angular associates DOM node position 0 with whatever the data item happens to be at index 0 right now -- if the array is reordered, filtered, or has an item removed from the middle, Angular reuses the wrong DOM element for the wrong data, which can cause visible flicker, lost input focus, or stale component state on reused nodes. track item.id (a stable identity that travels WITH the data, not its position) is almost always the correct choice."
+    },
+    {
+      "q": "A component reads this.myInput() in the constructor and gets undefined even though the parent clearly passes a value. What's the actual timing issue?",
+      "a": "Angular's dependency injection resolves the constructor before it has processed and assigned any @Input bindings from the parent template -- inputs are guaranteed to be set only by the time ngOnInit runs. Reading an input in the constructor is a timing race that happens to sometimes look like it works (if you're just checking existence) but is fundamentally unreliable. Any logic depending on an input's actual value belongs in ngOnInit or later, never the constructor."
+    },
+    {
+      "q": "Why is switchMap specifically wrong for a save/submit button, when it's the textbook-correct choice for search-as-type?",
+      "a": "switchMap's entire purpose is cancelling the previous in-flight request when a new one starts -- exactly right for search, where only the latest keystroke's result matters and stale results should be discarded. For a save action, the first click's save request is meaningful and must complete; cancelling it because the user clicked again (perhaps impatiently, perhaps by accident) silently loses that first save. exhaustMap (ignore new clicks while one is in-flight) or concatMap (queue and run them in order) are the correct operators for anything transactional."
+    },
+    {
+      "q": "How does using the async pipe twice on the same observable in one template accidentally cause a duplicate HTTP call?",
+      "a": "Each | async in a template creates its own independent subscription to the source observable. If that observable is a cold, non-shared HTTP call (the default shape of an HttpClient.get() call), subscribing to it twice triggers the underlying HTTP request twice -- once per subscription, not once total. The fix is to subscribe exactly once by capturing the resolved value with the as syntax (@if (data$ | async; as data)) and reusing that captured value throughout the rest of the template block."
+    }
+  ]
+}

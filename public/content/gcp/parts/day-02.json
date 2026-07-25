@@ -1,0 +1,55 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "Cloud IAM -- the additive permission model",
+  "exp": "This is the single highest-value day in the GCP track. GCP IAM has a genuine structural difference from both AWS and Azure that trips up even experienced multi-cloud engineers if they don't internalize it explicitly.",
+  "pts": [
+    "IAM binding = (role) + (member) + (resource). A role is bound to a member (user, group, or service account) at a resource (Organization, Folder, Project, or an individual resource).",
+    "The critical trap: GCP IAM permissions are almost always PURELY ADDITIVE across the hierarchy, with no narrower-scope-wins concept the way AWS IAM policies and Azure RBAC both have in different forms. A broad role granted at the Organization level applies to every Project and resource beneath it, full stop -- there is no lower-level 'more specific' assignment that overrides or narrows it.",
+    "Basic roles: Owner, Editor, Viewer -- broad, legacy, generally discouraged in favor of predefined roles for anything beyond a personal sandbox project.",
+    "Predefined roles: granular, service-specific roles (roles/storage.objectViewer, roles/dataproc.editor) -- the GCP equivalent of AWS's service-specific managed policies or Azure's built-in roles, and the correct default choice for least privilege.",
+    "Service Account: an identity for a workload (a Dataproc cluster, a Cloud Function) rather than a person -- the GCP equivalent of an IAM role / Managed Identity. Service accounts are actual resources with their own email-address-shaped identifiers, unlike AWS instance profiles or Azure Managed Identities which are more tightly bound to the resource itself.",
+    "Workload Identity Federation on GCP lets an external identity (a GitHub Actions run, an AWS IAM role) impersonate a GCP Service Account without a downloaded JSON key file -- the same 'no long-lived secret' pattern as AWS and Azure's OIDC federation approaches."
+  ],
+  "code": "# Grant a predefined role at the Project level\ngcloud projects add-iam-policy-binding orders-pipeline-prod \\\n  --member=\"serviceAccount:pipeline-sa@orders-pipeline-prod.iam.gserviceaccount.com\" \\\n  --role=\"roles/storage.objectViewer\"\n\n# Create a Service Account for the pipeline's workload identity\ngcloud iam service-accounts create pipeline-sa \\\n  --display-name=\"Orders Pipeline Service Account\"\n\n# Workload Identity Federation -- GitHub Actions authenticates without a JSON key\ngcloud iam workload-identity-pools create github-pool \\\n  --location=\"global\" --display-name=\"GitHub Actions Pool\"\n\ngcloud iam service-accounts add-iam-policy-binding \\\n  pipeline-sa@orders-pipeline-prod.iam.gserviceaccount.com \\\n  --role=\"roles/iam.workloadIdentityUser\" \\\n  --member=\"principalSet://iam.googleapis.com/projects/.../workloadIdentityPools/github-pool/*\"",
+  "pr": [
+    "Grant a predefined role to a Service Account at the Project level, and explain in one sentence why granting a broad role at the Organization level is riskier on GCP than the equivalent action on AWS"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS/Azure IAM concept",
+        "GCP equivalent"
+      ],
+      "r": [
+        [
+          "IAM Role / Managed Identity",
+          "Service Account"
+        ],
+        [
+          "Narrower scope can override broader",
+          "No override -- purely additive"
+        ],
+        [
+          "Managed Policy / Built-in Role",
+          "Predefined Role"
+        ],
+        [
+          "OIDC Federation",
+          "Workload Identity Federation"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the single most important structural difference between GCP IAM and AWS IAM / Azure RBAC that a multi-cloud engineer must know explicitly?",
+      "a": "GCP IAM permissions are purely additive across the resource hierarchy -- a role granted at the Organization or Folder level applies to every Project and resource beneath it with no mechanism for a more specific, narrower assignment to override or reduce it. AWS IAM has explicit Deny statements that can override an Allow, and Azure RBAC at least has the practical convention of assigning at the narrowest useful scope, but GCP has no 'narrower wins' or 'explicit deny overrides' concept in the same way -- once a broad role is granted high in the hierarchy, it cannot be walked back at a lower level. This makes granting broad roles at the Organization or Folder level in GCP a genuinely higher-risk action than the equivalent in AWS or Azure."
+    },
+    {
+      "q": "What is a GCP Service Account and how does its identity model differ from an AWS instance profile or Azure Managed Identity?",
+      "a": "A Service Account is a real, standalone GCP resource with its own email-address-shaped identifier (name@project.iam.gserviceaccount.com) that can be granted roles, impersonated, and referenced independently of any single compute resource. AWS instance profiles and Azure system-assigned Managed Identities are more tightly bound to the lifecycle of the specific resource they're attached to. A GCP Service Account is closer in spirit to an Azure user-assigned Managed Identity -- a standalone identity that can be attached to multiple resources -- except GCP Service Accounts are the default and primary pattern, not a secondary option."
+    }
+  ]
+}

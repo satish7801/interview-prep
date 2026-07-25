@@ -1,0 +1,29 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Transactions, isolation, concurrency, soft delete",
+  "exp": "Isolation levels and optimistic concurrency are favorite 4 YOE topics — especially RCSI vs locking.",
+  "pts": [
+    "Read Committed default; Snapshot/RCSI lets readers avoid blocking writers (version store).",
+    "Serializable prevents phantoms but costs blocking — use sparingly.",
+    "EF: `BeginTransactionAsync` + execution strategy for transient retries.",
+    "**RowVersion** / concurrency token → `DbUpdateConcurrencyException` → reload/merge.",
+    "Soft delete via global filters; watch unique indexes on 'deleted' rows."
+  ],
+  "code": "",
+  "pr": [
+    "Map isolation levels to anomalies they prevent",
+    "Add a RowVersion to an Order entity"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "What does READ COMMITTED SNAPSHOT buy you?",
+      "a": "Row versioning so readers don't take shared locks that block writers (and vice versa) for typical read committed scenarios. Trade-off: tempdb version store cost and different anomaly profile — know it isn't full serializability."
+    },
+    {
+      "q": "How do you handle optimistic concurrency in EF Core?",
+      "a": "Add a RowVersion/timestamp (or token) configured as concurrency token. On SaveChanges conflict, catch DbUpdateConcurrencyException, reload database values, merge or ask the user, retry."
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Grafana on Azure -- Managed Grafana vs self-hosted",
+  "exp": "Same decision as Amazon Managed Grafana, on Azure's platform. This day covers the specific identity wiring Azure requires before a panel can query Azure Monitor.",
+  "pts": [
+    "Azure Managed Grafana: fully managed workspace, jointly operated by Microsoft and Grafana Labs -- patching, scaling, uptime handled for you.",
+    "Authentication integrates with Entra ID directly -- users sign in with their existing corporate identity, no separate Grafana user database.",
+    "Critical identity detail, mirroring the AWS lesson exactly: the Grafana WORKSPACE itself needs a Managed Identity with RBAC roles (Monitoring Reader at minimum) to query Azure Monitor -- separate from the Entra ID login controlling who can access the UI. Skipping this produces the same 'logged in fine, every panel shows an authorization error' symptom as the AWS equivalent mistake.",
+    "Self-hosted alternative: Grafana OSS on a VM, Container Instance, or AKS -- full plugin control, no per-user licensing, at the cost of owning patching and uptime.",
+    "VNet integration: if a data source lives inside a private VNet, the managed workspace needs VNet injection configured to reach it -- public Azure Monitor doesn't require this."
+  ],
+  "code": "resource \"azurerm_dashboard_grafana\" \"pipeline\" {\n  name                = \"grafana-orders-pipeline\"\n  resource_group_name = azurerm_resource_group.pipeline.name\n  location            = azurerm_resource_group.pipeline.location\n  identity { type = \"SystemAssigned\" }\n}\n\n# Workspace's own Managed Identity needs Monitoring Reader -- separate from user login\nresource \"azurerm_role_assignment\" \"grafana_monitor_reader\" {\n  scope                = azurerm_resource_group.pipeline.id\n  role_definition_name = \"Monitoring Reader\"\n  principal_id         = azurerm_dashboard_grafana.pipeline.identity[0].principal_id\n}\n\nresource \"azurerm_role_assignment\" \"grafana_admin_access\" {\n  scope                = azurerm_dashboard_grafana.pipeline.id\n  role_definition_name = \"Grafana Admin\"\n  principal_id         = data.azuread_group.data_platform_team.object_id\n}",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "",
+        "Azure Managed Grafana",
+        "Self-hosted"
+      ],
+      "r": [
+        [
+          "Patching/uptime",
+          "Microsoft/Grafana-managed",
+          "Your responsibility"
+        ],
+        [
+          "Auth",
+          "Entra ID",
+          "Grafana's own user DB or custom SSO"
+        ],
+        [
+          "Workspace-to-Monitor access",
+          "Managed Identity + RBAC role",
+          "Whatever credentials you configure"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the Azure-specific identity detail that mirrors the AWS lesson about the Grafana workspace needing its own role?",
+      "a": "The Azure Managed Grafana workspace has its own System-assigned Managed Identity, and that identity needs an RBAC role (typically Monitoring Reader) scoped to the subscription or resource group containing the data to visualize. This is separate from granting a human user access to log into the Grafana UI via Entra ID -- the same two-layer distinction as AMG's IAM role pattern on AWS."
+    },
+    {
+      "q": "When would VNet integration be required for an Azure Managed Grafana workspace?",
+      "a": "When a data source has no public endpoint -- a self-hosted Prometheus inside a private VNet, or a database with public access disabled. Public Azure Monitor Metrics and Log Analytics are reachable without special networking; VNet injection is only needed for genuinely private network resources."
+    }
+  ]
+}

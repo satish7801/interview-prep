@@ -1,0 +1,455 @@
+{
+  "trackId": "angular",
+  "items": [
+    {
+      "dayN": 1,
+      "qi": 0,
+      "q": "What is the difference between @ViewChild and @ContentChild?",
+      "a": "@ViewChild queries elements in the component's own template (its VIEW) — the DOM it creates itself. Available after ngAfterViewInit. @ContentChild queries elements that were PROJECTED into the component via <ng-content> — content that came from the parent. Available after ngAfterContentInit. Practical: @ViewChild for finding a child component you defined in your template; @ContentChild for finding what the parent injected into your slots."
+    },
+    {
+      "dayN": 1,
+      "qi": 1,
+      "q": "What is multi-slot content projection and how do you implement it?",
+      "a": "Multi-slot content projection lets a component define multiple named slots for projected content using CSS selectors on <ng-content>. Add a select attribute: <ng-content select=\"[header]\"> only projects elements with the header attribute, <ng-content select=\".footer\"> projects elements with the footer CSS class, <ng-content> (no select) is the default slot for everything else. The parent marks its projected elements with the matching attribute or class."
+    },
+    {
+      "dayN": 1,
+      "qi": 2,
+      "q": "What is ViewContainerRef and what can you do with it?",
+      "a": "ViewContainerRef is an injection token representing a position in the DOM where views (component or template instances) can be inserted. You can use it to: createComponent(Type) — dynamically instantiate and insert a component; createEmbeddedView(TemplateRef) — render an ng-template at that position; clear() — remove all dynamically created views. It's the foundation for modals, dynamic dashboards, and structural directives."
+    },
+    {
+      "dayN": 1,
+      "qi": 3,
+      "q": "What is the difference between ng-container and ng-template?",
+      "a": "ng-container renders NO DOM element — it's a logical grouping element for applying @if, @for, or directives without adding a wrapper div. ng-template defines a template fragment that is NOT rendered at all by default — it's a blueprint that must be explicitly instantiated via ngTemplateOutlet, ViewContainerRef.createEmbeddedView(), or a structural directive. Think: ng-container is \"invisible wrapper,\" ng-template is \"stored-but-not-rendered blueprint.\""
+    },
+    {
+      "dayN": 1,
+      "qi": 4,
+      "q": "When would you use ElementRef vs Renderer2 for DOM manipulation?",
+      "a": "ElementRef gives you direct access to the native DOM element via nativeElement — simple but platform-specific (breaks in Server-Side Rendering or Web Workers). Renderer2 provides an abstraction layer for DOM manipulation (createElement, setAttribute, setStyle, listen) that works across all Angular platforms including SSR. Use ElementRef for read-only access or when you're certain you're in a browser context; use Renderer2 for all DOM writes to ensure SSR compatibility."
+    },
+    {
+      "dayN": 2,
+      "qi": 0,
+      "q": "What is @defer and what are its trigger options?",
+      "a": "@defer is a block-level template directive that lazily loads the template content (and the component classes it uses) as a separate JS chunk. It only downloads the code when a trigger condition is met. Triggers: on viewport (IntersectionObserver), on idle (requestIdleCallback), on interaction (click or focus on the placeholder), on immediate (right away, but async), on timer(n) (after n ms), when expression (signal or boolean expression). @placeholder, @loading, and @error blocks control what's shown before/during/after loading."
+    },
+    {
+      "dayN": 2,
+      "qi": 1,
+      "q": "What is the difference between a pure and an impure pipe?",
+      "a": "Pure pipe (pure: true, the default): Angular only re-runs the transform when the input reference changes — works well with OnPush components. Impure pipe (pure: false): Angular re-runs the transform on every change detection cycle regardless of input changes — necessary for pipes that depend on external state (like the async pipe or a pipe that reads Date.now()), but breaks OnPush optimization. Avoid impure pipes in OnPush components unless necessary."
+    },
+    {
+      "dayN": 2,
+      "qi": 2,
+      "q": "What does the async pipe do that manually subscribing doesn't?",
+      "a": "The async pipe: (1) subscribes to an Observable or Promise automatically, (2) returns the current emitted value for display, (3) triggers change detection when a new value arrives (compatible with OnPush), and (4) automatically unsubscribes when the component is destroyed — preventing memory leaks. Manual subscribe() in the component requires explicit unsubscribe in ngOnDestroy; forgetting causes memory leaks. The async pipe is the preferred pattern for template-bound streams."
+    },
+    {
+      "dayN": 2,
+      "qi": 3,
+      "q": "What is a template reference variable and how is it used?",
+      "a": "A template reference variable (#ref) is a name given to an element, component, or directive in the template. Inside the template, you can use #myInput on an <input> and then reference it as myInput.value in event handlers. Combined with @ViewChild('myInput') in the component class, you can access the element programmatically after the view is initialized. They're also used to reference child components: #myModal gives access to the MyModalComponent's public API."
+    },
+    {
+      "dayN": 2,
+      "qi": 4,
+      "q": "What is @for's track and what happens without it?",
+      "a": "track is an expression that uniquely identifies each item in the list — Angular uses it to associate DOM elements with data items across re-renders. With track item.id: when the list changes, Angular only updates DOM nodes whose items actually changed. Without track: Angular must destroy and recreate ALL DOM nodes on any list change (since it can't tell what moved vs what changed). Missing track is a compile error in Angular 17+ (unlike *ngFor where trackBy was optional)."
+    },
+    {
+      "dayN": 3,
+      "qi": 0,
+      "q": "What is an InjectionToken and when do you use it instead of a class?",
+      "a": "InjectionToken<T> is a typed token for providing non-class values via Angular's DI system — strings, numbers, config objects, factory functions, or anything that isn't a class. Example: const API_URL = new InjectionToken<string>('api.url'). You use it because Angular's DI uses types as keys, and there's no type key for a primitive. InjectionTokens also work for providing different implementations of the same interface without a concrete class as the token."
+    },
+    {
+      "dayN": 3,
+      "qi": 1,
+      "q": "What are multi-providers and what are they used for?",
+      "a": "Multi-providers let multiple providers register under the same token, and the injected value is an array of all registered values. Add multi: true to each provider. Angular uses this pattern for HTTP_INTERCEPTORS (register multiple interceptors that all run), VALIDATORS (multiple validator factories), and extensible plugin systems. Without multi: true, later providers overwrite earlier ones. With multi: true, all are collected into an array."
+    },
+    {
+      "dayN": 3,
+      "qi": 2,
+      "q": "How does hierarchical DI work in Angular?",
+      "a": "Angular has a tree of injectors mirroring the component tree. When you inject a service, Angular walks up the injector tree: component injector → parent component injector → ... → environment injector → root injector. If a component provides a service in its providers array, it (and its children) get a new instance, not the root singleton. This enables component-scoped state. @Self() limits lookup to the current component's injector; @SkipSelf() skips it and goes to the parent; @Optional() returns null instead of throwing if not found."
+    },
+    {
+      "dayN": 3,
+      "qi": 3,
+      "q": "What is the difference between useClass, useValue, useFactory, and useExisting?",
+      "a": "useClass: provide an instance of a different class than the token — { provide: Logger, useClass: ConsoleLogger }. useValue: provide a static value directly — { provide: API_URL, useValue: '/api/v2' }. useFactory: compute the provided value via a function that can inject its own dependencies — { provide: Logger, useFactory: (env: Env) => env.prod ? new SilentLogger() : new ConsoleLogger(), deps: [Env] }. useExisting: alias one token to an already-registered token — { provide: OldService, useExisting: NewService }."
+    },
+    {
+      "dayN": 3,
+      "qi": 4,
+      "q": "What is the inject() function and when do you use it instead of constructor injection?",
+      "a": "inject(Token) is a function-based alternative to constructor injection, usable inside the injection context: constructor body, field initializers, factory functions, and functional guards/interceptors. It's preferred in modern Angular because: (1) it's less ceremony for simple injections, (2) works in functional constructs (guards, interceptors) that have no class constructor, and (3) it's required inside inject()-based factory providers. It cannot be used in lifecycle hooks (outside the injection context)."
+    },
+    {
+      "dayN": 4,
+      "qi": 0,
+      "q": "What is the difference between switchMap, mergeMap, concatMap, and exhaustMap?",
+      "a": "All four project source emissions to inner observables but handle concurrency differently. switchMap: cancels the previous inner observable when a new source emission arrives — use for search/autocomplete. mergeMap: runs all inner observables simultaneously — use for parallel independent operations. concatMap: queues inner observables, starts the next only after the previous completes — use when order matters. exhaustMap: ignores new source emissions while an inner observable is active — use for preventing duplicate requests (login button, submit forms)."
+    },
+    {
+      "dayN": 4,
+      "qi": 1,
+      "q": "What is the difference between forkJoin and combineLatest?",
+      "a": "forkJoin waits for all source observables to COMPLETE, then emits once with an array/object of their final values — like Promise.all(). Use for parallel HTTP calls that must all finish. combineLatest emits whenever ANY source emits, combining the LATEST value from all sources — it never \"finishes.\" Use for reactive forms, filter combinations, or any scenario where you need the latest from multiple ongoing streams combined into one."
+    },
+    {
+      "dayN": 4,
+      "qi": 2,
+      "q": "What does shareReplay(1) do and why is it important for services?",
+      "a": "shareReplay(1) multicasts an observable (so multiple subscribers share one upstream subscription) and caches the last n emissions, replaying them to new late subscribers. Without it, if two components both subscribe to this.http.get('/api/me'), Angular makes two HTTP calls. With shareReplay(1), the first subscriber triggers the HTTP call; subsequent subscribers get the cached response immediately without another network request. Essential for any service-level data stream that is shared across the app."
+    },
+    {
+      "dayN": 4,
+      "qi": 3,
+      "q": "How do you handle errors in an RxJS pipeline without breaking the stream?",
+      "a": "Use catchError inside a switchMap or mergeMap (not at the top level): source$.pipe(switchMap(x => apiCall(x).pipe(catchError(() => of(fallback)))). This way, an error in one inner call returns a fallback value, and the outer stream continues listening. If you put catchError at the top level, an error terminates the entire stream (including the outer subscription). The of(fallback) is typically of([]) for lists or of(null) for optional data."
+    },
+    {
+      "dayN": 4,
+      "qi": 4,
+      "q": "When would you use debounceTime vs throttleTime?",
+      "a": "debounceTime(n): wait until n milliseconds of silence, then emit — use for search inputs where you want to wait until the user stops typing before making an API call. throttleTime(n): emit immediately, then ignore emissions for n milliseconds — use for scroll or resize events where you want immediate response but need to limit the rate. debounceTime delays all emissions; throttleTime passes the first and drops the rest during the throttle window."
+    },
+    {
+      "dayN": 5,
+      "qi": 0,
+      "q": "What does toSignal() do and when would you use it?",
+      "a": "toSignal(observable$) subscribes to an Observable and returns a signal that reflects its latest emitted value. Angular manages the subscription and unsubscribes on destroy. Use it when you have a service that returns an Observable but your component is signal-based and you want to use the value in a template or computed() without the async pipe. Options: initialValue (value before first emission), requireSync (throws if the Observable doesn't emit synchronously)."
+    },
+    {
+      "dayN": 5,
+      "qi": 1,
+      "q": "What is httpResource() and how does it differ from using HttpClient directly?",
+      "a": "httpResource<T>(urlFn) creates a reactive data loader where the URL is a computed function of signals. It automatically re-fetches when any signal the URL function reads changes. It returns an object with value() (the data), isLoading() (boolean signal), and error() (error signal) — all signals. Compared to HttpClient + switchMap: httpResource needs ~3 lines vs ~10; no pipe, no subscribe, no takeUntilDestroyed. HttpClient + switchMap is still better for complex scenarios needing RxJS operators (debounce, retry, catchError)."
+    },
+    {
+      "dayN": 5,
+      "qi": 2,
+      "q": "What is model() and what does it replace?",
+      "a": "model<T>() is a signal-based alternative to the @Input() + @Output() EventEmitter pattern for two-way binding. In the child: checked = model(false) creates a writable signal that also emits on .set(). In the parent: <toggle [(checked)]=\"mySignal\" /> binds the signal two-ways. It replaces the verbose pattern of @Input() checked and @Output() checkedChange = new EventEmitter<boolean>() with valueChange$. model() is cleaner, type-safe, and signal-native."
+    },
+    {
+      "dayN": 5,
+      "qi": 3,
+      "q": "What is untracked() and when do you use it inside an effect?",
+      "a": "untracked(fn) reads a signal inside an effect or computed without registering it as a dependency. Normally, every signal read inside effect() adds that signal as a dependency — the effect re-runs when any dependency changes. untracked lets you read a signal for its current value without making the effect reactive to that signal. Use it when you need to sample a signal's value at the moment the effect runs, but you don't want that signal to trigger a re-run."
+    },
+    {
+      "dayN": 5,
+      "qi": 4,
+      "q": "What is the difference between computed() and effect() in terms of execution?",
+      "a": "computed() is lazy — it only re-evaluates when something reads it AND at least one of its dependencies changed. It's memoized: if the same dependencies changed but the computed result hasn't changed, Angular may skip re-rendering. effect() is eager — it runs automatically whenever any of its signal dependencies change, whether or not anything is reading its result. effect() is for side effects (logging, local storage writes, imperative DOM), not for deriving values (use computed() for that)."
+    },
+    {
+      "dayN": 6,
+      "qi": 0,
+      "q": "What is a route resolver and why use it instead of loading data in ngOnInit?",
+      "a": "A resolver is a function that fetches data before Angular completes navigation to a route. The component only instantiates after the resolver completes. Benefits: the component always has its data available immediately (no loading spinner, no conditional template), and if the resolver throws or returns an empty observable, navigation is cancelled (the user never sees a broken component). Downside: the route change is delayed until the resolver completes — consider showing a global loading indicator."
+    },
+    {
+      "dayN": 6,
+      "qi": 1,
+      "q": "What is the difference between NoPreloading and PreloadAllModules?",
+      "a": "NoPreloading (default): lazy routes are only loaded when the user navigates to them — best for large apps where most users don't visit all routes. PreloadAllModules: after the initial app loads, Angular immediately begins preloading ALL lazy route bundles in the background — subsequent navigations feel instant because the chunks are already downloaded. Use PreloadAllModules for smaller apps or admin panels where users are likely to visit multiple sections."
+    },
+    {
+      "dayN": 6,
+      "qi": 2,
+      "q": "What are named router outlets and what are they used for?",
+      "a": "Named router outlets allow multiple router-outlet elements in one template, each rendering a different route simultaneously. Syntax: <router-outlet name=\"sidebar\"></router-outlet>. Navigate to a named outlet: router.navigate([{ outlets: { primary: ['home'], sidebar: ['user-info'] } }]). Use for auxiliary views that change independently of the main content — a sidebar with contextual info, a modal that has its own URL, or a split-pane layout."
+    },
+    {
+      "dayN": 6,
+      "qi": 3,
+      "q": "How do functional route guards work compared to class-based guards?",
+      "a": "Functional guards are plain functions typed as CanActivateFn, CanDeactivateFn, etc. They use inject() internally to access services. Advantages: no class boilerplate (no implements, no class declaration), composable (you can call one functional guard from another), and naturally tree-shakeable. Class-based guards still work but require the class to be provided — functional guards are the Angular 15+ standard and the approach in all new Angular docs."
+    },
+    {
+      "dayN": 6,
+      "qi": 4,
+      "q": "How do you access route parameters as signals in Angular 17.3+?",
+      "a": "In Angular 17.3+, ActivatedRoute exposes signal-based accessors: inject(ActivatedRoute).snapshot.paramMap is the static snapshot. For reactive access with signals: use the input() function with routerLink inputs when the component is registered with the router using withComponentInputBinding() in provideRouter(). This maps route params/queryParams directly to component inputs, which can be signal-based inputs: userId = input<string>('userId')."
+    },
+    {
+      "dayN": 7,
+      "qi": 0,
+      "q": "What is ControlValueAccessor and when do you need to implement it?",
+      "a": "ControlValueAccessor is an interface that bridges a custom component to Angular's form API, making it usable as a form control with both Reactive Forms and template-driven Forms. You implement it when you're building a custom input component (star rating, color picker, address form, rich text editor) that should participate in form validation and value binding. Implement writeValue (receive value from form), registerOnChange (notify form of changes), registerOnTouched (notify form of blur), and provide NG_VALUE_ACCESSOR via multi-provider."
+    },
+    {
+      "dayN": 7,
+      "qi": 1,
+      "q": "What is the difference between form.value and form.getRawValue()?",
+      "a": "form.value excludes disabled controls — their values are omitted from the object. form.getRawValue() includes all controls including disabled ones. This matters when you disable a field for UI reasons (e.g., \"confirmation email is read-only\") but still need its value when submitting. If you use form.value to build the submit payload, you'll silently lose the disabled field's value. Always use getRawValue() when building the submit payload."
+    },
+    {
+      "dayN": 7,
+      "qi": 2,
+      "q": "How do you implement an async validator that checks if an email is already taken?",
+      "a": "Create an AsyncValidatorFn that returns an Observable<ValidationErrors | null>: take the control value, debounce to avoid hitting the API on every keystroke, call the API, map the response to null (valid) or { emailTaken: true } (invalid). Always add catchError(() => of(null)) so an API failure doesn't break the form. The form control shows status PENDING while the async validator is running. Attach it with asyncValidators in the FormControl constructor."
+    },
+    {
+      "dayN": 7,
+      "qi": 3,
+      "q": "What is a cross-field validator and how do you apply it?",
+      "a": "A cross-field validator is a ValidatorFn applied to a FormGroup (not a single FormControl) that can compare multiple fields. Example: passwords match validator receives the entire FormGroup, reads group.get('password')?.value and group.get('confirmPassword')?.value, returns null if they match or { passwordMismatch: true } if not. Apply it in the FormGroup constructor's second argument: new FormGroup({...}, { validators: [passwordMatchValidator] }). Check the error on the group: form.errors?.'passwordMismatch'."
+    },
+    {
+      "dayN": 7,
+      "qi": 4,
+      "q": "What is updateOn and what are the three options?",
+      "a": "updateOn controls when Angular runs validation and updates the form control value. 'change' (default): validates on every keystroke — good for instant feedback. 'blur': validates when the user leaves the field — reduces unnecessary validation noise during typing. 'submit': validates only when the form is submitted — best for sensitive fields where showing errors while typing feels intrusive. Set it per-control: new FormControl('', { updateOn: 'blur' }) or per-group: new FormGroup({...}, { updateOn: 'blur' })."
+    },
+    {
+      "dayN": 8,
+      "qi": 0,
+      "q": "What is the difference between class-based and functional HTTP interceptors?",
+      "a": "Class-based interceptors implement HttpInterceptor with an intercept(req, next) method and are provided with { provide: HTTP_INTERCEPTORS, useClass: ..., multi: true }. Functional interceptors are plain functions of type HttpInterceptorFn = (req, next) => Observable<HttpEvent<unknown>> and are registered with withInterceptors([fn]) in provideHttpClient(). Functional interceptors are cleaner (no class boilerplate), work with inject() for dependencies, are the Angular 15+ standard, and are what new Angular docs use."
+    },
+    {
+      "dayN": 8,
+      "qi": 1,
+      "q": "Why must you clone the request in an interceptor instead of modifying it directly?",
+      "a": "HttpRequest objects are immutable by design — Angular makes requests immutable so that interceptors in a chain cannot interfere with each other through shared mutation. req.clone({ setHeaders: {...} }) creates a new request with the modified properties while copying everything else. This ensures each interceptor gets a clean, unmodified request, and later interceptors see the modifications from earlier ones as intended, not accidental side effects."
+    },
+    {
+      "dayN": 8,
+      "qi": 2,
+      "q": "How do you implement token refresh on a 401 response in an interceptor?",
+      "a": "Catch the 401 in catchError, call auth.refreshToken() to get a new token, then retry the original request with the new token using switchMap. The key: save the original request before the error, and re-clone it with the new Authorization header in the switchMap. Edge case: if the refresh itself returns 401 (refresh token also expired), catch that error and redirect to login. Also consider preventing parallel refresh calls if multiple requests 401 simultaneously (use a BehaviorSubject or share() to broadcast the single refresh)."
+    },
+    {
+      "dayN": 8,
+      "qi": 3,
+      "q": "What is HttpContext and why is it useful for interceptors?",
+      "a": "HttpContext lets you attach metadata to an HTTP request that interceptors can read, without modifying the request URL or headers. Define a token: const SKIP_AUTH = new HttpContextToken<boolean>(() => false). Pass it: http.get(url, { context: new HttpContext().set(SKIP_AUTH, true) }). Read in interceptor: req.context.get(SKIP_AUTH). Use cases: skip auth for public endpoints, skip caching for specific calls, mark a request as high-priority, or pass any interceptor-specific configuration without polluting the service call signature."
+    },
+    {
+      "dayN": 8,
+      "qi": 4,
+      "q": "How do you implement a caching interceptor for GET requests?",
+      "a": "Maintain a Map<string, HttpResponse> in a singleton service. In the interceptor: if the request is a GET and the URL is in the cache, return of(cachedResponse) and skip next(req). Otherwise, call next(req), tap the response to store it in the cache, and return the response. Add cache invalidation: either time-based (TTL via Date.now()), or explicit (clear the cache entry when a related mutation request succeeds). Only cache GET requests — POST/PUT/DELETE should never be cached."
+    },
+    {
+      "dayN": 9,
+      "qi": 0,
+      "q": "What does Zone.js actually do and why is Angular removing it?",
+      "a": "Zone.js monkey-patches browser async APIs at startup: setTimeout, Promise, fetch, XMLHttpRequest, addEventListener, etc. When any patched API completes, Zone.js fires a notification and Angular calls ApplicationRef.tick() — which checks every component in the tree for changes. It's magic: no code changes needed, but it causes performance issues (full-tree check after every async operation, even trivial ones like setTimeout(fn, 0)) and breaks with non-Angular libraries that also patch these APIs. Signals provide a targeted alternative — Angular knows exactly which components to update."
+    },
+    {
+      "dayN": 9,
+      "qi": 1,
+      "q": "What are the four exact conditions that trigger OnPush change detection?",
+      "a": "1) An @Input reference changes (object identity changes, not object mutation). 2) An async pipe in the template emits a new value. 3) A signal that the template reads (signal()) updates — Angular tracks signal reads at the component level. 4) ChangeDetectorRef.markForCheck() is called explicitly. Mutations to objects/arrays without changing reference (arr.push()) do NOT trigger OnPush — you must reassign: this.arr.set([...this.arr(), newItem]) for signals, or this.cdr.markForCheck() for non-signal patterns."
+    },
+    {
+      "dayN": 9,
+      "qi": 2,
+      "q": "What is the difference between ChangeDetectorRef.detectChanges() and markForCheck()?",
+      "a": "detectChanges() is synchronous — it immediately checks the current component and its children right now, in the current call stack. Use when you've updated state from outside Angular's knowledge and need immediate UI update. markForCheck() is asynchronous — it marks the component (and its ancestors in the tree) as dirty, to be checked on the next change detection cycle triggered by Zone.js or ApplicationRef.tick(). Use in OnPush components that receive data via Observables or external callbacks."
+    },
+    {
+      "dayN": 9,
+      "qi": 3,
+      "q": "What is NgZone.runOutsideAngular and when do you use it?",
+      "a": "NgZone.runOutsideAngular(fn) executes code in a context where Zone.js does not trigger change detection. Use it for: requestAnimationFrame loops for canvas/chart animations (prevent CD on every frame), WebSocket message handling that updates a buffer before signaling Angular, third-party library initialization that fires many callbacks, or any computation where you only need to update Angular's view at the end (call zone.run(() => signal.set(result)) when done)."
+    },
+    {
+      "dayN": 9,
+      "qi": 4,
+      "q": "What are the steps to migrate an existing Angular app to zoneless?",
+      "a": "1) Add provideExperimentalZonelessChangeDetection() to the providers array. 2) Enable OnPush on all components. 3) Replace all mutable property assignments that trigger CD with signal.set(). 4) Replace remaining manual markForCheck() calls with signal updates. 5) Test — components that relied on Zone.js detecting property mutations will stop updating (surfaces hidden bugs). 6) Remove zone.js from polyfills.ts and package.json. This can be incremental: Zone.js and zoneless signals coexist during migration."
+    },
+    {
+      "dayN": 10,
+      "qi": 0,
+      "q": "What is the difference between @defer triggers on viewport and on idle?",
+      "a": "on viewport: Angular uses IntersectionObserver to detect when the @placeholder element enters the browser viewport — then downloads and renders the deferred content. Best for below-the-fold content. on idle: uses requestIdleCallback to defer loading until the browser has nothing else to do — content loads soon after initial render but without blocking the main thread. Best for non-critical widgets that can load any time. You can combine them: @defer (on viewport; prefetch on idle) — preloads the chunk when idle, renders immediately when scrolled into view."
+    },
+    {
+      "dayN": 10,
+      "qi": 1,
+      "q": "When is CDK virtual scroll necessary vs a simple @for loop?",
+      "a": "Use CDK virtual scroll when rendering more than ~500-1000 items in a list that the user can scroll through. With @for and 10,000 items, Angular creates 10,000 DOM nodes — heavy initial render, slow scroll, memory-intensive. CDK virtual scroll only creates DOM nodes for the visible items (typically 10-20) plus a small buffer, regardless of list size. The viewport knows the item size (itemSize=\"48\" in pixels) to calculate total scroll height without rendering all items."
+    },
+    {
+      "dayN": 10,
+      "qi": 2,
+      "q": "Why should heavy computed values be in pure pipes rather than template expressions?",
+      "a": "Template expressions like {{ computeHeavyValue(item) }} re-evaluate on EVERY change detection cycle — even if item hasn't changed — because Angular can't know whether the function's output has changed without calling it. A pure pipe runs only when its input REFERENCE changes, memoizing the result. This means for OnPush components, the pipe computation skips when @Input doesn't change. Additionally, pipes are composable and testable in isolation, while template function calls are not."
+    },
+    {
+      "dayN": 10,
+      "qi": 3,
+      "q": "What is NgOptimizedImage and what problems does it solve automatically?",
+      "a": "NgOptimizedImage ([ngSrc]) is a built-in Angular directive for image optimization. It automatically: adds loading=\"lazy\" for below-fold images (reduces initial page load), adds fetchpriority=\"high\" for images marked as [priority] (LCP elements), generates a srcset for responsive images, enforces explicit width/height attributes to prevent layout shift (CLS), and warns in dev mode about images that are sized incorrectly. It removes the need for manual optimization that developers frequently forget."
+    },
+    {
+      "dayN": 10,
+      "qi": 4,
+      "q": "How do you analyse bundle size in an Angular app?",
+      "a": "Run ng build --stats-json to generate a webpack stats file. Then run npx webpack-bundle-analyzer dist/your-app/stats.json to open an interactive treemap showing which modules contribute most to each chunk. Look for: unexpectedly large dependencies (moment.js, lodash), large vendor chunks that should be split, lazy route chunks that are too large (split further), and shared chunks that might benefit from optimization. Angular 17+ also shows chunk sizes in the build output."
+    },
+    {
+      "dayN": 11,
+      "qi": 0,
+      "q": "What is the difference between shallow and deep component testing in Angular?",
+      "a": "Shallow testing (using NO_ERRORS_SCHEMA or stub children): only the component under test is fully rendered; child components are replaced with empty stubs. Faster and more isolated but doesn't verify integration with children. Deep testing (declaring all child components): renders the full component tree. More realistic but slower and more fragile. For unit tests, shallow is preferred; for integration tests that verify component composition, deep is appropriate. The Angular CDK HarnessLoader provides a middle ground for testing specific child component interactions."
+    },
+    {
+      "dayN": 11,
+      "qi": 1,
+      "q": "Why do you need to call fixture.detectChanges() in Angular tests?",
+      "a": "Angular does not run change detection automatically in the test environment. fixture.detectChanges() triggers one round of change detection: it initialises the component (ngOnInit runs on the first call), then updates the DOM to reflect the current component state. For OnPush components, you MUST call detectChanges() after every state change or the template won't update. Always call it: once in beforeEach after creating the component (initial render), and once after every state change in test cases."
+    },
+    {
+      "dayN": 11,
+      "qi": 2,
+      "q": "What is the Angular CDK component harness and why use it?",
+      "a": "CDK component harnesses provide a stable API for testing components — especially Angular Material components. Instead of querying the DOM directly (fixture.nativeElement.querySelector('.mat-button')), which breaks when Material changes its DOM structure, you use HarnessLoader.getHarness(MatButtonHarness) and call harness.click(). Benefits: tests are decoupled from implementation details, work consistently across browsers, and don't break on Material version upgrades. You can also write custom harnesses for your own components."
+    },
+    {
+      "dayN": 11,
+      "qi": 3,
+      "q": "How does Vitest differ from Karma for Angular tests?",
+      "a": "Karma launches a real browser (Chrome/Firefox), runs tests inside it, and reports results back — slow startup, requires a display. Vitest runs in Node.js using jsdom for DOM simulation — starts in milliseconds, runs tests in parallel, and integrates with the Vite build pipeline. Vitest is up to 10x faster for unit tests. Angular 21 made Vitest the default test runner for new projects. The test syntax is nearly identical (describe/it/expect) — the main migration work is configuration and replacing Karma-specific setup."
+    },
+    {
+      "dayN": 11,
+      "qi": 4,
+      "q": "How do you test a component that uses signals?",
+      "a": "Signals are synchronous — reading and setting them is immediate, unlike Observables. To test: set the signal value with component.mySignal.set(value); call fixture.detectChanges(); then assert on the DOM. For computed signals: set the source signals, call detectChanges, assert the computed result. For effects: effects run during change detection, so fixture.detectChanges() is enough to trigger them. Signal-based tests are generally simpler than Observable-based tests because there's no async, no tick, no subscribe needed for state changes."
+    },
+    {
+      "dayN": 12,
+      "qi": 0,
+      "q": "When would you use plain service signals vs NgRx for state management in Angular?",
+      "a": "Plain service signals for: small to medium apps, simple CRUD state without complex async orchestration, teams new to reactive patterns who need quick onboarding, prototypes. NgRx for: complex async flows where Effects provide a natural home for HTTP + error handling, large teams that benefit from enforced unidirectional data flow, apps where time-travel debugging (Redux DevTools) would save significant debugging time, or apps where action logs are needed for analytics/monitoring. NgRx Signals is a good middle ground — structured like NgRx but using signal primitives."
+    },
+    {
+      "dayN": 12,
+      "qi": 1,
+      "q": "What is the role of each part of NgRx (Store, Action, Reducer, Effect, Selector)?",
+      "a": "Store: holds the entire application state as one immutable object. Actions: plain objects describing what happened (loadUsers, usersLoaded, loadUsersFailed) — the \"events\" of the app. Reducers: pure functions that take (currentState, action) and return a new state — no side effects. Effects: handle side effects (HTTP calls, routing, local storage) triggered by actions; dispatch new actions when complete. Selectors: pure, memoized functions that derive specific slices of state from the store — like computed() signals but for NgRx."
+    },
+    {
+      "dayN": 12,
+      "qi": 2,
+      "q": "How does NgRx Signals (SignalStore) differ from classic NgRx?",
+      "a": "Classic NgRx: actions, reducers, effects, selectors are all separate files; boilerplate-heavy; built on RxJS Observables. NgRx Signals (signalStore): the store is a single entity with withState (signal-based state), withComputed (derived signals), and withMethods (mutations and side effects); much less boilerplate; state is signals not Observables; direct reads without selectors. NgRx Signals is the recommended approach for new NgRx projects targeting Angular 17+, though classic NgRx is still common in existing codebases."
+    },
+    {
+      "dayN": 12,
+      "qi": 3,
+      "q": "What is the difference between a Selector and a Computed signal in terms of functionality?",
+      "a": "Both memoize derived state and only recalculate when their inputs change. NgRx Selectors: created with createSelector, compose with other selectors, work with the Observable-based store.select() API, and are tested separately. Computed signals: created with computed(), work natively with Angular templates and signals, no separate testing infrastructure needed, and are the native Angular approach for derived state. Functionally equivalent for simple derivations; NgRx selectors have better composition primitives for complex state trees."
+    },
+    {
+      "dayN": 12,
+      "qi": 4,
+      "q": "What is the \"one-directional data flow\" principle and why does NgRx enforce it?",
+      "a": "One-directional data flow means data flows in only one direction: component dispatches Action → Effect handles async → Reducer produces new State → Selector derives view data → component reads via store.select(). No component directly mutates state. Benefits: predictable state changes (any change has a traceable action), testable (each piece is a pure function), reproducible bugs (replay actions), and time-travel debugging (step backward through actions). NgRx enforces it structurally — you cannot mutate state outside a reducer."
+    },
+    {
+      "dayN": 13,
+      "qi": 0,
+      "q": "What are the key differences between Angular 21 and Angular 22?",
+      "a": "Angular 21 (Nov 2025): zoneless change detection became the default for new projects; Vitest replaced Karma as the default test runner; Signal Forms shipped as experimental; Angular ARIA headless components reached developer preview. Angular 22 (June 2026): OnPush became the default change detection strategy for new components; Signal Forms and the Resource API (resource, rxResource, httpResource) were promoted to stable; Angular ARIA stabilised; TypeScript 6 support added. The through-line: Angular 22 stabilised what Angular 21 made experimental."
+    },
+    {
+      "dayN": 13,
+      "qi": 1,
+      "q": "What is the Resource API and what problem does it solve?",
+      "a": "The Resource API (resource, rxResource, httpResource) is a signal-native data-fetching primitive. Problem solved: combining signals and async data fetching previously required converting between Observables and signals (toSignal + switchMap) or manual effect() with HTTP calls. resource()/httpResource() provides a clean abstraction: define a reactive request (function of signals), provide a loader (Promise or Observable), and get back value(), status(), isLoading(), error(), and reload() as signals — no subscribe, no async pipe, no takeUntilDestroyed."
+    },
+    {
+      "dayN": 13,
+      "qi": 2,
+      "q": "What is the difference between resource(), rxResource(), and httpResource()?",
+      "a": "resource(): generic, loader returns a Promise — use when you have any async data source (fetch, IndexedDB, WebSocket). rxResource(): loader returns an Observable — use when you need RxJS operators like retry, catchError, or debounce. httpResource(): convenience wrapper that takes a URL function and uses Angular's HttpClient under the hood — use for simple HTTP GET requests that should re-fetch when route params change. All three return the same interface: value(), isLoading(), error(), status(), reload() signals."
+    },
+    {
+      "dayN": 13,
+      "qi": 3,
+      "q": "What does it mean that OnPush is now the default in Angular 22?",
+      "a": "ng generate component now produces components with ChangeDetectionStrategy.OnPush without needing to specify it. This is a significant shift: new Angular apps are fully OnPush-first by default. Combined with zoneless being the default (Angular 21), and signal inputs providing the primary way to pass data, Angular 22 apps are inherently more performant and explicit about reactivity than pre-v21 apps. Existing components still need explicit OnPush — the default only applies to newly generated components in projects on Angular 22+."
+    },
+    {
+      "dayN": 13,
+      "qi": 4,
+      "q": "What is Angular ARIA and why is it significant?",
+      "a": "Angular ARIA (stable in Angular 22) is a set of accessible, unstyled headless component primitives from the CDK team — listbox, combobox, tree, menu, dialog, and more. \"Headless\" means they provide behaviour and accessibility (keyboard navigation, ARIA attributes, focus management) without any visual styling, so design systems can style them freely. Significance: building accessible components from scratch is extremely difficult; Angular ARIA provides the accessibility foundation so component library authors focus on styling rather than ARIA/keyboard handling."
+    },
+    {
+      "dayN": 14,
+      "qi": 0,
+      "q": "What is the smart/dumb component pattern and why does it improve maintainability?",
+      "a": "Smart (container) components inject services, own state, and pass data down. Dumb (presentational) components only receive @Input, emit @Output, and contain no business logic. Benefits: dumb components are reusable anywhere (no service dependencies), easily unit-tested (just pass @Input values and verify output), and naturally work with OnPush (all data comes from @Inputs/signals). Smart components contain the side effects and async logic in one place. The pattern also guides code organisation — keep business logic in stores/services, keep templates in dumb components."
+    },
+    {
+      "dayN": 14,
+      "qi": 1,
+      "q": "Why is feature-based folder structure preferred over type-based?",
+      "a": "Type-based (components/, services/, pipes/) groups files by what they are — a component for users and a component for orders live in the same folder. Feature-based (users/, orders/) groups files by what they belong to — all users files are together. Feature-based advantages: lazy loading maps 1:1 to features, team ownership is clearer (the users team owns the users folder), and when you add a user feature you touch one folder instead of five. Type-based creates coupling across features — a change to user logic touches components, services, pipes, and models in separate locations."
+    },
+    {
+      "dayN": 14,
+      "qi": 2,
+      "q": "How do you handle global errors in Angular without component-level try/catch?",
+      "a": "Provide a custom ErrorHandler: { provide: ErrorHandler, useClass: GlobalErrorHandler }. The handleError(error) method is called whenever an unhandled error occurs in any component, service, or effect. Use it to: show a notification toast, log to Sentry or other monitoring, navigate to an error page. For HTTP errors, an error interceptor is more appropriate (handles specific status codes). For Observable errors within components, use catchError in the pipe. The combination — global ErrorHandler + error interceptor + per-Observable catchError — covers most error scenarios."
+    },
+    {
+      "dayN": 14,
+      "qi": 3,
+      "q": "How would you walk through migrating a large Angular 12 NgModule app to modern Angular 22?",
+      "a": "1) Upgrade Angular incrementally to v22. 2) Enable standalone component migration: run ng generate @angular/core:standalone with the mode=convert-to-standalone schematic. 3) Enable OnPush on all components. 4) Replace Observable-based shared state with signal services. 5) Replace @Input()/@Output() with input()/output() and model() for two-way. 6) Add provideExperimentalZonelessChangeDetection() and test. 7) Replace lazy NgModules with loadComponent/loadChildren. 8) Add @defer to below-fold heavy components. 9) Migrate tests from Karma to Vitest. Each step is independently deployable — you don't need to do it all at once."
+    },
+    {
+      "dayN": 14,
+      "qi": 4,
+      "q": "What is a barrel file and what are the trade-offs of using it?",
+      "a": "A barrel file (usually index.ts) re-exports the public API of a feature: export { UserCardComponent } from './components/user-card.component'; export { UserStore } from './services/user.store'. Consumers import from 'features/users' instead of 'features/users/components/user-card.component'. Benefits: consumers are decoupled from internal file structure, refactoring internals doesn't break imports, clear public vs private API. Trade-offs: can cause circular dependency issues if not managed carefully, and some bundlers (Angular's esbuild) can slightly reduce tree-shaking effectiveness — mitigated by keeping barrels lean."
+    },
+    {
+      "dayN": 15,
+      "qi": 0,
+      "q": "Why does calling this.items().push(newItem) inside an OnPush component silently do nothing visible?",
+      "a": "OnPush change detection only re-runs when an @Input reference changes, an async pipe emits, or a signal updates via .set()/.update() -- it specifically does NOT re-run just because the contents of an existing array or object were mutated in place. push() mutates the array without changing which array object it is, so from OnPush's perspective, nothing changed. The fix is always to produce a new reference: spread into a new array, or use the signal's own .update() method."
+    },
+    {
+      "dayN": 15,
+      "qi": 1,
+      "q": "What's wrong with @for (item of items(); track $index) even though it compiles without error?",
+      "a": "Tracking by index means Angular associates DOM node position 0 with whatever the data item happens to be at index 0 right now -- if the array is reordered, filtered, or has an item removed from the middle, Angular reuses the wrong DOM element for the wrong data, which can cause visible flicker, lost input focus, or stale component state on reused nodes. track item.id (a stable identity that travels WITH the data, not its position) is almost always the correct choice."
+    },
+    {
+      "dayN": 15,
+      "qi": 2,
+      "q": "A component reads this.myInput() in the constructor and gets undefined even though the parent clearly passes a value. What's the actual timing issue?",
+      "a": "Angular's dependency injection resolves the constructor before it has processed and assigned any @Input bindings from the parent template -- inputs are guaranteed to be set only by the time ngOnInit runs. Reading an input in the constructor is a timing race that happens to sometimes look like it works (if you're just checking existence) but is fundamentally unreliable. Any logic depending on an input's actual value belongs in ngOnInit or later, never the constructor."
+    },
+    {
+      "dayN": 15,
+      "qi": 3,
+      "q": "Why is switchMap specifically wrong for a save/submit button, when it's the textbook-correct choice for search-as-type?",
+      "a": "switchMap's entire purpose is cancelling the previous in-flight request when a new one starts -- exactly right for search, where only the latest keystroke's result matters and stale results should be discarded. For a save action, the first click's save request is meaningful and must complete; cancelling it because the user clicked again (perhaps impatiently, perhaps by accident) silently loses that first save. exhaustMap (ignore new clicks while one is in-flight) or concatMap (queue and run them in order) are the correct operators for anything transactional."
+    },
+    {
+      "dayN": 15,
+      "qi": 4,
+      "q": "How does using the async pipe twice on the same observable in one template accidentally cause a duplicate HTTP call?",
+      "a": "Each | async in a template creates its own independent subscription to the source observable. If that observable is a cold, non-shared HTTP call (the default shape of an HttpClient.get() call), subscribing to it twice triggers the underlying HTTP request twice -- once per subscription, not once total. The fix is to subscribe exactly once by capturing the resolved value with the as syntax (@if (data$ | async; as data)) and reusing that captured value throughout the rest of the template block."
+    }
+  ]
+}

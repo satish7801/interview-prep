@@ -1,0 +1,45 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Worked system design 2 -- design a rate-limited API gateway for the 50-source ingestion pipeline",
+  "exp": "A second full worked example, deliberately different in shape from Day 6's -- this one is about protecting a shared resource (API rate limits from 50 external providers) rather than about deduplication. Seeing two differently-shaped problems solved with the same clarify-scale-sketch-drill-tradeoff-failure structure is what makes the structure itself transferable to a genuinely novel prompt in the real interview.",
+  "pts": [
+    "**Step 1 -- Clarify requirements:** each of the 50 external data providers (Bloomberg, ICE, etc.) has its OWN rate limit (some allow 10 requests/second, others allow 2/second) -- the system needs to respect each provider's individual limit without one slow/strict provider blocking ingestion from the others.",
+    "**Step 2 -- State the scale:** 50 providers, each with an independent rate limit ranging from 2-10 req/sec, and the daily ingestion needs to pull a bounded number of records from each (not unbounded streaming) -- this is a per-key rate limiting problem, not a global-traffic-shaping problem.",
+    "**Step 3 -- Sketch the approach, narrating the key decision immediately since it IS the design:** a per-provider token bucket, implemented in Redis so it's shared across however many parallel ingestion workers exist (from the Step Functions Map pattern in the AWS track) -- each worker, before calling a given provider's API, must acquire a token from that provider's bucket; if no token is available, it waits or backs off.",
+    "**Step 4 -- Justify token bucket over a fixed window counter, since this is where an interviewer probes depth:** a fixed window counter (like 'max 10 requests in this calendar second') has a boundary-burst problem -- 10 requests at the very end of second N and 10 more at the very start of second N+1 is 20 requests in a 2ms span, technically satisfying both windows' individual limits while bursting well past the intended rate. Token bucket smooths this because tokens refill continuously rather than resetting at a hard boundary.",
+    "**Step 5 -- Address the specific concurrency problem this pipeline has:** with 10 parallel Map-state workers (from the AWS orchestration day) potentially all wanting to call the SAME provider at once, the token bucket check-and-decrement must be atomic -- a Redis Lua script (or Redis's built-in atomic operations) performs the check-and-decrement as one atomic step, avoiding a race where two workers both see 1 token available and both proceed, over-drawing the bucket.",
+    "**Step 6 -- Name the trade-off:** centralizing rate limit state in Redis adds a dependency -- if Redis is unavailable, ingestion for ALL 50 providers stalls, not just one. The alternative (each worker tracking its own local rate limit) avoids that single point of failure but can't coordinate across workers, risking exceeding a provider's actual limit when multiple workers are active. For this pipeline's actual scale (50 providers, modest request volume), the coordination benefit of centralized Redis state outweighs the added dependency risk -- but this is a genuine trade-off worth stating, not a free win.",
+    "**What NOT to do:** don't describe generic 'API gateway' features (auth, routing, logging) as if they were the interesting part of this specific prompt -- the interviewer asked about rate limiting specifically because that's the part with a real design decision for THIS pipeline's shape (many independent per-provider limits, concurrent workers)."
+  ],
+  "code": "-- Token bucket state per provider, stored in Redis\n-- key:    ratelimit:{provider_name}\n-- fields: tokens (current count), last_refill (timestamp)\n\n-- Atomic check-and-decrement via a Redis Lua script (avoids the race\n-- condition of two workers both reading \"1 token available\" simultaneously)\n\nlocal function try_acquire_token(provider, max_tokens, refill_rate_per_sec):\n    -- Executed atomically in Redis via EVAL\n    local bucket = redis.call('HGETALL', 'ratelimit:' .. provider)\n    local tokens = tonumber(bucket.tokens) or max_tokens\n    local last_refill = tonumber(bucket.last_refill) or now()\n\n    -- Refill based on elapsed time since last check\n    local elapsed = now() - last_refill\n    tokens = math.min(max_tokens, tokens + elapsed * refill_rate_per_sec)\n\n    if tokens >= 1 then\n        tokens = tokens - 1\n        redis.call('HSET', 'ratelimit:' .. provider, 'tokens', tokens, 'last_refill', now())\n        return true    -- token acquired, safe to call the provider's API\n    else\n        return false   -- no token available, worker should back off and retry\n    end\n\n-- Worker-side usage (pseudocode)\nif try_acquire_token(\"Bloomberg\", max_tokens=10, refill_rate_per_sec=10):\n    call_bloomberg_api()\nelse:\n    sleep(backoff_interval)\n    retry()",
+  "pr": [
+    "Re-derive this entire design out loud from memory in under 15 minutes, then compare which of the six steps you skipped or rushed compared to Day 6's example"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "10 parallel workers (Map state)",
+        "Redis token bucket per provider",
+        "Atomic check-and-decrement (Lua)",
+        "Call provider API or back off"
+      ],
+      "cap": "Worked example: the atomicity of the check-and-decrement is the one genuine design decision under concurrent load"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is a token bucket the right rate-limiting algorithm here instead of a simple fixed-window counter, and can you state the specific failure mode a fixed window has?",
+      "a": "A fixed window counter (e.g. 'no more than 10 requests between :00 and :01 of each second') has a boundary-burst problem: nothing prevents 10 requests landing in the last millisecond of one window and another 10 in the first millisecond of the next window, producing 20 requests in a roughly 2-millisecond span while technically never violating either individual window's limit. A token bucket avoids this because tokens refill continuously over time rather than resetting at a hard boundary, smoothing the actual request rate closer to the intended average rather than allowing boundary-adjacent bursts."
+    },
+    {
+      "q": "Why does the token bucket check-and-decrement need to be atomic, and what specifically goes wrong if it isn't?",
+      "a": "With multiple parallel workers (from the Step Functions Map pattern) potentially calling the same provider concurrently, a non-atomic check-then-decrement (read the token count, decide there's enough, THEN decrement) creates a race window: two workers can both read '1 token available' before either has decremented, both proceed to call the API, and the bucket ends up over-drawn -- exceeding the provider's actual rate limit despite the code appearing correct in isolation. A Redis Lua script (or Redis's atomic primitives) performs the read-check-decrement as a single indivisible operation, closing that race window entirely."
+    },
+    {
+      "q": "What is the trade-off of centralizing rate-limit state in Redis versus having each worker track its own local rate limit independently?",
+      "a": "Centralized Redis state lets all workers correctly coordinate against the SAME provider's true rate limit regardless of how many workers are active -- but introduces Redis as a dependency whose unavailability stalls ingestion for every provider at once, a single point of failure affecting all 50 sources simultaneously. Local per-worker rate limiting has no single point of failure, but cannot coordinate across workers -- if 10 workers each independently believe they're allowed 10 req/sec to the same provider, the provider actually sees up to 100 req/sec, exceeding its real limit. For this pipeline's scale, the correctness benefit of centralized coordination is judged to outweigh the added dependency risk, but a candidate should state this as a conscious trade-off, not present it as a free win."
+    }
+  ]
+}

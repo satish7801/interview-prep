@@ -1,0 +1,35 @@
+{
+  "id": "day-14",
+  "n": 14,
+  "title": "System design drills + behavioral finals",
+  "exp": "Practice mid-senior designs (~35 min): URL shortener, notifications, rate limiter, checkout. Close with STAR stories.",
+  "pts": [
+    "**URL shortener:** hash/counter IDs, Redis cache, store, rate limit, async analytics.",
+    "**Notifications:** channels, templates, outbox, retries, preferences, idempotency.",
+    "**Rate limiter:** token bucket/sliding window in Redis; 429 semantics.",
+    "**Checkout:** reserve inventory → pay → order; saga/compensations; payment idempotency.",
+    "Behavioral: Situation → Task → Action (technical) → Result (numbers)."
+  ],
+  "code": "",
+  "pr": [
+    "Design URL shortener on paper in 30 minutes",
+    "Record one incident STAR story aloud",
+    "Mock interview: 45 minutes technical + 15 behavioral"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Whiteboard drill: pick one design daily. State requirements, API, data model, bottlenecks, and what you'd monitor in prod."
+    }
+  ],
+  "qa": [
+    {
+      "q": "Outline a notification service for email/SMS/push.",
+      "a": "API accepts notify requests with idempotency keys; persist outbox; workers per channel with retries/DLQ; template service; user preferences; provider adapters; metrics on send success/latency; never block the upstream order flow on provider latency."
+    },
+    {
+      "q": "Give a STAR story structure for a production incident.",
+      "a": "Situation: symptom + blast radius. Task: your ownership. Action: how you diagnosed (metrics/traces), mitigated, fixed root cause. Result: MTTR, error rate drop, follow-up (test, alert, postmortem)."
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Interview red flags -- the non-technical mistakes that sink a strong technical answer",
+  "exp": "Everything else in this track is about having the right answer. This day is about not undermining a right answer with how you deliver it. These are patterns interviewers explicitly watch for and weight heavily, independent of technical correctness.",
+  "pts": [
+    "**Talking without landing anywhere:** listing five possible approaches to a design question without ever committing to one reads as indecision, not thoroughness -- even when every option mentioned is technically valid. State a default choice, THEN mention the alternative you considered and why you didn't pick it. 'I'd use X because Y; I considered Z but ruled it out because [specific reason]' is dramatically stronger than 'you could do X, or Z, or...'",
+    "**Diving into a design before clarifying requirements:** covered in Day 6/7's Step 1, but worth repeating as its own red flag -- interviewers specifically watch whether a candidate asks clarifying questions BEFORE sketching a solution, or starts drawing boxes immediately. Skipping this reads as not having done real design work before, even if the eventual design is technically sound.",
+    "**Badmouthing a previous employer, team, or technology choice:** even when the criticism is factually accurate and even when the interviewer seems sympathetic, this reads as a risk signal about how you'll talk about THIS company later. Frame past frustrations as trade-offs and lessons ('the team prioritized shipping speed over test coverage at that stage, which I understood given the constraints, but it's something I'd advocate differently for now') rather than blame.",
+    "**Answering a question you weren't asked because you prepared for it:** a rehearsed answer to a slightly different question than what was actually asked is noticeable and reads as not actually listening. If a question seems to overlap with something you've prepared, briefly confirm you're answering the right thing ('just to make sure I'm addressing what you're asking -- you want to know about X specifically, not Y?') rather than launching into the prepared answer regardless.",
+    "**No questions for the interviewer at the end:** having zero questions reads as low genuine interest in the specific role, not just politeness. Prepare 2-3 real questions in advance that you'd actually want answered -- about the team's current biggest technical challenge, how the 50-source pipeline's on-call rotation works, or what a first 90 days would concretely look like -- not generic ones like 'what's the culture like.'",
+    "**Overclaiming ownership on a team project:** describing work you contributed to as work you solely did is a common overcorrection under interview pressure, and experienced interviewers often probe with a specific follow-up ('what part of that did YOU specifically write') that exposes overclaiming immediately and damages credibility on everything else you said. Use precise language: 'I owned the validation layer specifically; the ingestion side was a teammate's work' is more credible AND easier to defend under follow-up than a blanket 'I built the pipeline.'",
+    "**Treating a coding/design question as adversarial instead of collaborative:** getting visibly frustrated at a follow-up question or a hint from the interviewer, or treating every pushback as something to defend against rather than incorporate, signals how you'll behave in an actual code review or design discussion. The strongest signal you can give is incorporating a hint smoothly and thanking the interviewer for the redirect, not defending your original approach after being shown a gap in it.",
+    "**Silence during a hard problem instead of narrating your thinking:** going quiet while stuck looks identical to an interviewer whether you're making genuine progress silently or completely lost -- narrate what you're trying, even if it's 'I'm not sure this is right, but let me try assuming X and see where it leads' rather than working silently until you either solve it or give up."
+  ],
+  "code": "-- This day has no code -- it's entirely about interview delivery.\n-- The one \"exercise\" worth doing: record yourself (audio is enough)\n-- answering one system design question from Day 6 or 7, then listen back\n-- specifically for:\n--   1. Did you ask a clarifying question before describing any design?\n--   2. Did you land on ONE recommended approach, or just list options?\n--   3. How many filler words / how much silence when you got stuck?\n--   4. Did you narrate your thinking, or go quiet while working through it?\n-- Most people are surprised by at least one of these on the first listen-back.",
+  "pr": [
+    "Record yourself answering the Day 6 system design question, then listen back specifically checking for the 4 questions listed in this day's code block"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Red flag",
+        "Why it hurts even with correct technical content"
+      ],
+      "r": [
+        [
+          "Listing options without committing",
+          "Reads as indecision, not thoroughness"
+        ],
+        [
+          "Diving in before clarifying requirements",
+          "Signals no real design-work experience"
+        ],
+        [
+          "Badmouthing a past employer/team",
+          "Signals how you'll talk about THIS company later"
+        ],
+        [
+          "Overclaiming solo ownership of team work",
+          "Collapses credibility once probed with a follow-up"
+        ],
+        [
+          "Defending against a helpful hint",
+          "Signals poor code-review/feedback behavior"
+        ],
+        [
+          "Going silent while stuck",
+          "Interviewer can't distinguish progress from being lost"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the practical difference between 'you could use a queue, or a direct call, or maybe an event bus' and a strong answer to the same design question?",
+      "a": "The first version lists options without committing, which reads as indecision even if every option is technically defensible -- the interviewer has to ask 'well, which would YOU choose' as a follow-up just to get an actual answer. A strong version states a default with a reason, then mentions what was considered and ruled out: 'I'd use a queue here because it decouples the two systems' availability -- I considered a direct synchronous call, but ruled it out because it would let a notification-service outage block the core monitoring system.' Same underlying knowledge, dramatically different signal about decisiveness and design maturity."
+    },
+    {
+      "q": "Why is badmouthing a previous employer or technology choice risky even when the criticism is completely accurate?",
+      "a": "Accuracy isn't the concern -- the interviewer isn't primarily evaluating whether your critique of a past team's decision was factually fair, they're forming an impression of how you'll talk about THIS company and team a year from now if something here also goes imperfectly, which is a near-certainty at any real company. Reframing the same substance as a trade-off ('the team optimized for shipping speed at that stage, which made sense given the constraints, though I'd push for more test coverage earlier if doing it again') conveys the identical technical judgment without the relationship-risk signal."
+    },
+    {
+      "q": "An interviewer gives you a hint mid-problem that contradicts the approach you'd started with. What is the strongest way to respond?",
+      "a": "Incorporate it smoothly and say something like 'ah, that's a good point -- let me adjust' before continuing, rather than defending the original approach or explaining why you'd still prefer it despite the hint. This isn't about capitulating to any pushback reflexively -- if you genuinely disagree after real technical consideration, saying so with reasoning is fine. But visibly defending against a hint that clearly resolves a real gap, rather than incorporating it, signals how you'd behave in an actual code review when a teammate points out a legitimate issue -- which is precisely the behavior pattern the interviewer is trying to observe."
+    },
+    {
+      "q": "Why does going silent while stuck on a hard problem hurt you even if you eventually solve it correctly?",
+      "a": "An interviewer cannot distinguish 'working through a genuinely hard problem productively' from 'completely lost and hoping something comes to mind' if both look like silence from the outside -- the entire point of narrating your thinking out loud ('let me try assuming X first and see if that leads anywhere useful') is to give the interviewer visibility into your problem-solving process, which is frequently what's actually being evaluated more than whether you land the exact right answer in the allotted time. A correct answer reached in silence provides less signal to the interviewer than a mostly-correct answer reached with clearly narrated reasoning."
+    }
+  ]
+}

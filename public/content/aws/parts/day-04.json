@@ -1,0 +1,26 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "AWS SDK for .NET, CI/CD, shared responsibility",
+  "exp": "As a .NET developer joining a data engineering team, you bridge the .NET API layer with the AWS data pipeline.",
+  "pts": [
+    "AWSSDK.S3 NuGet package: AmazonS3Client reads credentials from env vars -> ~/.aws/credentials -> EC2 instance profile.",
+    "Never hardcode access keys. Attach an IAM role to the EC2 instance for automatic temporary credentials.",
+    "Shared responsibility: AWS secures hardware/network. YOU secure IAM, encryption, network config.",
+    "CI/CD: GitHub Actions with OIDC (no long-lived keys stored) is the modern standard."
+  ],
+  "code": "// .NET C# -- AWS SDK for S3\nusing Amazon.S3;\nusing Amazon.S3.Model;\n\nvar s3 = new AmazonS3Client(Amazon.RegionEndpoint.EUWest2);\n\nvar put = new PutObjectRequest {\n    BucketName = \"my-pipeline-data\",\n    Key        = \"uploads/2024/orders.csv\",\n    FilePath   = \"C:/data/orders.csv\",\n    ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256\n};\nawait s3.PutObjectAsync(put);\n\nvar req = new GetPreSignedUrlRequest {\n    BucketName = \"my-pipeline-data\", Key = \"reports/q4.pdf\",\n    Expires = DateTime.UtcNow.AddHours(1)\n};\nstring url = s3.GetPreSignedURL(req);\n\nvar list = await s3.ListObjectsV2Async(new ListObjectsV2Request {\n    BucketName = \"my-pipeline-data\", Prefix = \"processed/2024/\"\n});\nforeach (var obj in list.S3Objects)\n    Console.WriteLine($\"{obj.Key} ({obj.Size:N0} bytes)\");",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Credential chain: EC2 code -> SDK checks env vars -> checks ~/.aws/credentials -> checks instance metadata (IAM role) -> temporary credentials returned."
+    }
+  ],
+  "qa": [
+    {
+      "q": "How should a .NET app on EC2 access S3 without hardcoded credentials?",
+      "a": "Attach an IAM Role (instance profile) to the EC2 instance. The AWS SDK automatically reads temporary credentials from the EC2 metadata service -- no access keys in code. Credentials auto-rotate every hour. Same pattern applies to Lambda (execution role), ECS (task role), and EMR (cluster role)."
+    }
+  ]
+}

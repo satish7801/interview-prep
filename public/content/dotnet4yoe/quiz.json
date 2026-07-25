@@ -1,0 +1,167 @@
+{
+  "trackId": "dotnet4yoe",
+  "items": [
+    {
+      "dayN": 1,
+      "qi": 0,
+      "q": "What do interviewers expect at ~4 YOE that they don't expect from a junior?",
+      "a": "Trade-off reasoning, production debugging stories with metrics, ownership of API+DB+auth+observability end-to-end, and mentoring/communication — not just CRUD syntax."
+    },
+    {
+      "dayN": 1,
+      "qi": 1,
+      "q": "How would you structure 2 weeks of prep before a mid-senior .NET interview?",
+      "a": "Week 1: async, DI, ASP.NET pipeline, EF/SQL (N+1, indexes, isolation). Week 2: security, messaging, caching, observability, three system designs, and STAR/resume drills. Daily: 30–45 min flashcards + one design sketch."
+    },
+    {
+      "dayN": 2,
+      "qi": 0,
+      "q": "IEnumerable vs IQueryable — when does each execute?",
+      "a": "IEnumerable operators run in-process when enumerated. IQueryable builds an expression tree; the provider (EF) translates to SQL when enumerated/materialized (ToList, First, etc.). Mixing them poorly can pull too much data into memory."
+    },
+    {
+      "dayN": 2,
+      "qi": 1,
+      "q": "When would you use Span<T> and what are its limits?",
+      "a": "Use Span for slicing/parsing contiguous memory without allocations. Limits: ref struct — can't be stored on the heap, can't be class fields, can't be used across await. Use Memory<T> when you need to hold the view longer."
+    },
+    {
+      "dayN": 3,
+      "qi": 0,
+      "q": "Why can .Result deadlock, and how do you fix it?",
+      "a": "If a SynchronizationContext must resume the continuation but the thread is blocked waiting for the task, you deadlock. Fix: async all the way with await; never block in UI/legacy sync contexts. In ASP.NET Core prefer await over Result always."
+    },
+    {
+      "dayN": 3,
+      "qi": 1,
+      "q": "When is ValueTask appropriate?",
+      "a": "When a method frequently completes synchronously and allocation of Task shows up in profiles. Rules: await at most once, don't store/reuse casually, convert with AsTask() only when needed (allocates)."
+    },
+    {
+      "dayN": 4,
+      "qi": 0,
+      "q": "Why can't you inject DbContext into a Singleton?",
+      "a": "DbContext is scoped. Captured by a singleton it lives for the app lifetime, becoming shared/unsafe across requests (threading + disposed state). Create a scope per unit of work via IServiceScopeFactory."
+    },
+    {
+      "dayN": 4,
+      "qi": 1,
+      "q": "Why is IHttpClientFactory preferred?",
+      "a": "It manages handler lifetimes and DNS refresh, avoiding socket exhaustion from disposing HttpClient too often or holding one forever. Enables named/typed clients and resilience policies."
+    },
+    {
+      "dayN": 5,
+      "qi": 0,
+      "q": "Describe the ASP.NET Core request pipeline.",
+      "a": "Kestrel accepts the connection and parses HTTP, then invokes the middleware pipeline in order. Routing selects an endpoint; the handler runs; the response flows back through middleware. Auth middleware must be placed correctly relative to UseRouting/UseEndpoints."
+    },
+    {
+      "dayN": 5,
+      "qi": 1,
+      "q": "Minimal APIs vs Controllers — when do you choose each?",
+      "a": "Minimal for small/focused APIs and fast delivery. Controllers for larger apps needing conventions, filters, inheritance, and clearer organization. Either can be production-grade; choose for maintainability of the team."
+    },
+    {
+      "dayN": 6,
+      "qi": 0,
+      "q": "How do you make POST /orders safe under client retries?",
+      "a": "Require an Idempotency-Key header. Persist key → response (or request hash). On replay, return the original result instead of creating a second order. Combine with unique constraints for defense in depth."
+    },
+    {
+      "dayN": 6,
+      "qi": 1,
+      "q": "When would you pick gRPC over REST?",
+      "a": "Internal service-to-service calls needing strong contracts, binary efficiency, and streaming. Prefer REST for public HTTP APIs, browser clients, and HTTP caching."
+    },
+    {
+      "dayN": 7,
+      "qi": 0,
+      "q": "What is the N+1 problem and how do you fix it in EF?",
+      "a": "Loading a collection then lazy-loading a navigation per row causes 1+N queries. Fix with Include/ThenInclude, Select projections, AsSplitQuery for big graphs, or explicit SQL joins. Verify with logging or a profiler."
+    },
+    {
+      "dayN": 7,
+      "qi": 1,
+      "q": "When do you use AsNoTracking?",
+      "a": "Read-only queries where you won't Update/SaveChanges. Skipping tracking reduces memory and CPU. Don't use it if you need to mutate and persist the same instances."
+    },
+    {
+      "dayN": 8,
+      "qi": 0,
+      "q": "What does READ COMMITTED SNAPSHOT buy you?",
+      "a": "Row versioning so readers don't take shared locks that block writers (and vice versa) for typical read committed scenarios. Trade-off: tempdb version store cost and different anomaly profile — know it isn't full serializability."
+    },
+    {
+      "dayN": 8,
+      "qi": 1,
+      "q": "How do you handle optimistic concurrency in EF Core?",
+      "a": "Add a RowVersion/timestamp (or token) configured as concurrency token. On SaveChanges conflict, catch DbUpdateConcurrencyException, reload database values, merge or ask the user, retry."
+    },
+    {
+      "dayN": 9,
+      "qi": 0,
+      "q": "Explain Authorization Code flow with PKCE.",
+      "a": "Client sends authorize request with code_challenge; user authenticates; AS returns a code; client exchanges code + code_verifier for tokens. PKCE stops intercepted codes from being redeemed by attackers who lack the verifier."
+    },
+    {
+      "dayN": 9,
+      "qi": 1,
+      "q": "Name five OWASP mitigations you'd apply to an ASP.NET API.",
+      "a": "Parameterized queries/EF; output encoding; CSRF protection for cookie sessions; secrets out of source; least-privilege authZ policies; strict DTOs; security headers; dependency scanning."
+    },
+    {
+      "dayN": 10,
+      "qi": 0,
+      "q": "When do you choose Kafka over RabbitMQ?",
+      "a": "High-throughput event streams, replay/retention, partition-scaled consumers, and log-oriented processing. Choose RabbitMQ for complex routing, classic work queues, and lower operational complexity at moderate volume."
+    },
+    {
+      "dayN": 10,
+      "qi": 1,
+      "q": "What problem does the outbox pattern solve?",
+      "a": "Dual-write: updating DB and publishing a message separately can lose one side on failure. Outbox writes the event in the same DB transaction; a process publishes later, yielding reliable at-least-once delivery with idempotent consumers."
+    },
+    {
+      "dayN": 11,
+      "qi": 0,
+      "q": "How do you debug increasing API latency over days?",
+      "a": "Check metrics (P95, errors, dependency times), distributed traces for slow spans, runtime counters (thread pool queue, GC), recent deploys/config, and classics: N+1, missing index, sync-over-async, cache stampede, chatty logging."
+    },
+    {
+      "dayN": 11,
+      "qi": 1,
+      "q": "When should a retry policy NOT retry?",
+      "a": "On non-transient errors (400 validation, 401/403), non-idempotent POSTs without idempotency keys, and after a circuit is open. Retry timeouts/5xx/connection resets with jittered backoff."
+    },
+    {
+      "dayN": 12,
+      "qi": 0,
+      "q": "When are microservices the wrong choice?",
+      "a": "Small team/domain, unclear boundaries, or when a modular monolith would ship faster with fewer failure modes. Microservices add network latency, consistency, and ops cost — justify with real scaling or team ownership needs."
+    },
+    {
+      "dayN": 12,
+      "qi": 1,
+      "q": "Describe cache-aside and one failure mode.",
+      "a": "App reads cache; on miss, loads DB and populates cache with TTL. Failure modes: stampedes on expiry, stale reads after writes without invalidation, and caching personalized/security-sensitive data incorrectly."
+    },
+    {
+      "dayN": 13,
+      "qi": 0,
+      "q": "App Service vs AKS for a single .NET API?",
+      "a": "Default to App Service for one API needing speed-to-prod and managed scaling. Choose AKS when you run many services, need custom networking/sidecars, or already operate Kubernetes. Don't adopt K8s for resume points alone."
+    },
+    {
+      "dayN": 14,
+      "qi": 0,
+      "q": "Outline a notification service for email/SMS/push.",
+      "a": "API accepts notify requests with idempotency keys; persist outbox; workers per channel with retries/DLQ; template service; user preferences; provider adapters; metrics on send success/latency; never block the upstream order flow on provider latency."
+    },
+    {
+      "dayN": 14,
+      "qi": 1,
+      "q": "Give a STAR story structure for a production incident.",
+      "a": "Situation: symptom + blast radius. Task: your ownership. Action: how you diagnosed (metrics/traces), mitigated, fixed root cause. Result: MTTR, error rate drop, follow-up (test, alert, postmortem)."
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Memory and GC deep dive -- stack vs heap, boxing, IDisposable, Span<T>",
+  "exp": "Day 7's GC generations content covered the mental model. This day goes deeper into the specific memory decisions that show up in code review and performance-sensitive interview questions.",
+  "pts": [
+    "Value types (struct, int, bool, enum) live on the stack when they're local variables or method parameters -- fast allocation, automatic cleanup when the stack frame pops, no GC involvement.",
+    "Reference types (class, string, array, delegate) always live on the heap -- the stack only holds a reference (pointer) to the heap location. This is true even for a local variable of a reference type.",
+    "**Boxing:** converting a value type to object (or an interface it implements) allocates a NEW object on the heap wrapping a copy of the value -- a hidden allocation that's easy to introduce accidentally, e.g. passing an int to a method expecting object, or adding value types to a non-generic ArrayList.",
+    "**Unboxing** is the reverse -- extracting the value type back out of the boxed object, which involves a type check and a copy. Boxing/unboxing in a tight loop is a classic, easy-to-miss performance bug.",
+    "IDisposable and the `using` statement: for any type wrapping an unmanaged resource (file handle, database connection, network socket), Dispose() must be called deterministically -- GC alone doesn't know how to release unmanaged resources, only managed memory. `using var conn = ...;` guarantees Dispose() runs even if an exception is thrown.",
+    "The finalizer (~ClassName() destructor syntax) is a SAFETY NET for unmanaged resources if Dispose() was never called -- it runs on a separate finalizer thread at an unpredictable time, is significantly slower than deterministic disposal, and objects with finalizers survive at least one extra GC generation before being collected. Never rely on it as your primary cleanup mechanism.",
+    "Span<T> and Memory<T> (introduced in C# 7.2+) provide a type-safe view over a contiguous block of memory (an array, a stack-allocated buffer, unmanaged memory) WITHOUT copying it -- string.Substring() allocates a new string, but a ReadOnlySpan<char> slice over the same string allocates nothing.",
+    "Span<T> is a ref struct, meaning it can ONLY live on the stack -- it cannot be stored in a field of a class, boxed, or captured in a lambda closure, because the memory it might point to (like a stack-allocated buffer) would become invalid once the method returns."
+  ],
+  "code": "// Boxing -- an easy-to-miss hidden heap allocation\nint number = 42;\nobject boxed = number;              // BOXES: allocates a new object on the heap\nint unboxed = (int)boxed;           // UNBOXES: type-checks and copies the value back out\n\n// Classic boxing trap: non-generic collections box every value type added\nArrayList list = new ArrayList();\nlist.Add(42);                       // boxes the int -- avoid ArrayList, use List<int>\n\n// IDisposable -- using guarantees Dispose() runs even on exception\npublic class DbConnection : IDisposable\n{\n    private SqlConnection _conn;\n    public void Dispose() => _conn?.Dispose();\n}\n\nusing var conn = new DbConnection();\n// ... use conn ...\n// Dispose() called automatically here, even if an exception was thrown above\n\n// Finalizer as a safety net (rarely needed if IDisposable is used correctly)\npublic class UnmanagedWrapper : IDisposable\n{\n    private IntPtr _handle;\n    public void Dispose()\n    {\n        ReleaseHandle();\n        GC.SuppressFinalize(this);   // tell GC the finalizer is no longer needed\n    }\n    ~UnmanagedWrapper() => ReleaseHandle();  // safety net if Dispose() was never called\n    private void ReleaseHandle() { /* release _handle */ }\n}\n\n// Span<T> -- zero-allocation slicing over existing memory\nReadOnlySpan<char> fullText = \"CustomerId=12345;Region=US\".AsSpan();\nint separatorIndex = fullText.IndexOf(';');\nReadOnlySpan<char> firstField = fullText.Slice(0, separatorIndex);  // no new string allocated\n// Compare to: fullText.ToString().Substring(0, separatorIndex) -- allocates a new string\n\n// Span<T> cannot be stored in a field or captured in a closure -- this won't compile:\n// class Bad { private Span<int> _field; }  // CS8345: field cannot be of a byref-like type",
+  "pr": [
+    "Rewrite a loop that boxes ints into an ArrayList to use a generic List<int> instead, and explain the allocation difference"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Concept",
+        "Lives where",
+        "Key risk"
+      ],
+      "r": [
+        [
+          "Value type local variable",
+          "Stack",
+          "None -- fast, auto-cleanup"
+        ],
+        [
+          "Reference type instance",
+          "Heap",
+          "GC pressure if allocated excessively"
+        ],
+        [
+          "Boxed value type",
+          "Heap",
+          "Hidden allocation, easy to miss"
+        ],
+        [
+          "Span<T> / ref struct",
+          "Stack only",
+          "Cannot store in a field or closure"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is boxing and why is it a performance concern that's easy to introduce accidentally?",
+      "a": "Boxing converts a value type to object (or an interface type), allocating a new object on the heap that wraps a copy of the value. It's easy to introduce accidentally: passing an int to a method parameter typed as object, storing value types in a non-generic collection like ArrayList, or calling a virtual method inherited from object (like ToString()) on a struct in some cases. In a tight loop processing millions of values, each boxing operation is a heap allocation and eventual GC pressure that wouldn't exist with a properly generic API."
+    },
+    {
+      "q": "Why can't you rely on a class's finalizer as the primary way to release an unmanaged resource?",
+      "a": "Finalizers run on a separate finalizer thread at a time GC decides, not deterministically when you're done with the resource -- meaning a file handle or database connection could remain open far longer than necessary, potentially exhausting a limited resource pool. Additionally, an object with a finalizer survives at least one extra GC generation (it must be finalized before its memory can actually be reclaimed), making cleanup slower overall. IDisposable with a using statement provides deterministic, immediate cleanup; the finalizer should only exist as a safety net for cases where Dispose() was forgotten."
+    },
+    {
+      "q": "Why is Span<T> described as a 'ref struct' and what does that restrict?",
+      "a": "A ref struct can only ever live on the stack -- it cannot be boxed, stored as a field in a class, used in an async method's state machine, or captured in a lambda closure. This restriction exists because a Span<T> might point to stack-allocated memory (like a stackalloc buffer), and if that Span were allowed to outlive the stack frame it points into -- by being stored on the heap or captured in a closure that outlives the method -- it would reference invalid memory. The restriction is what makes Span<T> safe to use for zero-allocation slicing without introducing memory corruption risks."
+    },
+    {
+      "q": "What is the practical difference between fullText.Slice(0, n) on a Span<char> and fullText.Substring(0, n) on a string?",
+      "a": "Substring() allocates a brand new string object on the heap containing a copy of the requested characters. Slice() on a Span<char> or ReadOnlySpan<char> returns a new Span value (itself a lightweight stack-allocated struct) that simply points into the SAME underlying memory with adjusted offset and length -- zero heap allocation. For code parsing large volumes of text (like a hot-path log parser or a high-throughput API processing many small strings), replacing repeated Substring calls with Span slicing can eliminate a significant source of GC pressure."
+    }
+  ]
+}

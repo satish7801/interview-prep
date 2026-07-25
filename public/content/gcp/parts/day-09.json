@@ -1,0 +1,54 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Grafana + Cloud Monitoring -- building the pipeline dashboard",
+  "exp": "With the Service Account and role in place, wire up Cloud Monitoring (and Cloud Logging) as Grafana data sources and build the same panel set as the AWS and Azure versions.",
+  "pts": [
+    "Cloud Monitoring query editor in Grafana requires: the metric type (e.g. custom.googleapis.com/pipeline/records_processed), a filter on resource/metric labels, and an aggregation (ALIGN_SUM, ALIGN_MEAN, etc.) -- the same four-piece shape as CloudWatch and Azure Monitor, GCP's own naming for the aggregation functions.",
+    "Cloud Logging as a Grafana data source lets you run a Cloud Logging filter query directly in a panel -- structurally similar to embedding a Logs Insights or KQL query, using Cloud Logging's own filter syntax instead.",
+    "Grafana's math expression feature again fills the Metric-Math-equivalent role here, since Cloud Monitoring itself has no native cross-metric math feature any more than Azure Monitor does -- same $A / $B * 100 pattern as the Azure day.",
+    "Template variables sourced from a Cloud Monitoring label (like the 'source' label used on the custom metric) populate a $source dropdown the same way as the AWS dimension and Azure KQL-distinct patterns.",
+    "Same practical panel set for the third time: records per source (Stat), job duration trend (Time series), error rate % (Stat, expression), Dataproc cluster idle/low-utilization signal (Stat), last successful run per source (Table, via Cloud Logging query)."
+  ],
+  "code": "// Cloud Monitoring query in a Grafana panel (simplified JSON)\n{\n  \"datasource\": \"Cloud Monitoring\",\n  \"metricType\": \"custom.googleapis.com/pipeline/records_processed\",\n  \"filters\": [\"metric.label.source = \\\"$source\\\"\"],\n  \"aggregation\": { \"perSeriesAligner\": \"ALIGN_SUM\", \"alignmentPeriod\": \"3600s\" }\n}\n\n// Cloud Logging query embedded in a panel\nresource.type=\"dataproc_cluster\"\nseverity=\"ERROR\"\nlabels.source=\"$source\"\n\n// Error rate -- Grafana math expression, same pattern as Azure day\n$A / $B * 100\n\n// Template variable: Name=source, Type=Query, Data source=Cloud Monitoring\n// Query: label_values(custom.googleapis.com/pipeline/records_processed, source)",
+  "pr": [
+    "Build a Grafana panel using a math expression that computes error rate as a percentage from two Cloud Monitoring custom metrics"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Panel",
+        "Cloud Monitoring query type"
+      ],
+      "r": [
+        [
+          "Records per source",
+          "Metric, ALIGN_SUM aggregation"
+        ],
+        [
+          "Job duration trend",
+          "Metric, Time series"
+        ],
+        [
+          "Error rate %",
+          "Grafana math expression"
+        ],
+        [
+          "Dataproc idle signal",
+          "Metric, CPU utilization ALIGN_MEAN"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What four pieces of information does a Cloud Monitoring query in Grafana require, and how does that compare across all three clouds now covered?",
+      "a": "Metric type, a label-based filter (narrowing to a specific resource/dimension), and an aggregation function over an alignment period -- functionally identical in purpose to CloudWatch's namespace+metric+dimensions+statistic and Azure Monitor's namespace+metric+resource+aggregation. All three clouds require the same four conceptual pieces -- which metric, filtered to what, aggregated how, over what time window -- just with different field names and syntax for expressing each one."
+    },
+    {
+      "q": "Why does Grafana's math expression feature do the Metric-Math-equivalent job on all three clouds rather than each cloud providing its own native version?",
+      "a": "Only CloudWatch has a genuine server-side Metric Math feature; Azure Monitor and Cloud Monitoring have no native cross-metric-query math capability of their own. Grafana's own math expression layer (referencing queries by letter and combining them, e.g. $A / $B * 100) works identically regardless of which cloud's data source is feeding queries A and B, which is precisely why it's the more broadly useful skill to know well -- it's cloud-agnostic within Grafana even when the underlying platforms differ in their own native capabilities."
+    }
+  ]
+}

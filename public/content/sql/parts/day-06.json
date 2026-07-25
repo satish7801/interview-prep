@@ -1,0 +1,70 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Nth highest salary — 3 approaches + classic problems",
+  "exp": "The Nth highest salary problem is asked so often because it has three distinct solutions representing three SQL paradigms. After solving it three ways, practice the 'second highest salary with NULL return' variant — that edge case reveals whether you truly understand each approach.",
+  "pts": [
+    "Approach 1: `OFFSET FETCH` — clean, readable, SQL Server 2012+; but returns empty set (not NULL) when N does not exist",
+    "Approach 2: Correlated subquery with `COUNT(DISTINCT salary)` — works everywhere; slowest O(n²)",
+    "Approach 3: `DENSE_RANK()` — most robust; handles ties and non-existence correctly",
+    "**RANK vs DENSE_RANK for Nth highest:** RANK leaves gaps after ties (1,1,3) — rank 2 may not exist. DENSE_RANK has no gaps (1,1,2) — every rank N is always reachable",
+    "**Edge case: return NULL not empty set** — wrap in SELECT with ISNULL or use outer query: `SELECT MAX(salary) WHERE rnk = N` returns NULL when N does not exist",
+    "**Nth highest per group:** `DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC)` then filter WHERE rnk = N",
+    "Practice: \"second highest salary or NULL if it does not exist\" — a very common variant that tests edge case handling"
+  ],
+  "code": "-- Problem: find the 3rd highest distinct salary\n\n-- Approach 1: OFFSET FETCH (clean but empty set if N doesn't exist)\nSELECT DISTINCT salary FROM employees\nORDER BY salary DESC\nOFFSET 2 ROWS FETCH NEXT 1 ROW ONLY;\n\n-- Approach 2: Correlated subquery\nSELECT DISTINCT salary FROM employees e\nWHERE (\n  SELECT COUNT(DISTINCT salary) FROM employees\n  WHERE salary > e.salary\n) = 2;   -- exactly 2 distinct salaries are higher → this is 3rd\n\n-- Approach 3: DENSE_RANK (most robust — handles ties + non-existence)\nSELECT salary FROM (\n  SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk\n  FROM employees\n) t WHERE rnk = 3;\n\n-- Variant: return NULL if 3rd highest doesn't exist\nSELECT MAX(salary) FROM (\n  SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk\n  FROM employees\n) t WHERE rnk = 3;   -- MAX of empty set = NULL ✓\n\n-- Nth highest PER DEPARTMENT\nSELECT dept, salary FROM (\n  SELECT dept, salary,\n    DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS rnk\n  FROM employees\n) t WHERE rnk = 2;",
+  "pr": [
+    "LeetCode: Second Highest Salary",
+    "LeetCode: Nth Highest Salary",
+    "LeetCode: Department Highest Salary"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Approach",
+        "How it works",
+        "Limitation"
+      ],
+      "r": [
+        [
+          "OFFSET FETCH",
+          "Sort DESC, skip N-1, take 1",
+          "Empty set (not NULL) if N missing"
+        ],
+        [
+          "Correlated subquery",
+          "Count distinct higher values = N-1",
+          "O(n²) — slow on large tables"
+        ],
+        [
+          "DENSE_RANK",
+          "Rank all, filter WHERE rnk = N",
+          "Best overall — handles ties + gaps"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What are the three approaches to Nth highest salary and when would you choose each?",
+      "a": "OFFSET FETCH: cleanest syntax, best for simple cases, but returns empty set (not NULL) when N doesn't exist. Correlated subquery: works everywhere, most portable, but O(n²) — avoid on large tables. DENSE_RANK: most robust, handles ties correctly, O(n log n), can be adapted to return NULL for non-existent ranks. In interviews, lead with DENSE_RANK and explain why — it shows the deepest understanding."
+    },
+    {
+      "q": "Why does DENSE_RANK handle the Nth highest problem better than RANK?",
+      "a": "RANK leaves gaps after ties — if two employees share salary rank 1, the next rank is 3 (not 2). So rank 2 doesn't exist and a query for the \"2nd highest\" returns nothing. DENSE_RANK has no gaps — next after tied rank 1 is rank 2, every rank N is always reachable. For finding the Nth distinct salary, DENSE_RANK is the semantically correct choice."
+    },
+    {
+      "q": "How do you make the Nth highest query return NULL instead of an empty set when N doesn't exist?",
+      "a": "Wrap the DENSE_RANK query in MAX(salary): SELECT MAX(salary) FROM (SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk FROM employees) t WHERE rnk = N. When no rows match, MAX of an empty set returns NULL. This is the standard approach for the \"second highest salary or NULL\" variant on LeetCode."
+    },
+    {
+      "q": "How do you find the Nth highest salary per department in a single query?",
+      "a": "SELECT dept, salary FROM (SELECT dept, salary, DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS rnk FROM employees) t WHERE rnk = N; The PARTITION BY dept resets the rank counter per department, so rank 1 is the highest salary within each department separately."
+    },
+    {
+      "q": "What is the time complexity of the correlated subquery approach vs DENSE_RANK?",
+      "a": "Correlated subquery is O(n²): for each of the n outer rows, the subquery scans all n rows to count higher salaries. DENSE_RANK (window function) requires a sort — O(n log n). For large tables, the correlated subquery approach can be dramatically slower. OFFSET FETCH with DISTINCT also requires a sort — O(n log n). DENSE_RANK is generally the most efficient approach."
+    }
+  ]
+}

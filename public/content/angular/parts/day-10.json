@@ -1,0 +1,49 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Performance — @defer, virtual scroll, trackBy, pure pipes, bundle analysis",
+  "exp": "Performance optimisation is a guaranteed senior topic. Beyond OnPush (covered in Day 9), know @defer for code-splitting, CDK virtual scroll for long lists, and bundle analysis with angular-bundle-analyzer — these distinguish candidates who have shipped at scale.",
+  "pts": [
+    "**@defer (stable v17):** lazy-loads components and their dependencies as a separate JS chunk; reduces initial bundle size",
+    "**Triggers: `on viewport`** (IntersectionObserver), **`on idle`** (requestIdleCallback), **`on interaction`** (click/focus), **`when signal()`** (programmatic), **`on immediate`** (async, next tick)",
+    "**`@defer (prefetch on idle)`:** preloads the chunk in the background when idle — downloaded before needed, renders faster when triggered",
+    "**Virtual scrolling (CDK):** `<cdk-virtual-scroll-viewport itemSize=\"50\">` — only renders DOM for visible rows; essential for lists of 1000+ items",
+    "**`trackBy` in `@for`:** `track item.id` — Angular reuses existing DOM elements for unchanged items instead of recreating all",
+    "**Pure pipes for computed display values:** computed logic in the template without side effects; safer than computing in the template expression and faster than impure pipes",
+    "**`NgOptimizedImage` (`[ngSrc]`):** Angular image directive; adds `loading=\"lazy\"`, `fetchpriority`, `srcset`, and size hints automatically; enforces best practices",
+    "**Bundle analysis:** `ng build --stats-json && npx webpack-bundle-analyzer dist/*/stats.json` — visualise chunk sizes and find large dependencies to lazy-load",
+    "**Standalone component tree-shaking:** unused components are excluded from the bundle automatically when not imported — NgModules prevented this"
+  ],
+  "code": "// @defer with prefetch: preload in background, render on viewport\n@defer (on viewport; prefetch on idle) {\n  <heavy-analytics-dashboard [data]=\"data()\" />\n} @placeholder {\n  <div class=\"dashboard-skeleton\"></div>\n}\n\n// Virtual scrolling: render only visible rows (100 visible out of 100,000)\n@Component({\n  imports: [ScrollingModule],\n  template: \\`\n    <cdk-virtual-scroll-viewport itemSize=\"48\" style=\"height: 500px\">\n      @for (item of items(); track item.id) {\n        <div *cdkVirtualFor=\"let item of items(); trackBy: trackById\" class=\"row\">\n          {{ item.name }}\n        </div>\n      }\n    </cdk-virtual-scroll-viewport>\n  \\`\n})\nexport class BigListComponent {\n  items = signal<Item[]>([]);\n  trackById = (i: number, item: Item) => item.id;\n}\n\n// Pure pipe: compute display values without impure side effects\n@Pipe({ name: 'relativeTime', pure: true, standalone: true })\nexport class RelativeTimePipe implements PipeTransform {\n  transform(date: Date): string {\n    const diff = Date.now() - date.getTime();\n    if (diff < 60000) return 'just now';\n    if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';\n    return Math.floor(diff / 3600000) + 'h ago';\n  }\n}\n\n// NgOptimizedImage: automatic lazy loading, srcset, LCP priority\n@Component({\n  imports: [NgOptimizedImage],\n  template: \\`\n    <img [ngSrc]=\"user.avatarUrl\" width=\"64\" height=\"64\" [priority]=\"isAboveFold\">\n  \\`\n})\nexport class AvatarComponent {\n  @Input() user!: User;\n  @Input() isAboveFold = false;\n}",
+  "pr": [
+    "Add @defer (on viewport) to the bottom section of a page and verify it creates a separate chunk"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Diagram: @defer block sequence — @placeholder visible → trigger fires → @loading shown → chunk downloads → component renders"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between @defer triggers on viewport and on idle?",
+      "a": "on viewport: Angular uses IntersectionObserver to detect when the @placeholder element enters the browser viewport — then downloads and renders the deferred content. Best for below-the-fold content. on idle: uses requestIdleCallback to defer loading until the browser has nothing else to do — content loads soon after initial render but without blocking the main thread. Best for non-critical widgets that can load any time. You can combine them: @defer (on viewport; prefetch on idle) — preloads the chunk when idle, renders immediately when scrolled into view."
+    },
+    {
+      "q": "When is CDK virtual scroll necessary vs a simple @for loop?",
+      "a": "Use CDK virtual scroll when rendering more than ~500-1000 items in a list that the user can scroll through. With @for and 10,000 items, Angular creates 10,000 DOM nodes — heavy initial render, slow scroll, memory-intensive. CDK virtual scroll only creates DOM nodes for the visible items (typically 10-20) plus a small buffer, regardless of list size. The viewport knows the item size (itemSize=\"48\" in pixels) to calculate total scroll height without rendering all items."
+    },
+    {
+      "q": "Why should heavy computed values be in pure pipes rather than template expressions?",
+      "a": "Template expressions like {{ computeHeavyValue(item) }} re-evaluate on EVERY change detection cycle — even if item hasn't changed — because Angular can't know whether the function's output has changed without calling it. A pure pipe runs only when its input REFERENCE changes, memoizing the result. This means for OnPush components, the pipe computation skips when @Input doesn't change. Additionally, pipes are composable and testable in isolation, while template function calls are not."
+    },
+    {
+      "q": "What is NgOptimizedImage and what problems does it solve automatically?",
+      "a": "NgOptimizedImage ([ngSrc]) is a built-in Angular directive for image optimization. It automatically: adds loading=\"lazy\" for below-fold images (reduces initial page load), adds fetchpriority=\"high\" for images marked as [priority] (LCP elements), generates a srcset for responsive images, enforces explicit width/height attributes to prevent layout shift (CLS), and warns in dev mode about images that are sized incorrectly. It removes the need for manual optimization that developers frequently forget."
+    },
+    {
+      "q": "How do you analyse bundle size in an Angular app?",
+      "a": "Run ng build --stats-json to generate a webpack stats file. Then run npx webpack-bundle-analyzer dist/your-app/stats.json to open an interactive treemap showing which modules contribute most to each chunk. Look for: unexpectedly large dependencies (moment.js, lodash), large vendor chunks that should be split, lazy route chunks that are too large (split further), and shared chunks that might benefit from optimization. Angular 17+ also shows chunk sizes in the build output."
+    }
+  ]
+}

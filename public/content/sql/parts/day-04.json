@@ -1,0 +1,89 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "NULL handling, string functions, date functions — complete reference",
+  "exp": "NULLs propagate through expressions and break comparisons silently. String and date functions are tested constantly because they appear in real-world reporting queries. Know when each function is appropriate — interviewers often give a scenario and ask which function you would reach for.",
+  "pts": [
+    "`ISNULL(col, default)` — SQL Server only, exactly 2 args, replaces NULL with default",
+    "`COALESCE(a, b, c...)` — ANSI standard, returns first non-NULL from any number of args; type resolution uses highest-precedence type",
+    "`NULLIF(a, b)` — returns NULL if a = b, else returns a; classic use: safe division `total / NULLIF(count, 0)`",
+    "`IIF(condition, true_val, false_val)` — shorthand CASE WHEN for simple conditions",
+    "`TRY_CONVERT(type, value)` / `TRY_CAST(value AS type)` — return NULL on conversion failure instead of raising an error",
+    "**String functions:** `LEN` (length), `TRIM`/`LTRIM`/`RTRIM`, `UPPER`/`LOWER`, `SUBSTRING(str, start, len)`, `CHARINDEX(find, str)`, `REPLACE(str, old, new)`, `STUFF(str, start, len, replacement)`, `FORMAT(val, format)`",
+    "**Date functions:** `GETDATE()` (now), `GETUTCDATE()` (UTC now), `DATEDIFF(unit, start, end)`, `DATEADD(unit, n, date)`, `DATEPART(unit, date)`, `EOMONTH(date)` (last day of month), `DATEFROMPARTS(y,m,d)`",
+    "`FORMAT(val, 'pattern')` — flexible formatting for display (slow; avoid in WHERE clauses)",
+    "`CASE WHEN ... THEN ... ELSE ... END` — conditional column logic; can be nested and used in ORDER BY, GROUP BY, WHERE",
+    "**NULL comparison rules:** NULL = NULL → NULL (unknown), not TRUE. Always use `IS NULL` / `IS NOT NULL`"
+  ],
+  "code": "-- COALESCE vs ISNULL\nSELECT COALESCE(mobile, home_phone, 'no contact') AS phone FROM employees;\nSELECT ISNULL(salary, 0) AS salary FROM employees;  -- SQL Server only, 2 args\n\n-- NULLIF: safe division to avoid divide-by-zero\nSELECT orders, revenue / NULLIF(orders, 0) AS avg_order_value FROM daily_stats;\n\n-- TRY_CONVERT: handle invalid data gracefully\nSELECT TRY_CONVERT(INT, user_input) AS safe_int FROM raw_data;\n-- Returns NULL instead of error for 'abc' input\n\n-- String functions\nSELECT\n  LEN(name) AS name_len,\n  UPPER(LEFT(name, 1)) + LOWER(SUBSTRING(name, 2, 100)) AS title_case,\n  CHARINDEX('@', email) AS at_pos,\n  REPLACE(description, 'old_term', 'new_term') AS updated,\n  TRIM(BOTH ' ' FROM ' hello ') AS trimmed   -- SQL Server 2017+\nFROM employees;\n\n-- Date functions\nSELECT\n  GETDATE() AS now,\n  DATEDIFF(YEAR, hire_date, GETDATE()) AS years_at_company,\n  DATEADD(MONTH, 3, GETDATE()) AS next_quarter,\n  EOMONTH(GETDATE()) AS end_of_month,\n  DATEPART(WEEKDAY, order_date) AS day_of_week,\n  DATEFROMPARTS(2024, 12, 31) AS specific_date\nFROM employees;\n\n-- CASE WHEN in ORDER BY\nSELECT name, status FROM tasks\nORDER BY CASE status WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 ELSE 3 END;",
+  "pr": [
+    "LeetCode: Find Customer Referee",
+    "LeetCode: Invalid Tweets",
+    "HackerRank: Weather Observation Station"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Need",
+        "Function"
+      ],
+      "r": [
+        [
+          "Default NULL to fallback",
+          "COALESCE / ISNULL"
+        ],
+        [
+          "Safe division (avoid /0)",
+          "NULLIF"
+        ],
+        [
+          "Convert safely (no error)",
+          "TRY_CONVERT / TRY_CAST"
+        ],
+        [
+          "Days between dates",
+          "DATEDIFF(DAY, start, end)"
+        ],
+        [
+          "Add time to a date",
+          "DATEADD(MONTH, 3, date)"
+        ],
+        [
+          "Last day of month",
+          "EOMONTH(date)"
+        ],
+        [
+          "Conditional value",
+          "CASE WHEN … THEN … ELSE … END"
+        ],
+        [
+          "String position",
+          "CHARINDEX(find, str)"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between ISNULL and COALESCE?",
+      "a": "ISNULL is SQL Server-specific and takes exactly 2 arguments. COALESCE is ANSI SQL standard, accepts multiple arguments (returning the first non-NULL), and uses different type-resolution rules (highest-precedence type wins across all arguments). For portability and multi-argument fallback chains, prefer COALESCE. ISNULL is slightly faster in micro-benchmarks but the difference is rarely significant."
+    },
+    {
+      "q": "What is NULLIF and what problem does it solve?",
+      "a": "NULLIF(a, b) returns NULL if a equals b, otherwise returns a. Its primary use is safe division: revenue / NULLIF(orders, 0) — when orders is 0, NULLIF returns NULL, and dividing by NULL gives NULL (not an error). Without NULLIF, a zero denominator raises a divide-by-zero error. It also appears in data cleaning to replace sentinel values (like -1 meaning \"not applicable\") with NULL."
+    },
+    {
+      "q": "What is TRY_CONVERT and when should you use it?",
+      "a": "TRY_CONVERT(type, value) attempts a data type conversion and returns NULL on failure instead of raising an error. Use it when processing user input, importing data from external sources, or querying columns that should be typed but aren't. Example: TRY_CONVERT(INT, user_input) returns NULL for 'abc' instead of crashing. Regular CONVERT or CAST will raise an error in the same scenario."
+    },
+    {
+      "q": "What are the most important string functions to know for T-SQL interviews?",
+      "a": "SUBSTRING(str, start, len) — extract a portion. CHARINDEX(find, str) — position of a substring (0 if not found). LEN(str) — length (excludes trailing spaces). REPLACE(str, old, new) — global replacement. STUFF(str, start, len, replacement) — delete then insert. LTRIM/RTRIM/TRIM — remove whitespace. UPPER/LOWER — case conversion. LEFT(str, n) / RIGHT(str, n) — take n characters from each end."
+    },
+    {
+      "q": "How do you handle NULL values in WHERE comparisons?",
+      "a": "NULL is never equal to anything, including itself — NULL = NULL evaluates to NULL (unknown), not TRUE. WHERE col = NULL never returns any rows; WHERE col != NULL also returns nothing. Always use IS NULL or IS NOT NULL. For functions: COALESCE(col, fallback) = x will work for comparisons because COALESCE replaces NULL before the comparison. Failing to handle NULLs in WHERE is a common source of \"missing rows\" bugs."
+    }
+  ]
+}

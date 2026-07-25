@@ -1,0 +1,53 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Azure Monitor -- metrics, Log Analytics, KQL basics",
+  "exp": "Azure Monitor is the direct equivalent of CloudWatch -- the platform-native observability service everything else, including Grafana, ultimately reads from.",
+  "pts": [
+    "Azure Monitor Metrics: near-real-time numeric time-series data, collected automatically for most resources with no setup required.",
+    "Log Analytics workspace: a centralized store for logs, queried with KQL (Kusto Query Language) -- similar to a CloudWatch Logs group but typically shared tenant-wide.",
+    "Diagnostic settings route a resource's logs/metrics INTO a Log Analytics workspace -- this routing is NOT automatic and must be explicitly configured per resource, the most common 'why is there no data' issue for people new to Azure Monitor.",
+    "KQL basics: TableName | where condition | summarize aggregation by field | order by field -- structurally close to Logs Insights' fields/filter/stats/sort pattern, different keyword names.",
+    "bin() groups timestamps into time buckets -- the one KQL function that transfers with zero translation from Logs Insights, literally the same name and behavior.",
+    "Metric Alerts fire on Metrics thresholds; Log Alerts fire on a KQL query's result count -- two alert types under the same Azure Monitor Alerts umbrella."
+  ],
+  "code": "az monitor log-analytics workspace create \\\n  --resource-group rg-orders-pipeline --workspace-name law-orders-pipeline\n\naz monitor diagnostic-settings create \\\n  --name \"databricks-to-law\" \\\n  --resource \"/subscriptions/<sub>/resourceGroups/rg-orders-pipeline/providers/Microsoft.Databricks/workspaces/dbx-orders-pipeline\" \\\n  --workspace \"law-orders-pipeline\" \\\n  --logs '[{\"category\":\"clusters\",\"enabled\":true},{\"category\":\"jobs\",\"enabled\":true}]'\n\n// KQL -- find recent errors\nPipelineLogs_CL\n| where Level_s == \"ERROR\"\n| project TimeGenerated, Source_s, Message_s\n| order by TimeGenerated desc\n| limit 50\n\n// Aggregate by source, time-bucketed\nPipelineLogs_CL\n| where Source_s == \"Bloomberg\"\n| summarize AvgDuration = avg(DurationMs_d) by bin(TimeGenerated, 1h)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Logs Insights",
+        "KQL"
+      ],
+      "r": [
+        [
+          "filter",
+          "where"
+        ],
+        [
+          "stats ... by",
+          "summarize ... by"
+        ],
+        [
+          "fields",
+          "project"
+        ],
+        [
+          "bin()",
+          "bin() -- identical"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why do people often see 'no data' in Log Analytics right after creating a resource?",
+      "a": "Unlike CloudWatch where many AWS services log automatically to a default location, Azure resources don't send logs into a Log Analytics workspace automatically -- a Diagnostic Setting must be explicitly created, specifying which log categories to route and to which workspace. This one-time configuration step is the single most common source of confusion for people new to Azure Monitor."
+    },
+    {
+      "q": "What is the one KQL function that transfers with zero translation from CloudWatch Logs Insights?",
+      "a": "bin() -- used for grouping timestamps into time buckets, named identically and behaving the same way in both languages. The rest of the syntax differs in keyword (where vs filter, summarize vs stats, project vs fields) but expresses the same pipe-based query structure."
+    }
+  ]
+}

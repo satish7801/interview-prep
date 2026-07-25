@@ -1,0 +1,47 @@
+{
+  "id": "day-13",
+  "n": 13,
+  "title": "Advanced features — MERGE, OUTPUT, JSON, dynamic SQL, stored procedures",
+  "exp": "MERGE (upsert), OUTPUT (capture changes), and JSON functions are real-world T-SQL features that appear in senior SQL interviews and the kind of compliance/integration work you're already doing. Dynamic SQL is asked for its risks and safe patterns.",
+  "pts": [
+    "**MERGE:** combines INSERT/UPDATE/DELETE into a single statement based on a match condition — classic upsert pattern. Use carefully: known edge cases with duplicate matches in source.",
+    "**OUTPUT clause:** captures the rows affected by INSERT/UPDATE/DELETE into a result set or table variable — useful for audit trails, returning IDs of inserted rows, or capturing before/after values",
+    "**JSON in SQL Server:** `FOR JSON PATH` / `FOR JSON AUTO` — serialize query results to JSON; `JSON_VALUE(col, '$.key')` — extract a scalar; `JSON_QUERY(col, '$.array')` — extract an object/array; `OPENJSON(col)` — parse JSON into rows",
+    "**Dynamic SQL:** build and execute SQL strings at runtime using `sp_executesql @sql, @params, @val`; use parameterised queries to prevent SQL injection",
+    "**SQL injection risk:** NEVER concatenate user input directly into a SQL string. Use sp_executesql with typed parameters.",
+    "Stored procedures: compiled, can have input/output parameters, support transactions, reduce network round-trips; trade-off: business logic in DB vs application layer",
+    "Temp tables (#) in stored procedures reset on each execution; table variables (@) go out of scope at end of batch"
+  ],
+  "code": "-- MERGE (upsert): insert if new, update if existing\nMERGE employees AS target\nUSING staging_employees AS source ON target.employee_id = source.employee_id\nWHEN MATCHED THEN\n  UPDATE SET name = source.name, salary = source.salary\nWHEN NOT MATCHED BY TARGET THEN\n  INSERT (employee_id, name, salary) VALUES (source.employee_id, source.name, source.salary)\nWHEN NOT MATCHED BY SOURCE THEN\n  DELETE;   -- remove employees no longer in staging\n\n-- OUTPUT: capture inserted IDs\nDECLARE @inserted TABLE (id INT, name VARCHAR(100));\nINSERT INTO employees (name, salary)\nOUTPUT INSERTED.id, INSERTED.name INTO @inserted\nVALUES ('Alice', 90000);\nSELECT * FROM @inserted;  -- see what was inserted\n\n-- OUTPUT: audit trail with before/after\nUPDATE employees SET salary = salary * 1.1\nOUTPUT DELETED.salary AS old_salary, INSERTED.salary AS new_salary,\n       INSERTED.id, GETDATE() AS changed_at\nINTO salary_audit;\n\n-- FOR JSON PATH: serialize to JSON\nSELECT id, name, salary FROM employees FOR JSON PATH, ROOT('employees');\n-- Output: {\"employees\":[{\"id\":1,\"name\":\"Alice\",\"salary\":90000},...]}\n\n-- JSON_VALUE: extract scalar from JSON column\nSELECT JSON_VALUE(metadata, '$.department') AS dept FROM employees;\n\n-- OPENJSON: parse JSON array into rows\nSELECT * FROM OPENJSON('[{\"id\":1,\"name\":\"Alice\"},{\"id\":2,\"name\":\"Bob\"}]')\nWITH (id INT '$.id', name VARCHAR(100) '$.name');\n\n-- Safe dynamic SQL with sp_executesql\nDECLARE @sql NVARCHAR(MAX), @dept NVARCHAR(50) = 'Engineering';\nSET @sql = N'SELECT * FROM employees WHERE dept = @dept_param';\nEXEC sp_executesql @sql, N'@dept_param NVARCHAR(50)', @dept_param = @dept;",
+  "pr": [
+    "Write a MERGE for a SCIM user sync (insert if new, update if changed, deactivate if removed)"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Practice writing a MERGE statement for your SCIM provisioning scenario — this directly maps to your production work."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the MERGE statement and what is its main gotcha?",
+      "a": "MERGE combines INSERT, UPDATE, and DELETE into a single statement based on a match condition between a target table and a source. It's the SQL upsert operator. The main gotcha: if the source has duplicate rows matching the same target row, the MERGE raises an error. Always de-duplicate the source first: WITH deduped AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY key ORDER BY updated_at DESC) AS rn FROM source) ... SELECT * FROM deduped WHERE rn = 1."
+    },
+    {
+      "q": "What does the OUTPUT clause do and give two practical use cases?",
+      "a": "OUTPUT captures the rows affected by a data modification (INSERT, UPDATE, DELETE) and returns them as a result set or inserts them into a table. Use case 1: get the auto-generated IDs after a bulk INSERT without a separate SELECT. Use case 2: audit trail — UPDATE employees SET salary = salary*1.1 OUTPUT DELETED.salary AS before, INSERTED.salary AS after INTO salary_audit — captures before and after values in a single statement."
+    },
+    {
+      "q": "What are the JSON functions in SQL Server and when do you use each?",
+      "a": "FOR JSON PATH/AUTO: serialize query results to a JSON string — use when your API or client expects JSON. JSON_VALUE(col, '$.key'): extract a single scalar value from a JSON column — use for filtering or selecting individual fields. JSON_QUERY(col, '$.nested'): extract a JSON object or array (not a scalar) — preserves JSON structure. OPENJSON(col): parse a JSON string into a table of rows — use when you receive JSON documents and need to query them relationally. ISJSON(col): validate whether a string is valid JSON."
+    },
+    {
+      "q": "What is SQL injection and how does sp_executesql prevent it?",
+      "a": "SQL injection is when user-supplied input is concatenated into a SQL string and executed as code. If a user inputs '; DROP TABLE users; -- as a parameter, string concatenation executes the DROP. sp_executesql with parameters prevents this: the parameter value is passed separately and treated as data, never as SQL code, regardless of its content. Always use sp_executesql @sql, @params_definition, @param = @value pattern for dynamic SQL with user input."
+    },
+    {
+      "q": "What are the trade-offs of putting business logic in stored procedures vs the application layer?",
+      "a": "Stored procedures: compiled execution plan, reduced network round-trips, enforced schema, centralised logic. Trade-offs: harder to version control and test, tightly coupled to the database, requires DBA permissions for changes. Application layer: easier to test, version control, and deploy independently; uses familiar .NET/ORM patterns; but requires more network round-trips and loses SQL Server compilation benefits. Most modern teams prefer application-layer logic (using EF Core or Dapper) and reserve stored procedures for performance-critical or DBA-managed operations."
+    }
+  ]
+}

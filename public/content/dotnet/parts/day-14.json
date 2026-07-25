@@ -1,0 +1,50 @@
+{
+  "id": "day-14",
+  "n": 14,
+  "title": ".NET architecture capstone -- Clean Architecture, microservices trade-offs, review",
+  "exp": "The final .NET day ties every prior day into an architecture-level conversation -- the kind of question a Lead I candidate gets asked after the trivia is done: 'how would you structure a new service, and why.'",
+  "pts": [
+    "Clean Architecture / Onion Architecture: dependencies point INWARD -- the Domain layer (entities, business rules) has zero dependencies on anything else; Application layer (use cases, interfaces) depends only on Domain; Infrastructure (EF Core, external APIs) and Presentation (API controllers) depend on Application/Domain, never the reverse.",
+    "The practical test for whether this is actually followed: can you swap EF Core for Dapper, or swap SQL Server for PostgreSQL, by changing ONLY the Infrastructure layer, with zero changes to Domain or Application code? If not, a dependency is pointing the wrong way somewhere.",
+    "Repository pattern revisited (from Day 6/7's EF Core discussion) in the Clean Architecture context: the Application layer defines an IOrderRepository INTERFACE (what operations are needed), and Infrastructure provides the EF Core-based IMPLEMENTATION -- this is what actually enables swapping the data access technology without touching business logic.",
+    "MediatR and the CQRS-lite pattern (Commands for writes, Queries for reads, each handled by a dedicated Handler class) is a common way to implement the Application layer's use cases -- keeps each use case's logic isolated in its own small class rather than accumulating dozens of methods in a single bloated service class.",
+    "Monolith vs microservices is a team-size and deployment-independence question, not a default technical preference -- a well-structured Clean Architecture monolith with clear internal module boundaries can be split into microservices later IF the boundaries were designed thoughtfully; a poorly-structured monolith with tangled dependencies cannot be cleanly split regardless of how badly a team wants microservices.",
+    "Domain Events (an entity raising an event like OrderApproved that other parts of the system react to, often dispatched via MediatR's notification pattern) decouple side effects (send an email, update a read model, trigger a downstream integration) from the core transaction that caused them -- avoiding a single service method that directly orchestrates five unrelated side effects inline.",
+    "Vertical Slice Architecture (organizing code by FEATURE -- everything for 'ApproveOrder' lives together -- rather than by TECHNICAL LAYER -- all controllers together, all services together, all repositories together) is a genuine alternative to strict Clean Architecture layering, trading some architectural purity for the practical benefit that a single feature's code is easy to find and reason about as one unit.",
+    "The interview-ready synthesis: architecture patterns aren't dogma to apply uniformly -- they're tools to manage complexity and enable specific kinds of change (swapping infrastructure, testing in isolation, splitting a monolith later). Choosing Clean Architecture, Vertical Slices, or a simpler pragmatic structure should be justified by the SPECIFIC change-tolerance the project actually needs, not applied because it's the 'correct' pattern in the abstract."
+  ],
+  "code": "// Clean Architecture dependency direction -- Domain has ZERO external dependencies\nnamespace OrdersApi.Domain\n{\n    public class Order   // pure business entity, no EF Core attributes, no framework references\n    {\n        public int Id { get; private set; }\n        public decimal Amount { get; private set; }\n        public OrderStatus Status { get; private set; }\n\n        public void Approve()\n        {\n            if (Status != OrderStatus.Pending)\n                throw new InvalidOperationException(\"Only pending orders can be approved\");\n            Status = OrderStatus.Approved;\n        }\n    }\n}\n\n// Application layer -- defines the INTERFACE, depends only on Domain\nnamespace OrdersApi.Application\n{\n    public interface IOrderRepository\n    {\n        Task<Order> GetByIdAsync(int id);\n        Task SaveAsync(Order order);\n    }\n\n    // MediatR-style command handler -- one class per use case\n    public class ApproveOrderCommand : IRequest { public int OrderId { get; set; } }\n\n    public class ApproveOrderHandler : IRequestHandler<ApproveOrderCommand>\n    {\n        private readonly IOrderRepository _repo;\n        private readonly IMediator _mediator;\n\n        public ApproveOrderHandler(IOrderRepository repo, IMediator mediator)\n        {\n            _repo = repo; _mediator = mediator;\n        }\n\n        public async Task Handle(ApproveOrderCommand request, CancellationToken ct)\n        {\n            var order = await _repo.GetByIdAsync(request.OrderId);\n            order.Approve();\n            await _repo.SaveAsync(order);\n            await _mediator.Publish(new OrderApprovedEvent(order.Id), ct);  // decoupled side effects\n        }\n    }\n}\n\n// Infrastructure layer -- IMPLEMENTS the interface, depends on Application/Domain, uses EF Core\nnamespace OrdersApi.Infrastructure\n{\n    public class EfOrderRepository : IOrderRepository\n    {\n        private readonly AppDbContext _context;\n        public EfOrderRepository(AppDbContext context) => _context = context;\n\n        public Task<Order> GetByIdAsync(int id) => _context.Orders.FindAsync(id).AsTask();\n        public Task SaveAsync(Order order) => _context.SaveChangesAsync();\n    }\n}\n\n// Domain event handler -- reacts to OrderApprovedEvent independently of the approval logic itself\npublic class SendApprovalEmailHandler : INotificationHandler<OrderApprovedEvent>\n{\n    public async Task Handle(OrderApprovedEvent notification, CancellationToken ct)\n    {\n        await _emailService.SendAsync(/* ... */);   // fully decoupled from ApproveOrderHandler\n    }\n}",
+  "pr": [
+    "Take a service method that directly calls repository.Save(), emailService.Send(), and auditLog.Write() inline, and refactor it to use a domain event so the side effects are decoupled from the core operation"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "Presentation (API controller)",
+        "Application (use case handler)",
+        "Domain (business entity)",
+        "Infrastructure (EF Core impl)"
+      ],
+      "cap": "Clean Architecture dependency direction -- everything points inward toward Domain, never outward"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the practical test for whether a codebase is actually following Clean Architecture's dependency rule, versus just having folders named Domain/Application/Infrastructure?",
+      "a": "Can you swap the data access technology (EF Core to Dapper) or the database engine (SQL Server to PostgreSQL) by changing ONLY code inside the Infrastructure layer, with zero changes required in Domain or Application code? If the Domain layer references EF Core attributes, or the Application layer directly instantiates a DbContext instead of depending on a repository interface, the dependency is pointing the wrong way regardless of what the folders are named -- the folder structure alone doesn't enforce the actual architectural boundary."
+    },
+    {
+      "q": "How does the Repository pattern from the EF Core day connect specifically to Clean Architecture's goals?",
+      "a": "The Application layer defines an interface like IOrderRepository describing WHAT data operations a use case needs, without knowing or caring HOW they're implemented. The Infrastructure layer provides the concrete EF Core-based implementation. This is precisely what allows swapping EF Core for a different technology later -- the Application layer's code never changes, since it only ever depended on the interface, not the concrete implementation. Without this interface boundary, Application code calling EF Core's DbContext directly would need to change if the underlying data access technology ever changed."
+    },
+    {
+      "q": "What does Domain Events / MediatR's notification pattern buy you that a single method directly calling five side-effect methods inline doesn't?",
+      "a": "Decoupling: the core business operation (ApproveOrderHandler approving an order) doesn't need to know or care that approving an order should also send an email, update a read model, and notify a downstream system -- it just raises an OrderApprovedEvent and moves on. Each side effect lives in its own independent handler that subscribes to that event. Adding a NEW side effect later (say, logging the approval to an audit system) means adding a new handler class, with zero changes to the original approval logic -- versus having to open and modify the original method to bolt on one more inline call every time a new side effect is needed."
+    },
+    {
+      "q": "How would you decide between strict Clean Architecture layering and Vertical Slice Architecture for a new service?",
+      "a": "Clean Architecture's layer-based organization pays off most when the SAME domain logic is genuinely likely to be exposed through multiple different infrastructure choices, or when strict testability-in-isolation of business rules from any framework concern is a priority. Vertical Slice Architecture pays off when features are largely independent of each other and the team values being able to open one folder and see everything related to 'ApproveOrder' in one place, rather than hunting across Controllers/, Services/, Repositories/ folders for the pieces of one feature. Neither is universally correct -- the decision should be driven by which kind of future change (swapping infrastructure vs. quickly locating and modifying one feature) the project is more likely to need, not by which pattern is currently more fashionable."
+    }
+  ]
+}

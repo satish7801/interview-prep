@@ -1,0 +1,25 @@
+{
+  "id": "day-13",
+  "n": 13,
+  "title": "Cloud & DevOps — App Service vs AKS, CI/CD",
+  "exp": "At 4 YOE, compare hosting options and describe a safe deploy/rollback path.",
+  "pts": [
+    "App Service: faster PaaS path, less ops.",
+    "AKS: multi-service control, more complexity/cost.",
+    "CI/CD: build → test → image → deploy → health smoke → rollback.",
+    "Secrets via Key Vault / managed identity — not committed strings.",
+    "Multi-stage Docker builds for smaller .NET images."
+  ],
+  "code": "",
+  "pr": [
+    "Write a GitHub Actions outline for build/test/deploy",
+    "List secrets that should move to Key Vault"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "App Service vs AKS for a single .NET API?",
+      "a": "Default to App Service for one API needing speed-to-prod and managed scaling. Choose AKS when you run many services, need custom networking/sidecars, or already operate Kubernetes. Don't adopt K8s for resume points alone."
+    }
+  ]
+}

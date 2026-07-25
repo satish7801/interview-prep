@@ -1,0 +1,27 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "Window functions, caching, persistence",
+  "exp": "PySpark window functions use identical PARTITION BY / ORDER BY semantics as SQL -- vocabulary, not new concepts. Caching avoids recomputing expensive transformations.",
+  "pts": [
+    "Window.partitionBy('dept').orderBy(col('salary').desc()) -- define the window spec.",
+    "from pyspark.sql.functions import row_number, rank, dense_rank, lag, lead -- same as T-SQL.",
+    "df.withColumn('rn', row_number().over(window_spec)) -- adds result as a column.",
+    ".cache() stores in executor memory. .persist(StorageLevel.MEMORY_AND_DISK) spills to disk if full.",
+    "When to cache: DataFrame used in more than one action with expensive upstream transformations."
+  ],
+  "code": "from pyspark.sql import Window\nfrom pyspark.sql.functions import row_number, dense_rank, lag, sum as spark_sum\n\ndept_win = Window.partitionBy('category').orderBy(col('amount').desc())\ndate_win = (Window.partitionBy('customer_id').orderBy('order_date')\n            .rowsBetween(Window.unboundedPreceding, Window.currentRow))\n\ndf_ranked = (df\n    .withColumn('rn',  row_number().over(dept_win))\n    .withColumn('drnk', dense_rank().over(dept_win))\n    .withColumn('prev', lag('amount', 1, 0).over(\n        Window.partitionBy('customer_id').orderBy('order_date')))\n    .withColumn('running_total', spark_sum('amount').over(date_win)))\n\ntop3 = df_ranked.filter(col('drnk') <= 3)\n\n# CACHING -- expensive join used in two different aggregations\ndf_enriched = orders.join(broadcast(customers), 'customer_id').filter(col('status') == 'active')\ndf_enriched.cache()\ndf_enriched.count()  # materializes and caches\n\ncat_summary  = df_enriched.groupBy('category').agg(spark_sum('amount'))\ntier_summary = df_enriched.groupBy('tier').agg(spark_sum('amount'))\ndf_enriched.unpersist()",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Without cache: each action triggers full S3 read + all transformations. With cache: first action materializes, subsequent actions read from executor memory."
+    }
+  ],
+  "qa": [
+    {
+      "q": "When should you cache a Spark DataFrame?",
+      "a": "Cache when the same DataFrame is used in MORE than one action in the same job AND upstream transformations are expensive (multiple joins, UDFs). Do not cache when used only once, too large for executor memory, or when the source is fast to read."
+    }
+  ]
+}

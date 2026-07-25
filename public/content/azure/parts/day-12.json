@@ -1,0 +1,51 @@
+{
+  "id": "day-12",
+  "n": 12,
+  "title": "Terraform on Azure -- azurerm provider, state, modules",
+  "exp": "The exact same Terraform discipline from the Infrastructure track, now targeting Azure resources via the azurerm provider -- remote state, plan-before-apply, and modules all transfer directly, only the resource types change.",
+  "pts": [
+    "The azurerm provider manages Azure resources the same way the aws provider manages AWS resources -- same plan/apply/destroy workflow, same state file concept.",
+    "Remote state on Azure typically lives in a Blob Storage container instead of S3, with state locking handled natively by Azure Blob's lease mechanism -- no separate DynamoDB-equivalent table needed, a genuine simplification versus the AWS setup.",
+    "Resource Group as a Terraform-managed resource is usually the very first resource defined in an Azure Terraform configuration, since nearly everything else must be created inside one.",
+    "Modules work identically in structure and purpose to the AWS modules from the Infrastructure track -- a reusable package of resources (main.tf/variables.tf/outputs.tf), called with a source and input variables.",
+    "The grafana Terraform provider works against Azure Managed Grafana exactly as it did against Amazon Managed Grafana -- same resource types (grafana_dashboard, grafana_data_source), just pointed at a different workspace endpoint and auth method.",
+    "Drift detection and the plan-before-apply discipline are platform-agnostic Terraform principles -- nothing about this changes when the underlying cloud changes, which is itself worth saying explicitly in an interview to show the concepts, not just the syntax, transferred."
+  ],
+  "code": "terraform {\n  required_providers {\n    azurerm = { source = \"hashicorp/azurerm\", version = \"~> 3.0\" }\n  }\n  backend \"azurerm\" {\n    resource_group_name  = \"rg-terraform-state\"\n    storage_account_name = \"satishtfstate\"\n    container_name        = \"tfstate\"\n    key                    = \"orders-pipeline.tfstate\"\n    # Azure Blob's native lease mechanism handles locking --\n    # no separate DynamoDB-equivalent table needed\n  }\n}\n\nprovider \"azurerm\" { features {} }\n\nresource \"azurerm_resource_group\" \"pipeline\" {\n  name     = \"rg-orders-pipeline\"\n  location = \"eastus\"\n}\n\nmodule \"storage\" {\n  source              = \"./modules/storage-account\"\n  resource_group_name = azurerm_resource_group.pipeline.name\n  location             = azurerm_resource_group.pipeline.location\n  account_name          = \"satishpipeline\"\n}\n\n# terraform init\n# terraform plan     <- same discipline as AWS, always read this first\n# terraform apply",
+  "pr": [
+    "Configure an azurerm remote state backend using Blob Storage, and explain in one sentence why no separate locking table is needed"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS Terraform",
+        "Azure Terraform"
+      ],
+      "r": [
+        [
+          "aws provider",
+          "azurerm provider"
+        ],
+        [
+          "S3 state + DynamoDB lock",
+          "Blob Storage state + native lease lock"
+        ],
+        [
+          "No required parent resource",
+          "azurerm_resource_group required first"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does Terraform remote state locking on Azure differ from the AWS S3+DynamoDB pattern?",
+      "a": "Azure Blob Storage has a native lease mechanism that Terraform's azurerm backend uses directly for state locking -- there's no need for a separate lock table like DynamoDB on AWS. The state file itself still lives in a Storage Account container, but the locking is a built-in capability of Blob Storage rather than requiring a second service, a genuine simplification in the Azure setup compared to AWS."
+    },
+    {
+      "q": "What's the first resource typically defined in an Azure Terraform configuration, and why?",
+      "a": "The azurerm_resource_group, because nearly every other Azure resource must be created inside a Resource Group -- it's a required parent, not an optional organizational nicety the way tags are on AWS. Defining it first (and referencing its name/location from every subsequent resource) is the natural starting point for any Azure Terraform configuration."
+    }
+  ]
+}

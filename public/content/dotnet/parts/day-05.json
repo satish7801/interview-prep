@@ -1,0 +1,56 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "ASP.NET Core 10 — what's new",
+  "exp": "You're already running a .NET 10 Web API on the SCIM project — that's a talking point most candidates don't have. Know what's new so you can say \"I've used X directly.\"",
+  "pts": [
+    "**OpenAPI 3.1:** JSON Schema 2020-12 aligned. Nullable types as type arrays ([\"string\",\"null\"]). Better compatibility with code generators",
+    "**IOpenApiDocumentProvider via DI:** access the generated OpenAPI schema outside an HTTP request — useful in background services or startup tooling",
+    "**Automatic memory pool eviction:** ASP.NET Core's internal memory pools now release memory back to OS during idle periods",
+    "**Passkey/WebAuthn in Identity:** built-in passwordless auth using device biometrics or hardware keys — no third-party library needed",
+    "**Tighter OpenTelemetry:** more built-in meters for request duration, queue depth, active connections"
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        ".NET 8/9",
+        ".NET 10"
+      ],
+      "r": [
+        [
+          "OpenAPI 3.0 (nullable: true)",
+          "OpenAPI 3.1 ([\"string\",\"null\"])"
+        ],
+        [
+          "Memory pools held at idle",
+          "Auto-evicted during idle"
+        ],
+        [
+          "No built-in passkeys",
+          "Passkey/WebAuthn in Identity"
+        ],
+        [
+          "OpenAPI only via HTTP",
+          "IOpenApiDocumentProvider via DI"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What changed about OpenAPI generation in ASP.NET Core 10?",
+      "a": "It now produces OpenAPI 3.1 documents conforming to JSON Schema 2020-12. Nullable reference types are represented as a type array [\"string\",\"null\"] instead of {type: \"string\", nullable: true}. This means client generators that expect strict JSON Schema compliance now work correctly without workarounds."
+    },
+    {
+      "q": "What is IOpenApiDocumentProvider in .NET 10?",
+      "a": "A new interface injectable via DI that lets you programmatically access the generated OpenAPI document outside an HTTP request context. Use cases: startup task that uploads your API schema to an API gateway, background service that validates the schema, or integration tests that inspect the generated document without making an HTTP call."
+    },
+    {
+      "q": "How would you tie .NET 10 passkey support to your SCIM/SSO project in an interview?",
+      "a": "The SCIM system handles user lifecycle while SSO handles authentication. .NET 10's built-in passkey support means you could replace the password+JWT flow with WebAuthn using the same ASP.NET Core Identity framework you're already using — no third-party FIDO2 library. It's a direct extension of the auth work you're already doing."
+    }
+  ]
+}

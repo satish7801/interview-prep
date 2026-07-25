@@ -1,0 +1,59 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Cloud Monitoring + Cloud Logging -- metrics, custom metrics, alerting policies",
+  "exp": "Cloud Monitoring and Cloud Logging together are GCP's CloudWatch equivalent -- two distinctly named services covering the metrics and logs halves respectively, rather than one unified CloudWatch brand.",
+  "pts": [
+    "Cloud Monitoring: numeric time-series metrics, collected automatically for most GCP resources (Dataproc cluster CPU, Cloud Storage request counts) with no setup required, viewable and alertable via Metrics Explorer.",
+    "Cloud Logging: the centralized log store, automatically capturing logs from most GCP services with no manual routing step required -- a genuine structural difference from Azure, where Diagnostic Settings must be explicitly configured per resource before logs reach Log Analytics.",
+    "Custom metrics: published via the Cloud Monitoring API's projects.timeSeries.create method, or more simply through the OpenTelemetry/Cloud Monitoring client library -- the GCP equivalent of CloudWatch's put_metric_data.",
+    "Log-based Metrics: define a metric derived from a Cloud Logging query (count of ERROR-level log entries matching a filter) without changing application code -- the direct equivalent of a CloudWatch metric filter.",
+    "Alerting Policies: GCP's unified alert mechanism, evaluating either a Cloud Monitoring metric threshold OR a log-based metric derived from Cloud Logging -- functionally covering the same ground as both CloudWatch Alarms and Azure's Metric+Log Alert split, but under one policy type rather than two.",
+    "Notification Channels (email, Slack, PagerDuty, webhook) are defined once and attached to multiple Alerting Policies -- the same reusable-notification-target pattern as an SNS topic or an Azure Action Group."
+  ],
+  "code": "from google.cloud import monitoring_v3\nimport time\n\nclient = monitoring_v3.MetricServiceClient()\nproject_name = f\"projects/orders-pipeline-prod\"\n\n# Publish a custom metric\nseries = monitoring_v3.TimeSeries()\nseries.metric.type = \"custom.googleapis.com/pipeline/records_processed\"\nseries.metric.labels[\"source\"] = \"Bloomberg\"\nseries.resource.type = \"global\"\npoint = monitoring_v3.Point({\n    \"interval\": {\"end_time\": {\"seconds\": int(time.time())}},\n    \"value\": {\"int64_value\": 45000}\n})\nseries.points = [point]\nclient.create_time_series(name=project_name, time_series=[series])\n\n# Log-based metric -- count ERROR log entries per source, no app code change\ngcloud logging metrics create validation_errors \\\n  --description=\"Count of ERROR level pipeline logs\" \\\n  --log-filter='resource.type=\"dataproc_cluster\" AND severity=\"ERROR\"'\n\n# Alerting Policy on a log-based metric threshold\ngcloud alpha monitoring policies create \\\n  --display-name=\"No records processed in 25 hours\" \\\n  --condition-display-name=\"records_processed absent\" \\\n  --condition-filter='metric.type=\"custom.googleapis.com/pipeline/records_processed\"' \\\n  --duration=90000s  # 25 hours",
+  "pr": [
+    "Create a log-based metric counting ERROR-severity log entries, then attach an Alerting Policy to it with a Notification Channel"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS/Azure concept",
+        "GCP equivalent"
+      ],
+      "r": [
+        [
+          "CloudWatch Metrics / Azure Monitor Metrics",
+          "Cloud Monitoring"
+        ],
+        [
+          "CloudWatch Logs / Log Analytics",
+          "Cloud Logging"
+        ],
+        [
+          "Metric filter / Log-derived metric",
+          "Log-based Metric"
+        ],
+        [
+          "CloudWatch Alarm + Metric/Log Alert (2 types)",
+          "Alerting Policy (1 unified type)"
+        ],
+        [
+          "SNS topic / Action Group",
+          "Notification Channel"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the one genuinely different structural detail about Cloud Logging compared to Azure Monitor's Log Analytics?",
+      "a": "Cloud Logging automatically captures logs from most GCP services with no manual routing step required -- there's no Diagnostic Settings equivalent that must be explicitly configured per resource before logs start flowing. This is closer to CloudWatch's automatic-logging-for-many-services behavior than to Azure's explicit-opt-in-per-resource model, and it's worth naming this difference explicitly since 'why is there no data' is specifically an Azure gotcha, not a GCP one."
+    },
+    {
+      "q": "How does a GCP Alerting Policy differ structurally from having separate Metric Alerts and Log Alerts like Azure does?",
+      "a": "GCP unifies both under one Alerting Policy resource type -- a single policy's condition can be based on either a Cloud Monitoring metric threshold or a log-based metric derived from Cloud Logging, rather than requiring two conceptually distinct alert resource types the way Azure Monitor separates Metric Alerts from Log Alerts. Functionally the coverage is the same as CloudWatch Alarms and Azure's alert types combined; GCP just expresses it through one unified policy concept instead of two or three separate ones."
+    }
+  ]
+}

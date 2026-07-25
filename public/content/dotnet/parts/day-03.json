@@ -1,0 +1,35 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "C# 14 / .NET 10 — what's actually new",
+  "exp": "C# 14 ships with .NET 10 (Nov 2025, current LTS). The theme is reducing boilerplate. Three features matter most for interviews: field keyword, extension members, null-conditional assignment.",
+  "pts": [
+    "**`field` keyword:** custom property get/set without a separate backing field — `field` refers to the auto-generated backing field inside the accessor",
+    "**Extension members:** C# 14 extends the extension concept to properties, operators, and static members via `extension(Type x) { }` blocks",
+    "**Null-conditional assignment:** `customer?.Address = newAddress;` is now valid — no-op if customer is null",
+    "**First-class `Span<T>`:** new implicit conversions between Span, ReadOnlySpan, and arrays — performance story",
+    "**Partial constructors & events:** `partial` extended to constructors and events (useful with source generators)",
+    "**`nameof` on unbound generics:** `nameof(List<>)` now works — minor but signals you read release notes"
+  ],
+  "code": "// C# 14: field keyword — no explicit backing field needed\npublic class Config {\n  public string ConnectionString {\n    get;\n    set => field = value ?? throw new ArgumentNullException(nameof(value));\n    //     ^^^^^ implicit backing field — no _connectionString needed!\n  }\n}\n\n// C# 13 equivalent (verbose)\npublic class Config13 {\n  private string _cs;\n  public string ConnectionString {\n    get => _cs;\n    set => _cs = value ?? throw new ArgumentNullException(nameof(value));\n  }\n}\n\n// Extension members (C# 14)\nextension(string s) {\n  public bool IsValidEmail => s.Contains('@') && s.Contains('.');\n  public static string Placeholder => \"user@example.com\";\n}\n\n// Null-conditional assignment\ncustomer?.PreferredEmail = resolvedEmail;  // no-op if customer is null",
+  "pr": [],
+  "viz": [
+    {
+      "t": "csharp14"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What problem does the C# 14 field keyword solve?",
+      "a": "It eliminates the need to declare a separate private backing field for properties with custom get/set logic. Before C# 14, you needed a private _myField just to add null-checking in the setter. With field, you write the logic directly in the accessor and field refers to the auto-generated backing field."
+    },
+    {
+      "q": "What is new about extension members in C# 14?",
+      "a": "Before C# 14, you could only add extension methods. C# 14 introduces extension blocks (extension(Type x) { }) that also let you add extension properties, static members, and operators. This closes the gap between extension methods and actual class members."
+    },
+    {
+      "q": "What is the key .NET 10 feature most relevant to your SCIM project?",
+      "a": "OpenAPI 3.1 support — .NET 10 generates OpenAPI 3.1 documents (JSON Schema 2020-12). Nullable types are now [\"string\",\"null\"] instead of {nullable: true}. Also: IOpenApiDocumentProvider is injectable, letting you access the API schema outside an HTTP request — useful for tooling and startup validation."
+    }
+  ]
+}

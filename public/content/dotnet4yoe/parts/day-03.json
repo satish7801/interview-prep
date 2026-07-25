@@ -1,0 +1,29 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Async — state machine, ValueTask, deadlocks, starvation",
+  "exp": "`async` builds a state machine; it does not spawn a thread. At 4 YOE you must diagnose deadlocks and thread-pool starvation in production language.",
+  "pts": [
+    "Await I/O; don't block with `.Result` / `.Wait()` on ASP.NET request threads.",
+    "**ValueTask<T>** for hot paths that often complete synchronously — await once; don't spray everywhere.",
+    "ASP.NET Core has no sync context by default; `ConfigureAwait(false)` still matters in libraries.",
+    "**Thread-pool starvation:** sync-over-async or long CPU on pool threads → request queueing.",
+    "Propagate **CancellationToken** from controller → service → EF/HttpClient."
+  ],
+  "code": "public ValueTask<int> GetAsync()\n{\n    if (_cache.TryGet(out var v)) return new ValueTask<int>(v);\n    return new ValueTask<int>(FetchFromDbAsync());\n}\n\n// BAD in request path:\n// var data = GetAsync().Result;  // deadlock / thread-pool risk",
+  "pr": [
+    "Find sync-over-async in a sample codebase",
+    "Add CancellationToken through a service method"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "Why can .Result deadlock, and how do you fix it?",
+      "a": "If a SynchronizationContext must resume the continuation but the thread is blocked waiting for the task, you deadlock. Fix: async all the way with await; never block in UI/legacy sync contexts. In ASP.NET Core prefer await over Result always."
+    },
+    {
+      "q": "When is ValueTask appropriate?",
+      "a": "When a method frequently completes synchronously and allocation of Task shows up in profiles. Rules: await at most once, don't store/reuse casually, convert with AsTask() only when needed (allocates)."
+    }
+  ]
+}

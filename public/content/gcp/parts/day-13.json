@@ -1,0 +1,53 @@
+{
+  "id": "day-13",
+  "n": 13,
+  "title": "GCP security -- Secret Manager, Security Command Center, VPC Service Controls",
+  "exp": "The GCP equivalents of Secrets Manager, Security Hub, and PrivateLink -- rounding out the security-layer comparison across all three clouds.",
+  "pts": [
+    "Secret Manager: stores secrets with automatic versioning -- the direct GCP equivalent of AWS Secrets Manager and Azure Key Vault. Applications read secrets via a Service Account's IAM permission (roles/secretmanager.secretAccessor), never a hardcoded value.",
+    "Security Command Center: GCP's security posture and threat detection service, roughly the combined equivalent of AWS Security Hub + GuardDuty, or Azure's Defender for Cloud -- surfaces misconfigurations and active threats in one place.",
+    "VPC Service Controls: create a security perimeter around a set of GCP resources (a 'service perimeter') that blocks data exfiltration even by an otherwise-authorized identity operating from outside the perimeter's context -- a genuinely distinctive GCP concept without a precise 1:1 AWS/Azure equivalent, closer in spirit to a combination of VPC Endpoints plus an additional data-exfiltration-focused policy layer.",
+    "Private Google Access lets Compute Engine instances with no external IP still reach Google APIs (including Cloud Storage, BigQuery) over Google's internal network -- the GCP equivalent of a VPC Gateway Endpoint for S3, extended to cover many Google APIs at once rather than being service-specific.",
+    "Firewall Rules in GCP apply at the VPC network level (not per-subnet the way NSGs often are on Azure, or per-instance the way Security Groups are on AWS) -- a structural difference worth naming: GCP firewall rules are defined once per network and apply based on tags/service-accounts on instances, rather than being directly attached to a subnet or NIC.",
+    "Default encryption at rest applies automatically across GCP storage and compute services using Google-managed keys, with Customer-Managed Encryption Keys (CMEK) via Cloud KMS available as the bring-your-own-key option -- the same default-encrypted posture as AWS/Azure, worth confirming per-service rather than assuming."
+  ],
+  "code": "# Secret Manager -- create and grant Service Account access\ngcloud secrets create source-api-key --data-file=api-key.txt\n\ngcloud secrets add-iam-policy-binding source-api-key \\\n  --member=\"serviceAccount:pipeline-sa@orders-pipeline-prod.iam.gserviceaccount.com\" \\\n  --role=\"roles/secretmanager.secretAccessor\"\n\n# .NET reading a secret via the client library (auth resolved through ADC)\n// var client = SecretManagerServiceClient.Create();\n// var secret = client.AccessSecretVersion(\"projects/orders-pipeline-prod/secrets/source-api-key/versions/latest\");\n\n# VPC Service Controls -- create a perimeter around sensitive data resources\ngcloud access-context-manager perimeters create orders_pipeline_perimeter \\\n  --title=\"Orders Pipeline Perimeter\" \\\n  --resources=projects/orders-pipeline-prod \\\n  --restricted-services=storage.googleapis.com,bigquery.googleapis.com\n\n# Firewall rule -- applies at the network level, targeted by tag\ngcloud compute firewall-rules create allow-internal-dataproc \\\n  --network=vnet-pipeline \\\n  --allow=tcp,udp,icmp \\\n  --source-tags=dataproc-cluster \\\n  --target-tags=dataproc-cluster",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS/Azure",
+        "GCP"
+      ],
+      "r": [
+        [
+          "Secrets Manager / Key Vault",
+          "Secret Manager"
+        ],
+        [
+          "Security Hub+GuardDuty / Defender for Cloud",
+          "Security Command Center"
+        ],
+        [
+          "VPC Endpoint / Private Endpoint",
+          "Private Google Access + VPC Service Controls"
+        ],
+        [
+          "Security Group / NSG",
+          "Firewall Rules (network-level, tag-based)"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What does VPC Service Controls protect against that a firewall rule or IAM policy alone doesn't, and why is there no precise 1:1 AWS/Azure equivalent?",
+      "a": "VPC Service Controls creates a service perimeter that blocks data exfiltration even by an identity that IS otherwise authorized via IAM to access the resource, if that access attempt originates from outside the perimeter's trusted context (a different project, an unapproved network). This addresses a specific threat model -- a compromised or malicious authorized credential being used from an unexpected location -- that plain IAM policy and firewall rules don't cover on their own, since IAM only asks 'is this identity allowed,' not 'is this access attempt happening from a place we trust.' AWS and Azure have pieces of this idea spread across VPC endpoint policies and conditional access policies respectively, but no single service matches this specific perimeter-based exfiltration-prevention model as directly."
+    },
+    {
+      "q": "How do GCP Firewall Rules differ structurally from AWS Security Groups or Azure NSGs?",
+      "a": "GCP Firewall Rules are defined once per VPC network and apply based on network tags or service accounts attached to instances, rather than being directly bound to a specific subnet (like an NSG often is) or a specific instance/ENI (like a Security Group is). This means the same firewall rule can apply consistently to any instance carrying a particular tag anywhere in the network, a more label-based and less topology-based model than the subnet- or instance-attachment patterns on AWS and Azure."
+    }
+  ]
+}

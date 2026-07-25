@@ -1,0 +1,141 @@
+{
+  "id": "sql",
+  "name": "SQL",
+  "color": "--sql",
+  "sub": "T-SQL / SQL Server · 14 days",
+  "desc": "The gap that costs most people offers. Every topic covered at interview depth — syntax, gotchas, edge cases, and the \"why\" behind each concept.",
+  "tip": "If you blank on syntax, narrate your logic out loud — 'I'd partition by department, rank by salary descending, filter where rank = 1.' Interviewers weight reasoning as much as the final query.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Common mistake"
+    ],
+    "r": [
+      [
+        "RANK() vs DENSE_RANK()",
+        "RANK leaves gaps after ties (1,1,3). DENSE_RANK does not (1,1,2)."
+      ],
+      [
+        "HAVING vs WHERE",
+        "WHERE runs before GROUP BY — cannot use aggregates. HAVING runs after."
+      ],
+      [
+        "Correlated subquery",
+        "Re-evaluates for every outer row. Slow on large data."
+      ],
+      [
+        "LEFT JOIN + WHERE on right column",
+        "Drops NULLs → becomes INNER JOIN. Move filter to ON clause."
+      ],
+      [
+        "NULL in NOT IN",
+        "NOT IN returns zero rows if subquery has any NULL. Use NOT EXISTS."
+      ],
+      [
+        "CROSS APPLY vs JOIN",
+        "CROSS APPLY can reference outer columns in inner query. JOIN cannot."
+      ],
+      [
+        "READ COMMITTED SNAPSHOT",
+        "Row versioning — readers never block writers. Enable at DB level."
+      ],
+      [
+        "Covering index",
+        "Include all queried columns in the index to avoid Key Lookups."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "Joins — all types, algorithms, and the hidden traps",
+      "summary": "Joins are the most-tested SQL topic. At interview depth, it's not enough to know the types — you must understand the hidden LEFT JOIN + WHERE trap, when to use …"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "Aggregation — GROUP BY, HAVING, ROLLUP, CUBE, GROUPING SETS",
+      "summary": "The basics (GROUP BY/HAVING) are tested in every SQL round. At 4 YOE you're also expected to know ROLLUP and CUBE for reporting queries, STRING_AGG for string a…"
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Subqueries — scalar, correlated, APPLY operators, EXISTS vs IN",
+      "summary": "Subqueries test your understanding of SQL execution and NULL semantics. The NOT IN NULL trap is a real production bug waiting to happen. CROSS APPLY and OUTER A…"
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "NULL handling, string functions, date functions — complete reference",
+      "summary": "NULLs propagate through expressions and break comparisons silently. String and date functions are tested constantly because they appear in real-world reporting …"
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Set operations, query rewriting, and performance patterns",
+      "summary": "Set operations are tested as much for understanding SQL as a set-based language as for the syntax itself. The NOT IN vs NOT EXISTS distinction saves bugs. Query…"
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Nth highest salary — 3 approaches + classic problems",
+      "summary": "The Nth highest salary problem is asked so often because it has three distinct solutions representing three SQL paradigms. After solving it three ways, practice…"
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Window functions part 1 — ranking, NTILE, PERCENT_RANK",
+      "summary": "Window functions are the #1 gap that fails .NET/backend devs in SQL rounds. Master the ranking functions, know the differences cold, and understand NTILE for pe…"
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Window functions part 2 — LAG, LEAD, FIRST_VALUE, running totals, frames",
+      "summary": "LAG/LEAD replace self-joins for consecutive-row comparisons. FIRST_VALUE and LAST_VALUE with the right frame are frequently misused — the default frame often gi…"
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "CTEs deep dive — recursive, multiple, CTE vs temp table vs table variable",
+      "summary": "CTEs are fundamental for readable SQL but the performance trade-offs between CTEs, temp tables, and table variables are a genuine senior-level question. Recursi…"
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Classic problems — pivot, unpivot, gaps & islands, string aggregation",
+      "summary": "These patterns combine multiple SQL concepts and test whether you can think set-theoretically about a problem. 'Gaps and islands' is the signature senior-level …"
+    },
+    {
+      "id": "day-11",
+      "n": 11,
+      "title": "Indexing deep dive — covering, filtered, fragmentation, missing index DMVs",
+      "summary": "Index questions at 4 YOE go beyond 'clustered vs non-clustered.' Interviewers expect you to know covering indexes, filtered indexes, when indexes hurt, and how …"
+    },
+    {
+      "id": "day-12",
+      "n": 12,
+      "title": "Transactions, isolation levels, deadlocks — complete deep dive",
+      "summary": "ACID properties and isolation levels are asked in almost every senior .NET+SQL interview — partly because they connect directly to how you write safe applicatio…"
+    },
+    {
+      "id": "day-13",
+      "n": 13,
+      "title": "Advanced features — MERGE, OUTPUT, JSON, dynamic SQL, stored procedures",
+      "summary": "MERGE (upsert), OUTPUT (capture changes), and JSON functions are real-world T-SQL features that appear in senior SQL interviews and the kind of compliance/integ…"
+    },
+    {
+      "id": "day-14",
+      "n": 14,
+      "title": "Performance tuning, execution plans, parameter sniffing, full mock",
+      "summary": "Performance tuning at 4 YOE means being able to read an execution plan, explain parameter sniffing, and suggest concrete fixes. These questions appear whenever …"
+    },
+    {
+      "id": "day-15",
+      "n": 15,
+      "title": "Gotchas everyone forgets -- the traps that pass code review but break production",
+      "summary": "These are not obscure edge cases -- they're the specific mistakes that even experienced developers make under interview pressure or late-Friday deploys, because…"
+    }
+  ]
+}

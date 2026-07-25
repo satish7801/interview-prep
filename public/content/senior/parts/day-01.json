@@ -1,0 +1,33 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "System design — small-to-medium scale",
+  "exp": "At 4 YOE, system design questions are scoped: \"design a notification service\", not \"design Twitter.\" Interviewers want structured thinking and trade-off reasoning. Your evidence pipeline and SCIM work are natural material.",
+  "pts": [
+    "**The approach:** clarify requirements → estimate scale → sketch high-level architecture → drill into one component → state trade-offs. Grade = reasoning process, not just final diagram",
+    "**Caching:** in-memory (IMemoryCache) for single-instance; Redis for distributed. Cache invalidation: TTL (simple, may return stale), write-through (writes update cache + DB), write-behind (async)",
+    "**Message queues:** decouple when consumer is slower than producer, need at-least-once delivery, or caller doesn't need immediate response",
+    "**Monolith vs microservices:** start with a monolith unless team size or deployment independence requirements justify the overhead. \"Microservices are better\" is not a trade-off — that's an assertion"
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "archdiag"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Walk through how you'd approach a system design interview question.",
+      "a": "1) Clarify: functional requirements, non-functional (scale, latency, consistency). 2) Sketch the happy path: client → API → DB. 3) Identify the bottleneck or key decision. 4) Drill into that component — caching strategy, queue vs sync, storage choice. 5) State trade-offs explicitly. Interviewers grade the process, not just the final architecture."
+    },
+    {
+      "q": "When would you use a message queue instead of a direct synchronous API call?",
+      "a": "Use a queue when: the consumer is slower than the producer and you need to absorb bursts, you need at-least-once delivery even if the consumer crashes, you want to decouple services so failures don't cascade, or the operation is fire-and-forget. Direct API call when: you need a synchronous response, the consumer is fast and reliable, and queue latency is unacceptable."
+    },
+    {
+      "q": "When would you recommend NOT using microservices?",
+      "a": "When the team is small (< 5-8 engineers), domain boundaries aren't clear yet, or you lack the DevOps maturity to manage independent deployments and distributed tracing. The complexity of microservices (service mesh, contract testing, distributed transactions) only pays off when you have concrete scaling or team-independence requirements. Start with a well-structured monolith and extract services when there's a clear reason."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Cloud Storage -- buckets, classes, lifecycle, signed URLs",
+  "exp": "Cloud Storage is GCP's S3 -- genuinely the closest 1:1 naming match of any storage service across the three clouds, since GCP kept the term 'bucket' itself.",
+  "pts": [
+    "Buckets are globally unique, exactly like S3 -- GCP kept this naming and constraint identical to AWS, unlike Azure's Storage Account + Container two-level structure.",
+    "Storage classes: Standard (frequent), Nearline (access ~monthly, 30-day minimum), Coldline (access ~quarterly, 90-day minimum), Archive (rare, 365-day minimum) -- the same cost/access ladder as S3's Standard/IA/Glacier/Deep Archive, with GCP's own naming.",
+    "Lifecycle rules auto-transition or delete objects by age, defined as JSON conditions on the bucket -- same purpose as S3 lifecycle rules.",
+    "Signed URLs are GCP's presigned-URL equivalent -- time-limited, permission-scoped access generated using a service account's private key or via IAM's signBlob permission.",
+    "Object Versioning and Retention Policies protect against accidental overwrite/delete, same purpose as S3 versioning and Object Lock.",
+    "Pub/Sub notifications on a bucket (object finalized/deleted events) enable the same event-driven trigger pattern as S3 Event Notifications -- a message published to a Pub/Sub topic the moment a file lands."
+  ],
+  "code": "from google.cloud import storage\nfrom datetime import timedelta\n\nclient = storage.Client()  # uses Application Default Credentials automatically\nbucket = client.bucket(\"satish-pipeline-orders\")\n\n# UPLOAD\nblob = bucket.blob(\"2024/01/orders.csv\")\nblob.upload_from_filename(\"orders.csv\")\n\n# LIST with prefix\nfor blob in client.list_blobs(\"satish-pipeline-orders\", prefix=\"2024/01/\"):\n    print(blob.name, blob.size)\n\n# SIGNED URL -- presigned-URL equivalent\nurl = bucket.blob(\"reports/q4.pdf\").generate_signed_url(\n    version=\"v4\", expiration=timedelta(hours=1), method=\"GET\"\n)\n\n# Lifecycle rule -- move to Coldline after 90 days, delete after 365\n# (set via gcloud or a bucket.json lifecycle config)\n# gcloud storage buckets update gs://satish-pipeline-orders \\\n#   --lifecycle-file=lifecycle.json\n#\n# lifecycle.json:\n# {\"rule\": [\n#   {\"action\": {\"type\": \"SetStorageClass\", \"storageClass\": \"COLDLINE\"},\n#    \"condition\": {\"age\": 90}},\n#   {\"action\": {\"type\": \"Delete\"}, \"condition\": {\"age\": 365}}\n# ]}",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS S3",
+        "GCP Cloud Storage"
+      ],
+      "r": [
+        [
+          "Bucket",
+          "Bucket -- same term, same global uniqueness"
+        ],
+        [
+          "Presigned URL",
+          "Signed URL"
+        ],
+        [
+          "Standard/IA/Glacier/Deep Archive",
+          "Standard/Nearline/Coldline/Archive"
+        ],
+        [
+          "S3 Event Notifications",
+          "Pub/Sub bucket notifications"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is Cloud Storage described as the closest 1:1 naming match to S3 of any service across the three clouds?",
+      "a": "GCP kept the term 'bucket' itself and the same globally-unique-name constraint that S3 has -- no intermediate Storage Account layer the way Azure requires. Conceptually and terminologically, gs://bucket-name/object-key maps almost directly onto s3://bucket-name/object-key, making this one of the easiest single mental translations across all three clouds' storage services."
+    },
+    {
+      "q": "How does a GCP Signed URL get generated, and what is the practical implication for who can generate one?",
+      "a": "A Signed URL is generated using either a service account's private key directly, or via the IAM signBlob permission which lets a caller sign on behalf of a service account without possessing its raw key file -- the latter is the modern, more secure pattern, avoiding key file distribution. The practical implication: whoever's identity generates the signed URL must have appropriate Storage permissions on that object, and using signBlob-based signing (rather than a downloaded key) keeps this consistent with the broader 'avoid long-lived credentials' theme running through every cloud's modern IAM guidance."
+    }
+  ]
+}

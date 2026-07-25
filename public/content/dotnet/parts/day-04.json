@@ -1,0 +1,37 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "ASP.NET Core — middleware, DI lifetimes, Minimal APIs",
+  "exp": "The middleware pipeline and DI lifetimes are the two most-asked ASP.NET Core concepts. The captive dependency trap is a classic interview gotcha — know not just that it's wrong but exactly what breaks.",
+  "pts": [
+    "**Middleware pipeline:** request flows in registration order, response flows back in reverse. Order is critical",
+    "**DI Lifetimes:** Transient = new instance every resolution, Scoped = one per HTTP request, Singleton = one for app lifetime",
+    "**Captive dependency:** Scoped inside Singleton — the Scoped service is created once and held forever, breaking per-request isolation. ASP.NET Core throws in development mode",
+    "**Minimal APIs vs Controllers:** Minimal = less ceremony, great for microservices. Controllers = better for large APIs (filters, model binding conventions, organized routing)",
+    "**Action Filters vs Middleware:** Middleware applies to all requests. Action Filters are MVC-specific, apply to controller/action scope"
+  ],
+  "code": "// Middleware ORDER matters — wrong:\napp.UseAuthorization();   // ❌ identity not established yet\napp.UseAuthentication();\n\n// Correct:\napp.UseAuthentication();  // ✓ establishes identity\napp.UseAuthorization();   // ✓ can now check identity\n\n// DI lifetimes\nbuilder.Services.AddTransient<IEmailSender, SmtpSender>();\nbuilder.Services.AddScoped<ICurrentUser, CurrentUserService>();\nbuilder.Services.AddSingleton<ICache, MemoryCache>();\n\n// Minimal API (clean for your SCIM endpoints)\napp.MapGet(\"/scim/users/{id}\", async (string id, IUserService svc) =>\n  await svc.GetByIdAsync(id) is {} user ? Results.Ok(user) : Results.NotFound());",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline2"
+    },
+    {
+      "t": "lifetimes"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the middleware pipeline and why does order matter?",
+      "a": "Middleware components form a chain — each calls next() to pass the request forward, or short-circuits by returning directly. Order matters because each middleware only \"sees\" what has been set up before it. Authentication must run before Authorization so the identity is established when the auth check runs. Exception handling must be first to wrap everything else."
+    },
+    {
+      "q": "What is a captive dependency and what breaks?",
+      "a": "A captive dependency is when a Singleton service holds a reference to a Scoped service. The Scoped service is meant to be created fresh per HTTP request. Captured inside a Singleton, it lives as long as the Singleton — across all requests. It can hold stale state or a disposed DbContext. ASP.NET Core throws InvalidOperationException in development when it detects this pattern."
+    },
+    {
+      "q": "When would you choose Minimal APIs over controller-based APIs?",
+      "a": "Minimal APIs for: microservices with a small number of focused endpoints, serverless/cloud functions where cold start matters, prototyping. Controllers for: larger APIs with complex model binding, action filters, organized routing, and teams already familiar with MVC conventions. For your SCIM provisioning project, minimal APIs are a natural fit — the API surface is small and well-defined."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "Azure Databricks -- clusters, jobs, cost management",
+  "exp": "Azure Databricks is the direct equivalent of the EMR days -- built by the original Spark creators, deeply integrated with Azure infrastructure.",
+  "pts": [
+    "Databricks workspace: the persistent container for notebooks, clusters, jobs, and data.",
+    "All-purpose clusters: interactive/dev, billed while running regardless of activity -- idle timeout matters.",
+    "Job clusters: created automatically per scheduled Job run, terminated automatically on completion -- the Databricks equivalent of a transient EMR cluster with auto-terminate, and the correct choice for production.",
+    "autotermination_minutes on all-purpose clusters is the Databricks equivalent of remembering to terminate an EMR cluster -- except it's set once and forgotten, a genuine safety improvement over the AWS pattern.",
+    "Cluster node types map to Azure VM sizes (Standard_DS3_v2, etc.) -- same 'pick based on workload profile' logic as choosing an EC2 instance type.",
+    "Two separate cost line items: DBUs (Databricks platform compute-time metric) AND the underlying Azure VM compute -- worth knowing when reasoning about a cost question."
+  ],
+  "code": "{\n  \"name\": \"OrdersPipeline-Daily\",\n  \"new_cluster\": {\n    \"spark_version\": \"14.3.x-scala2.12\",\n    \"node_type_id\": \"Standard_DS3_v2\",\n    \"num_workers\": 4,\n    \"autotermination_minutes\": 20\n  },\n  \"notebook_task\": { \"notebook_path\": \"/Repos/pipeline/validate_and_transform\" },\n  \"timeout_seconds\": 3600,\n  \"max_retries\": 1\n}\n\nfrom databricks.sdk import WorkspaceClient\nw = WorkspaceClient()\njob = w.jobs.create(\n    name=\"OrdersPipeline-Daily\",\n    tasks=[{\"task_key\": \"validate\",\n            \"new_cluster\": {\"spark_version\": \"14.3.x-scala2.12\",\n                             \"node_type_id\": \"Standard_DS3_v2\",\n                             \"num_workers\": 4, \"autotermination_minutes\": 20},\n            \"notebook_task\": {\"notebook_path\": \"/Repos/pipeline/validate_and_transform\"}}]\n)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "EMR concept",
+        "Databricks equivalent"
+      ],
+      "r": [
+        [
+          "Transient cluster, auto-terminate",
+          "Job cluster"
+        ],
+        [
+          "Persistent/interactive cluster",
+          "All-purpose cluster"
+        ],
+        [
+          "EC2 instance type",
+          "Azure VM size"
+        ],
+        [
+          "EMR Step",
+          "Databricks Task within a Job"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is a job cluster, not an all-purpose cluster, the correct choice for a scheduled production pipeline?",
+      "a": "Job clusters are created fresh for a single Job run and automatically terminated when it completes -- no idle cost risk between runs. All-purpose clusters stay alive (billed) until manually stopped or idle-timeout triggers, and are meant for shared interactive development. This mirrors the exact AWS lesson: use transient EMR clusters with auto-terminate for scheduled batch work, not a persistent cluster."
+    },
+    {
+      "q": "Why does Databricks on Azure show up as two separate cost line items?",
+      "a": "DBUs (the Databricks platform's own compute-time billing unit, covering the runtime and management plane) are billed separately from the underlying Azure VM compute those clusters run on. A slow job isn't automatically an expensive one, or vice versa -- DBU rate varies by cluster type (all-purpose is billed at a higher rate than job clusters for the same VM size), so checking both numbers separately is necessary to actually diagnose a cost question."
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Architecture, patterns, GC, deadlocks — review",
+  "exp": "Day 7 consolidates architecture-level thinking. At 4 YOE, interviewers expect you to have opinions — not just know that patterns exist, but know when they're worth the trade-off.",
+  "pts": [
+    "**Repository + UoW:** if you're using EF Core, you already have both. Extra wrapper is usually over-engineering unless you need to swap ORMs",
+    "**IoC vs DI:** Inversion of Control is the principle (depend on abstractions). Dependency Injection is one implementation pattern (inject dependencies rather than creating them internally)",
+    "**GC generations:** Gen 0 (new, cheapest, most frequent), Gen 1 (survived Gen 0), Gen 2 (long-lived, LOH). Short-lived allocations in .NET are essentially free",
+    "**SQL vs threading deadlock:** SQL = two transactions waiting for each other's row locks (SQL Server detects and kills victim). Threading = two threads waiting for each other's Monitor locks (no auto-detection)",
+    "**STAR stories:** prepare Situation→Task→Action→Result for BMS migration, Zintara AI platform, ComplySec360 evidence pipeline"
+  ],
+  "code": "",
+  "pr": [],
+  "viz": [
+    {
+      "t": "gcheap"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Should you wrap EF Core's DbContext in a Repository + Unit of Work layer?",
+      "a": "In most cases: no. DbContext already provides both patterns. Wrapping adds boilerplate, loses EF-specific features like .Include and .AsSplitQuery, and the \"testability\" argument is better addressed with EF Core's in-memory provider. Valid exceptions: if you genuinely need to support multiple data stores, or if the domain model must be completely decoupled from the ORM."
+    },
+    {
+      "q": "What is the difference between Gen 0, Gen 1, and Gen 2 garbage collection?",
+      "a": "Gen 0 is the nursery — all new allocations go here. GC is fast (milliseconds) and frequent because it scans only a small portion of the heap. Objects surviving a Gen 0 collection are promoted to Gen 1, then Gen 2. Gen 2 GC is slower and rarer. The key insight: .NET is optimized for short-lived allocations — creating and discarding many small objects is fine."
+    },
+    {
+      "q": "What is the difference between a SQL deadlock and a threading deadlock?",
+      "a": "SQL deadlock: two transactions each holding a row/page lock the other needs — circular wait. SQL Server automatically detects and kills the \"deadlock victim\" with error 1205. Threading deadlock: two threads each holding a Monitor lock the other thread needs — no automatic detection, manifests as a hung application. Requires careful lock ordering or timeout-based acquisition."
+    }
+  ]
+}

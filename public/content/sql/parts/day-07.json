@@ -1,0 +1,50 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Window functions part 1 — ranking, NTILE, PERCENT_RANK",
+  "exp": "Window functions are the #1 gap that fails .NET/backend devs in SQL rounds. Master the ranking functions, know the differences cold, and understand NTILE for percentile bucketing — all of these appear in analytics and reporting interviews.",
+  "pts": [
+    "**OVER() clause:** defines the window. PARTITION BY resets per group (like GROUP BY but keeps rows). ORDER BY inside OVER() defines sort order within the window.",
+    "`ROW_NUMBER()` — always unique (1,2,3,4), even for ties — arbitrary tiebreaking unless ORDER BY is deterministic",
+    "`RANK()` — tied values share a rank; **gaps appear after ties** (1,1,3,4) — gap = number of tied rows",
+    "`DENSE_RANK()` — tied values share a rank; **no gaps** (1,1,2,3) — preferred for Nth value problems",
+    "`NTILE(n)` — divides the result set into n equally-sized buckets; returns the bucket number for each row. Uneven splits give extra row to earlier buckets.",
+    "`PERCENT_RANK()` — rank as a percentage: (rank - 1) / (total rows - 1). Returns 0 for lowest, 1 for highest.",
+    "`CUME_DIST()` — cumulative distribution: proportion of rows with values ≤ current value",
+    "Window functions execute AFTER WHERE and GROUP BY — to filter on a window function result, wrap in CTE or subquery",
+    "You can use multiple window functions with different OVER() specifications in the same SELECT"
+  ],
+  "code": "SELECT name, dept, salary,\n  ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC)   AS rn,\n  RANK()       OVER (PARTITION BY dept ORDER BY salary DESC)   AS rnk,\n  DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC)   AS drnk,\n  NTILE(4)     OVER (PARTITION BY dept ORDER BY salary ASC)    AS quartile,\n  PERCENT_RANK() OVER (PARTITION BY dept ORDER BY salary)      AS pct_rank,\n  CUME_DIST()    OVER (PARTITION BY dept ORDER BY salary)      AS cum_dist\nFROM employees;\n\n-- Top earner per department using ROW_NUMBER\nSELECT name, dept, salary FROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC, id) AS rn\n  FROM employees\n) t WHERE rn = 1;  -- id as tiebreaker makes row_number deterministic\n\n-- Top 3 per dept INCLUDING ties (use DENSE_RANK)\nSELECT name, dept, salary FROM (\n  SELECT *, DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS drnk\n  FROM employees\n) t WHERE drnk <= 3;\n\n-- NTILE: assign salary quartile labels\nSELECT name, salary,\n  CASE NTILE(4) OVER (ORDER BY salary)\n    WHEN 1 THEN 'Q1 (bottom 25%)'\n    WHEN 2 THEN 'Q2'\n    WHEN 3 THEN 'Q3'\n    WHEN 4 THEN 'Q4 (top 25%)'\n  END AS quartile\nFROM employees;\n\n-- Can't use window function in WHERE — must wrap\n-- WRONG: WHERE DENSE_RANK() OVER (...) <= 3\n-- RIGHT:\nWITH ranked AS (\n  SELECT *, DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS rnk\n  FROM employees\n)\nSELECT * FROM ranked WHERE rnk <= 3;",
+  "pr": [
+    "LeetCode: Rank Scores",
+    "LeetCode: Department Top Three Salaries",
+    "HackerRank: Placements"
+  ],
+  "viz": [
+    {
+      "t": "winfunc"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between ROW_NUMBER, RANK, and DENSE_RANK?",
+      "a": "ROW_NUMBER: always assigns unique sequential numbers — even tied rows get different numbers (tiebreaking is arbitrary unless the ORDER BY is deterministic). RANK: tied rows share the same rank, but the next rank after a tie jumps (1,1,3 — a gap equal to the number of tied rows). DENSE_RANK: tied rows share the same rank, the next rank after a tie is consecutive with no gap (1,1,2). Use DENSE_RANK for \"Nth highest\" problems; ROW_NUMBER for \"exactly one row per group.\""
+    },
+    {
+      "q": "What does NTILE(4) do and how does it handle uneven splits?",
+      "a": "NTILE(4) divides the result set into 4 equally-sized buckets and assigns each row a bucket number 1–4. For 10 rows split into 4 buckets: buckets 1 and 2 get 3 rows each, buckets 3 and 4 get 2 rows each (extra rows go to earlier buckets). NTILE is useful for assigning percentile labels (quartiles, deciles) without a separate PERCENTILE calculation."
+    },
+    {
+      "q": "What is PERCENT_RANK and what values does it return?",
+      "a": "PERCENT_RANK() = (rank - 1) / (total rows - 1). It returns 0 for the row with the lowest ORDER BY value and 1 for the highest. For a dataset with 5 rows: the ranks 1,2,3,4,5 become 0, 0.25, 0.5, 0.75, 1.0. It answers \"what percentage of rows have a value less than or equal to this row.\" Useful for normalizing rankings to a 0-1 scale."
+    },
+    {
+      "q": "How do you use two different window functions with different partitions in the same query?",
+      "a": "Each OVER() clause is independent — you can define different PARTITION BY and ORDER BY for each window function in the same SELECT. Example: ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) ranks within dept, while RANK() OVER (ORDER BY salary DESC) ranks globally across all employees — both computed in the same query without any subquery."
+    },
+    {
+      "q": "Why can you not use a window function directly in a WHERE clause?",
+      "a": "Window functions are evaluated in the SELECT phase, which comes AFTER WHERE in the logical execution order (FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY). By the time SELECT runs (and window functions are computed), WHERE has already filtered the rows. To filter on a window function result, wrap the query in a CTE or subquery so the outer WHERE can reference the computed column."
+    }
+  ]
+}

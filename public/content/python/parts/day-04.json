@@ -1,0 +1,31 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "Generators, decorators, context managers",
+  "exp": "These features distinguish idiomatic Python from basic Python. Generators are essential for large file processing.",
+  "pts": [
+    "Generator: uses yield instead of return. Produces one value at a time without building the full list in memory.",
+    "Generator expression: (x*2 for x in items) -- lazy list comprehension.",
+    "Decorator: wraps another function to add behaviour. @functools.wraps preserves the wrapped function name.",
+    "@contextmanager: simplest way to write a custom context manager using yield.",
+    "*args and **kwargs: used in decorators to pass all arguments through."
+  ],
+  "code": "import functools, time\nfrom contextlib import contextmanager\n\n# GENERATOR -- process huge file batch by batch\ndef read_batches(filepath, batch_size=1000):\n    import csv\n    with open(filepath, newline='') as f:\n        reader = csv.DictReader(f)\n        batch = []\n        for row in reader:\n            batch.append(row)\n            if len(batch) >= batch_size:\n                yield batch\n                batch = []\n        if batch: yield batch\n\nfor batch in read_batches('huge.csv'):\n    print(f'Processing {len(batch)} rows')\n\n# DECORATOR -- add timing to any function\ndef timed(func):\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        t0 = time.perf_counter()\n        result = func(*args, **kwargs)\n        print(f'{func.__name__} took {time.perf_counter()-t0:.3f}s')\n        return result\n    return wrapper\n\n@timed\ndef load_data(path):\n    import pandas as pd\n    return pd.read_csv(path)\n\n# CONTEXT MANAGER -- guaranteed cleanup\n@contextmanager\ndef get_conn(conn_str):\n    import pyodbc\n    conn = pyodbc.connect(conn_str)\n    try: yield conn\n    finally: conn.close()  # always runs even on exception",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Generator: producer pauses at each yield, consumer processes, producer resumes. List: fully builds before consumer starts."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is a generator and why use one over a list?",
+      "a": "A generator produces values one at a time on demand without computing all values upfront. Loading a 10GB CSV into a list crashes. A generator reads one batch at a time using constant memory regardless of file size. Use generators whenever processing data larger than available RAM."
+    },
+    {
+      "q": "How does a context manager guarantee cleanup?",
+      "a": "The code after yield in a @contextmanager always runs when the with block exits -- whether normally or via an exception. Use for file handles, database connections, threading locks -- anything that must be released even on error."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "C# OOP & SOLID — be precise, not encyclopaedic",
+  "exp": "OOP questions at 4 YOE are not \"define polymorphism.\" They're \"show me you understand virtual/override vs new, and give me a real SOLID example from your own code.\"",
+  "pts": [
+    "**Abstract class:** can have state (fields), constructors, and partial implementation. Use when sharing code within a related class family",
+    "**Interface:** pure contract. C# 8+ allows default method implementations, but no instance fields. Use for capabilities across unrelated types",
+    "**`virtual`/`override`:** true polymorphism — even accessed via a base reference, the derived method is called (runtime dispatch via vtable)",
+    "**`new` (hiding):** derived method only called if accessed via derived-type reference. Via base reference → base method runs (compile-time)",
+    "**SOLID:** for each principle, have ONE concrete example from your work (evidence pipeline = Open/Closed; injectable providers = Dependency Inversion)"
+  ],
+  "code": "// virtual/override — runtime dispatch\nclass Animal { public virtual string Sound() => \"...\"; }\nclass Dog : Animal { public override string Sound() => \"Woof\"; }\nAnimal a = new Dog();\na.Sound();  // \"Woof\" — override found at runtime\n\n// new (hiding) — compile-time dispatch\nclass Cat : Animal { public new string Sound() => \"Meow\"; }\nAnimal c = new Cat();\nc.Sound();  // \"...\" — base method, because reference type = Animal\n\n// Interface with default impl (C# 8+)\ninterface ILogger {\n  void Log(string msg);\n  void LogError(string msg) => Log(\"[ERROR] \" + msg);  // default\n}",
+  "pr": [],
+  "viz": [
+    {
+      "t": "solid"
+    },
+    {
+      "t": "vtable"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between virtual/override and new (method hiding) in C#?",
+      "a": "virtual/override uses runtime polymorphism — C# looks up the actual runtime type and calls the override, even through a base-class reference. new (hiding) is compile-time — calling through a base reference invokes the base method, not the derived one. Hiding breaks Liskov Substitution and is usually a design smell."
+    },
+    {
+      "q": "When would you choose abstract class over interface?",
+      "a": "Use abstract class when: you need to share state (fields) or concrete implementation, you need a constructor, or subclasses are closely related and share a common identity. Use interface when multiple unrelated types need the same capability, or when implementing multiple \"contracts\" (C# doesn't support multiple abstract class inheritance)."
+    },
+    {
+      "q": "Give a real Open/Closed Principle example from your work.",
+      "a": "In ComplySec360's evidence pipeline: the core orchestration engine is closed for modification. Adding a new integration means creating a new IEvidenceProvider implementation — not editing the engine. The SCIM provisioning system follows the same pattern: each IdP is a separate IProvisioningStrategy without touching the provisioning core."
+    }
+  ]
+}

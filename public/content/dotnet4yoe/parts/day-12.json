@@ -1,0 +1,29 @@
+{
+  "id": "day-12",
+  "n": 12,
+  "title": "Architecture — clean architecture, caching, microservices honesty",
+  "exp": "Defend layering choices. Don't propose microservices for a simple CRUD app — interviewers reward honesty.",
+  "pts": [
+    "Clean/onion: UI → Application → Domain ← Infrastructure; know where validation & transactions live.",
+    "Split services for independent deploy/scale/team ownership — accept distributed complexity.",
+    "Cache aside with Redis/`IMemoryCache`; plan TTL + invalidation; watch stampedes.",
+    "CAP: usually strong consistency in one DB, eventual across services.",
+    "SOLID as judgment tools, not religion."
+  ],
+  "code": "",
+  "pr": [
+    "Sketch clean architecture folders for Orders",
+    "Design cache keys + invalidation for product pages"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "When are microservices the wrong choice?",
+      "a": "Small team/domain, unclear boundaries, or when a modular monolith would ship faster with fewer failure modes. Microservices add network latency, consistency, and ops cost — justify with real scaling or team ownership needs."
+    },
+    {
+      "q": "Describe cache-aside and one failure mode.",
+      "a": "App reads cache; on miss, loads DB and populates cache with TTL. Failure modes: stampedes on expiry, stale reads after writes without invalidation, and caching personalized/security-sensitive data incorrectly."
+    }
+  ]
+}

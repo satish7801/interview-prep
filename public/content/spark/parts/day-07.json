@@ -1,0 +1,39 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Production Spark -- EMR deployment, Spark UI, Structured Streaming",
+  "exp": "Reading the Spark UI is the difference between guessing at performance problems and diagnosing them.",
+  "pts": [
+    "Spark UI (port 4040 locally, EMR History Server in prod): Jobs -> Stages -> Tasks. Find slow stage; check task duration outliers and Exchange operators.",
+    "EMR step: upload .py to S3, submit with --deploy-mode cluster.",
+    "Structured Streaming: read from stream source as a DataFrame; Spark processes micro-batches continuously.",
+    "Checkpoint: records stream progress. On restart, resumes exactly where it stopped.",
+    "trigger(availableNow=True): process all available data right now and stop."
+  ],
+  "code": "# STRUCTURED STREAMING\nfrom pyspark.sql.functions import window\nfrom pyspark.sql.types import StructType, StringType, DoubleType\n\nschema = StructType().add('order_id', StringType()).add('amount', DoubleType())\n\nstream = (spark.readStream\n    .format('json')\n    .schema(schema)\n    .option('path', 's3://bucket/incoming/')\n    .load())\n\nprocessed = (stream\n    .filter(col('amount') > 0)\n    .withWatermark('timestamp', '10 minutes')\n    .groupBy(window('timestamp', '5 minutes'), 'customer_id')\n    .agg({'amount': 'sum'}))\n\nquery = (processed.writeStream\n    .outputMode('append')\n    .format('parquet')\n    .option('path', 's3://bucket/streaming-output/')\n    .option('checkpointLocation', 's3://bucket/checkpoints/orders/')\n    .trigger(processingTime='1 minute')\n    .start())\nquery.awaitTermination()",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "S3 new files",
+        "readStream",
+        "filter + transform",
+        "groupBy + agg",
+        "writeStream",
+        "Checkpoint"
+      ],
+      "cap": "Structured Streaming micro-batch pipeline -- runs continuously"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What to look for in the Spark UI for a slow job?",
+      "a": "Jobs tab: which job is slow. Stages tab: find slow stage. In that stage Tasks tab: median vs max task duration (big gap = skew), input size per task (outlier = skew). DAG Visualization: Exchange nodes (shuffles). A healthy stage has all tasks completing within 2-3x of each other."
+    },
+    {
+      "q": "Why is checkpointing mandatory in Structured Streaming?",
+      "a": "The checkpoint directory records the stream offset (how far the job has processed) and aggregation state. On crash and restart, Spark reads the checkpoint and resumes exactly where it stopped -- not reprocessing everything. Without checkpointing, a restart reprocesses all data or loses progress."
+    }
+  ]
+}

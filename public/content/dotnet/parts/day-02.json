@@ -1,0 +1,38 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "LINQ, delegates, async/await, generics",
+  "exp": "These four are grouped together because they test whether you really understand C# beyond syntax. The most common trip-ups: forgetting LINQ is deferred, and using async void.",
+  "pts": [
+    "**Deferred LINQ:** `IEnumerable<T>` query doesn't execute until enumerated. Calling `.Count()` twice hits the DB twice. Use `.ToList()` to materialize once",
+    "**`Select`:** 1:1 projection. **`SelectMany`:** flattens one level (list-of-lists → flat list)",
+    "**Delegates → Events:** events wrap delegates to prevent external invocation/overwriting of the invocation list",
+    "**`async void` is dangerous:** exceptions propagate to SynchronizationContext and crash the process — never catchable by caller. Always use `async Task`",
+    "**`ConfigureAwait(false)`:** don't capture SynchronizationContext — use in library/infrastructure code to avoid deadlocks",
+    "**Generics constraints:** `where T : class, new()`. Covariance: `out T` (`IEnumerable<Dog>` where `IEnumerable<Animal>` expected). Contravariance: `in T`"
+  ],
+  "code": "// Deferred: enumerating query twice = two DB trips\nvar q = context.Orders.Where(o => o.Status == \"Pending\");\nvar count = q.Count();     // query 1\nvar list  = q.ToList();    // query 2 — same data fetched again!\n\n// Safe: materialize once\nvar orders = q.ToList();\nvar count2 = orders.Count; // in-memory, no DB call\n\n// SelectMany: flatten nested collections\nvar allItems = orders.SelectMany(o => o.Items).ToList();\n\n// async Task (correct) vs async void (dangerous)\nasync Task<string> GoodAsync()   => await FetchAsync();\nasync void BadAsync()  { await FetchAsync(); }  // exceptions crash app!\n\n// ConfigureAwait(false) for library code\npublic async Task<Data> GetAsync() {\n  var r = await http.GetAsync(url).ConfigureAwait(false);\n  return await r.Content.ReadAsAsync<Data>().ConfigureAwait(false);\n}",
+  "pr": [],
+  "viz": [
+    {
+      "t": "asyncseq"
+    },
+    {
+      "t": "selectmany"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is deferred execution in LINQ and what is the practical risk?",
+      "a": "A LINQ query on IEnumerable/IQueryable doesn't execute until you iterate it. The risk: enumerate the same query twice and you hit the database twice. Fix: call .ToList() once to materialize into memory, then work with the list."
+    },
+    {
+      "q": "What is the difference between Task, Task<T>, and ValueTask<T>?",
+      "a": "Task = async operation with no return value. Task<T> = async operation returning T. ValueTask<T> is a struct (no heap allocation) for methods that often complete synchronously — like cache hits. Only use ValueTask when profiling shows Task allocation is a measurable bottleneck."
+    },
+    {
+      "q": "What is ConfigureAwait(false) and when should you use it?",
+      "a": "By default, awaiting captures the SynchronizationContext and resumes on it (important for UI threads). ConfigureAwait(false) says \"resume on any thread pool thread.\" Use it in library/infrastructure code to avoid deadlocks in calling code that uses .Result or .Wait() on async methods."
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "Performance -- skew, salting, partitioning, AQE",
+  "exp": "The answer to every slow Spark job is almost always: data skew, missing broadcast, too many shuffles, or wrong partition count.",
+  "pts": [
+    "Data skew: one key has far more rows -- one task runs forever. Spark UI shows one outlier task.",
+    "Salting: add random suffix to skewed key to split across N sub-partitions.",
+    "spark.sql.shuffle.partitions defaults to 200 -- tune per job.",
+    "Filter early: before joins and aggregations to reduce shuffle size.",
+    "Avoid Python UDFs: cross JVM-to-Python per row. Use built-in PySpark SQL functions instead.",
+    "AQE (Adaptive Query Execution, Spark 3.x default): dynamically changes plan mid-query."
+  ],
+  "code": "# Tune shuffle partitions for this job\nspark.conf.set('spark.sql.shuffle.partitions', '50')\n\n# Filter EARLY -- before joins\norders_small = (orders\n    .filter(col('order_date') >= '2024-01-01')\n    .filter(col('amount') > 0)\n    .select('order_id','customer_id','amount','order_date'))\n\n# SALTING -- fix skewed customer_id join\nN = 50\nfrom pyspark.sql.functions import floor, rand, concat_ws, lit, explode, array\n\norders_salted = orders.withColumn('salt',\n    concat_ws('_', col('customer_id'), (floor(rand()*N)).cast('string')))\n\ncust_exploded = (customers\n    .withColumn('salt_range', array([lit(str(i)) for i in range(N)]))\n    .withColumn('salt_val', explode(col('salt_range')))\n    .withColumn('salt', concat_ws('_', col('customer_id'), col('salt_val'))))\n\njoined = orders_salted.join(broadcast(cust_exploded), on='salt')\nfinal = joined.groupBy('customer_id').agg(sum('amount'))",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Skew: 199 short task bars + 1 giant bar blocking the stage. After salting: all 200 bars roughly equal."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is data skew and how do you detect it?",
+      "a": "Data skew is when one key in a groupBy or join has far more rows than others -- one task becomes the bottleneck. Detect in Spark UI: Tasks tab of the slow stage, look for one task with duration or input size 100x larger than the median."
+    },
+    {
+      "q": "What does Adaptive Query Execution do?",
+      "a": "AQE allows Spark to modify the execution plan mid-query based on runtime statistics. After filtering, Spark may discover a table is now small enough to broadcast and switches join strategy mid-execution. Also auto-coalesces shuffle partitions. Default in Spark 3.2+."
+    }
+  ]
+}

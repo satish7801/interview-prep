@@ -1,0 +1,41 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "Capstone architecture and final mock interview",
+  "exp": "The capstone ties all tracks together. The mock covers exactly the question types in the S&P Global Lead I round.",
+  "pts": [
+    "Capstone: SQL Server -> Python extract -> S3 raw -> Spark validate+transform -> S3 processed Parquet -> Grafana dashboard.",
+    "GitHub README with architecture diagram, setup instructions, and a lessons-learned paragraph is the most-read part after the diagram.",
+    "Mock: 15 min system design, 10 min technical depth, 5 min STAR story.",
+    "Lead I signals: multiplying team output, owning decisions end-to-end, communicating trade-offs to non-technical stakeholders."
+  ],
+  "code": "",
+  "pr": [
+    "Push capstone to GitHub with README: architecture diagram, setup, lessons learned",
+    "Do the 30-minute mock interview and record yourself"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "SQL Server",
+        "Python extract",
+        "S3 raw CSV",
+        "Spark validate",
+        "S3 processed Parquet",
+        "Grafana dashboard"
+      ],
+      "cap": "Capstone pipeline -- ties all 5 tracks together"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Walk me through your capstone project end-to-end.",
+      "a": "Template using your real capstone: Source -> Python extraction (pandas+pyodbc) -> S3 raw -> EMR Spark validates and transforms -> Parquet partitioned by date -> Grafana dashboard (records, duration, errors). Idempotent via mode('overwrite'). State one honest thing you'd change -- for example, shuffle partitions set too high for the data volume."
+    },
+    {
+      "q": "What is your 90-day plan as Lead I?",
+      "a": "Day 1-30: understand before changing -- read all code, run every job, interview the team, review 6 months of incidents. Day 31-60: deliver the highest-value lowest-risk improvement to build credibility. Day 61-90: propose the medium-term architectural improvement as a written document with trade-offs, lead the discussion, begin execution."
+    }
+  ]
+}

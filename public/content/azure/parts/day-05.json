@@ -1,0 +1,31 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "Azure SDK for .NET, CI/CD, shared responsibility",
+  "exp": "The Azure SDK is likely more natural to you than the AWS SDK given your .NET background. This day covers the concrete API shape and CI/CD integration.",
+  "pts": [
+    "Azure.Storage.Blobs NuGet package: BlobServiceClient / BlobContainerClient mirror the Python SDK shape from Day 3.",
+    "DefaultAzureCredential in .NET works identically to Python's version -- one credential class adapting to local dev (CLI/Visual Studio login) or Managed Identity in Azure, no code change needed between environments.",
+    "Never hardcode a storage connection string -- use Managed Identity with RBAC-scoped roles instead.",
+    "Shared responsibility: Microsoft secures the physical datacenter and hypervisor; you secure RBAC assignments, encryption choices, network rules, and anything you deploy.",
+    "Workload Identity Federation (GitHub Actions <-> Entra ID) is the modern CI/CD pattern -- no long-lived service principal secrets stored anywhere."
+  ],
+  "code": "// .NET C# -- Azure SDK for Blob Storage\nusing Azure.Storage.Blobs;\nusing Azure.Identity;\n\nvar client = new BlobServiceClient(\n    new Uri(\"https://satishpipeline.blob.core.windows.net\"),\n    new DefaultAzureCredential());\n\nvar container = client.GetBlobContainerClient(\"orders-raw\");\nawait using var stream = File.OpenRead(\"C:/data/orders.csv\");\nawait container.GetBlobClient(\"2024/01/orders.csv\").UploadAsync(stream, overwrite: true);\n\nawait foreach (var blob in container.GetBlobsAsync(prefix: \"processed/2024/\"))\n    Console.WriteLine($\"{blob.Name} ({blob.Properties.ContentLength:N0} bytes)\");\n\n// GitHub Actions -- Workload Identity Federation, no stored secret\n// - uses: azure/login@v2\n//   with:\n//     client-id: ${{ secrets.AZURE_CLIENT_ID }}\n//     tenant-id: ${{ secrets.AZURE_TENANT_ID }}\n//     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}\n//     # no client-secret -- federated credential trusts the GitHub OIDC token",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Credential chain: .NET code -> DefaultAzureCredential checks env vars -> checks Managed Identity endpoint -> checks CLI login -> returns valid token."
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does DefaultAzureCredential in .NET compare to the AWS SDK's default credential chain?",
+      "a": "Functionally identical in purpose -- a single credential object trying multiple auth sources in order (environment variables, Managed Identity, CLI login) without code branching between environments. The same code authenticates correctly locally and in production, and no connection strings or keys ever appear in application configuration."
+    },
+    {
+      "q": "What is Workload Identity Federation and why prefer it over a stored service principal secret?",
+      "a": "It lets GitHub Actions authenticate to Azure using a short-lived token Azure trusts via a federated credential on an Entra ID app registration -- no client secret is ever generated or stored as a CI secret. This eliminates secret-rotation burden and leaked-credential risk, mirroring the AWS OIDC pattern for GitHub Actions exactly."
+    }
+  ]
+}

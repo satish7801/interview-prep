@@ -1,0 +1,49 @@
+{
+  "id": "day-11",
+  "n": 11,
+  "title": "Testing — TestBed, Vitest (v21+), component harnesses, mocking",
+  "exp": "Angular testing is tested less often in product company interviews but is a common question at companies that prioritize quality. Know TestBed setup, how to test OnPush components, how to mock services, and the Vitest setup (Angular 21+). Signal-based testing patterns are now relevant.",
+  "pts": [
+    "**`TestBed.configureTestingModule`:** sets up an Angular testing environment; declare the component under test and its dependencies (real or mocked)",
+    "**`ComponentFixture<T>`:** wrapper around the component; `.componentInstance` (component class), `.nativeElement` (DOM), `.detectChanges()` (trigger CD)",
+    "**Testing OnPush:** must call `fixture.detectChanges()` after every state change — OnPush doesn't auto-detect outside the test context",
+    "**Mock services:** `jasmine.createSpyObj('UserService', ['getUser'])` or a plain object with jest/vitest `vi.fn()` methods",
+    "**`HttpClientTestingModule` / `provideHttpClientTesting()`:** provides a test implementation of HttpClient; use `HttpTestingController.expectOne(url)` to intercept and respond",
+    "**Component harnesses (CDK):** `HarnessLoader.getHarness(MatButtonHarness)` — interact with Material components in tests through a stable API instead of fragile DOM selectors",
+    "**Testing signals:** signals work synchronously in tests — `component.count.set(5); fixture.detectChanges(); expect(el.textContent).toBe('5')`",
+    "**Vitest (Angular 21+, default):** replaces Karma; faster, runs in Node.js; configure via `vitest.config.ts`; uses `describe`, `it`, `expect` like Jest",
+    "**`fakeAsync` + `tick(n)`:** fake time to test debounced or delayed operations without real waiting"
+  ],
+  "code": "// Component under test\n@Component({\n  standalone: true,\n  template: `<p>{{ count() }}</p><button (click)=\"increment()\">+</button>`\n})\nexport class CounterComponent {\n  count = signal(0);\n  increment() { this.count.update(v => v + 1); }\n}\n\n// TestBed setup (Vitest / Jasmine syntax)\ndescribe('CounterComponent', () => {\n  let fixture: ComponentFixture<CounterComponent>;\n  let component: CounterComponent;\n\n  beforeEach(async () => {\n    await TestBed.configureTestingModule({\n      imports: [CounterComponent]   // standalone components go in imports\n    }).compileComponents();\n\n    fixture = TestBed.createComponent(CounterComponent);\n    component = fixture.componentInstance;\n    fixture.detectChanges();  // initial render\n  });\n\n  it('starts at 0', () => {\n    expect(fixture.nativeElement.querySelector('p').textContent).toBe('0');\n  });\n\n  it('increments on button click', () => {\n    fixture.nativeElement.querySelector('button').click();\n    fixture.detectChanges();  // required for OnPush and always good practice\n    expect(component.count()).toBe(1);\n    expect(fixture.nativeElement.querySelector('p').textContent).toBe('1');\n  });\n});\n\n// Mock service in TestBed\ndescribe('UserListComponent', () => {\n  let userServiceMock: jasmine.SpyObj<UserService>;\n\n  beforeEach(async () => {\n    userServiceMock = jasmine.createSpyObj('UserService', ['getUsers']);\n    userServiceMock.getUsers.and.returnValue(of([{ id: 1, name: 'Alice' }]));\n\n    await TestBed.configureTestingModule({\n      imports: [UserListComponent],\n      providers: [{ provide: UserService, useValue: userServiceMock }]\n    }).compileComponents();\n  });\n});\n\n// HTTP testing\nit('loads users from API', () => {\n  const { fixture, http } = TestBed.inject(HttpTestingController);\n  fixture.detectChanges();\n  const req = http.expectOne('/api/users');\n  req.flush([{ id: 1, name: 'Alice' }]);\n  fixture.detectChanges();\n  expect(component.users()).toHaveLength(1);\n});\n\n// fakeAsync: test debounced search\nit('debounces search input', fakeAsync(() => {\n  component.searchTerm.set('ang');\n  tick(299);\n  expect(userServiceMock.search).not.toHaveBeenCalled();\n  tick(1);  // 300ms total\n  expect(userServiceMock.search).toHaveBeenCalledWith('ang');\n}));",
+  "pr": [
+    "Write a TestBed test for a component that uses a signal and makes an HTTP call"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Setup pattern: configureTestingModule → createComponent → detectChanges (init) → [act] → detectChanges (update) → assert"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between shallow and deep component testing in Angular?",
+      "a": "Shallow testing (using NO_ERRORS_SCHEMA or stub children): only the component under test is fully rendered; child components are replaced with empty stubs. Faster and more isolated but doesn't verify integration with children. Deep testing (declaring all child components): renders the full component tree. More realistic but slower and more fragile. For unit tests, shallow is preferred; for integration tests that verify component composition, deep is appropriate. The Angular CDK HarnessLoader provides a middle ground for testing specific child component interactions."
+    },
+    {
+      "q": "Why do you need to call fixture.detectChanges() in Angular tests?",
+      "a": "Angular does not run change detection automatically in the test environment. fixture.detectChanges() triggers one round of change detection: it initialises the component (ngOnInit runs on the first call), then updates the DOM to reflect the current component state. For OnPush components, you MUST call detectChanges() after every state change or the template won't update. Always call it: once in beforeEach after creating the component (initial render), and once after every state change in test cases."
+    },
+    {
+      "q": "What is the Angular CDK component harness and why use it?",
+      "a": "CDK component harnesses provide a stable API for testing components — especially Angular Material components. Instead of querying the DOM directly (fixture.nativeElement.querySelector('.mat-button')), which breaks when Material changes its DOM structure, you use HarnessLoader.getHarness(MatButtonHarness) and call harness.click(). Benefits: tests are decoupled from implementation details, work consistently across browsers, and don't break on Material version upgrades. You can also write custom harnesses for your own components."
+    },
+    {
+      "q": "How does Vitest differ from Karma for Angular tests?",
+      "a": "Karma launches a real browser (Chrome/Firefox), runs tests inside it, and reports results back — slow startup, requires a display. Vitest runs in Node.js using jsdom for DOM simulation — starts in milliseconds, runs tests in parallel, and integrates with the Vite build pipeline. Vitest is up to 10x faster for unit tests. Angular 21 made Vitest the default test runner for new projects. The test syntax is nearly identical (describe/it/expect) — the main migration work is configuration and replacing Karma-specific setup."
+    },
+    {
+      "q": "How do you test a component that uses signals?",
+      "a": "Signals are synchronous — reading and setting them is immediate, unlike Observables. To test: set the signal value with component.mySignal.set(value); call fixture.detectChanges(); then assert on the DOM. For computed signals: set the source signals, call detectChanges, assert the computed result. For effects: effects run during change detection, so fixture.detectChanges() is enough to trigger them. Signal-based tests are generally simpler than Observable-based tests because there's no async, no tick, no subscribe needed for state changes."
+    }
+  ]
+}

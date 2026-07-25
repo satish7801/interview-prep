@@ -1,0 +1,49 @@
+{
+  "id": "day-12",
+  "n": 12,
+  "title": "Transactions, isolation levels, deadlocks — complete deep dive",
+  "exp": "ACID properties and isolation levels are asked in almost every senior .NET+SQL interview — partly because they connect directly to how you write safe application code. Know each isolation level's anomalies by name. The READ COMMITTED SNAPSHOT distinction from READ COMMITTED is a real differentiator.",
+  "pts": [
+    "**ACID:** Atomicity (all-or-nothing), Consistency (valid state before/after), Isolation (no partial changes visible), Durability (committed = on disk)",
+    "**READ UNCOMMITTED:** dirty reads possible (can read rows another transaction has modified but not committed). Fastest, least safe. Use `WITH (NOLOCK)` hint.",
+    "**READ COMMITTED (default):** no dirty reads; but non-repeatable reads possible (same row can change between two reads in one transaction)",
+    "**REPEATABLE READ:** no dirty reads or non-repeatable reads; but phantom reads possible (new rows can appear between two queries with the same WHERE)",
+    "**SERIALIZABLE:** no anomalies; fully isolated but maximum blocking — range locks prevent phantom reads",
+    "**READ COMMITTED SNAPSHOT (RCSI):** SQL Server extension — uses row versioning in tempdb; readers never block writers; no dirty reads; enable at database level (`ALTER DATABASE ... SET READ_COMMITTED_SNAPSHOT ON`)",
+    "**SNAPSHOT isolation:** each transaction sees a snapshot of data from when the transaction began; detects write conflicts; must be enabled per database",
+    "**Deadlock:** two transactions each holding a lock the other needs — circular wait. SQL Server auto-detects and kills the \"deadlock victim\" (error 1205).",
+    "**Deadlock prevention:** always acquire locks in the same order across all code paths; keep transactions short; use RCSI to reduce lock contention",
+    "**Deadlock detection:** deadlock graph logged to SQL Server error log and Extended Events; shows the two transactions and their conflicting resources"
+  ],
+  "code": "-- Set isolation level for a session\nSET TRANSACTION ISOLATION LEVEL READ COMMITTED;  -- default\nSET TRANSACTION ISOLATION LEVEL SERIALIZABLE;\n\n-- Query hint for dirty reads (READ UNCOMMITTED)\nSELECT * FROM orders WITH (NOLOCK);  -- may read uncommitted rows\n\n-- Enable RCSI at database level (best practice for OLTP)\nALTER DATABASE YourDB SET READ_COMMITTED_SNAPSHOT ON;\n-- Now all READ COMMITTED queries use row versioning, readers don't block\n\n-- Enable SNAPSHOT isolation\nALTER DATABASE YourDB SET ALLOW_SNAPSHOT_ISOLATION ON;\n-- In a session:\nSET TRANSACTION ISOLATION LEVEL SNAPSHOT;\n\n-- Explicit transaction\nBEGIN TRANSACTION;\n  UPDATE accounts SET balance = balance - 100 WHERE id = 1;\n  UPDATE accounts SET balance = balance + 100 WHERE id = 2;\n  IF @@ERROR != 0 ROLLBACK TRANSACTION\n  ELSE COMMIT TRANSACTION;\n\n-- Better: TRY/CATCH for transactions\nBEGIN TRY\n  BEGIN TRANSACTION;\n    UPDATE accounts SET balance = balance - 100 WHERE id = 1;\n    UPDATE accounts SET balance = balance + 100 WHERE id = 2;\n  COMMIT TRANSACTION;\nEND TRY\nBEGIN CATCH\n  IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;\n  -- Re-raise or log the error\n  THROW;\nEND CATCH;\n\n-- View current locks\nSELECT request_session_id, resource_type, resource_description,\n       request_mode, request_status\nFROM sys.dm_tran_locks WHERE resource_database_id = DB_ID();",
+  "pr": [
+    "Deliberately create a deadlock in two sessions and observe the deadlock graph in SSMS"
+  ],
+  "viz": [
+    {
+      "t": "deadlock"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What are the four isolation levels and what anomaly does each prevent?",
+      "a": "READ UNCOMMITTED: prevents nothing — dirty reads, non-repeatable reads, and phantom reads all possible. READ COMMITTED (default): prevents dirty reads. REPEATABLE READ: prevents dirty reads and non-repeatable reads (same row can't change within a transaction). SERIALIZABLE: prevents all three — dirty reads, non-repeatable reads, and phantom reads (new rows matching a WHERE can't appear). Higher isolation = more correctness, more blocking."
+    },
+    {
+      "q": "What is the difference between READ COMMITTED and READ COMMITTED SNAPSHOT?",
+      "a": "Both prevent dirty reads. Standard READ COMMITTED uses shared locks — a reader blocks a writer and vice versa. READ COMMITTED SNAPSHOT (RCSI) uses row versioning: instead of taking a shared lock, a reader reads a committed snapshot of the row from tempdb. Readers never block writers, and writers never block readers. RCSI provides better concurrency with the same consistency guarantees. Enable at the database level: ALTER DATABASE YourDB SET READ_COMMITTED_SNAPSHOT ON."
+    },
+    {
+      "q": "What causes a deadlock and how do you prevent it in a .NET application?",
+      "a": "A deadlock occurs when Transaction A holds Lock X and waits for Lock Y, while Transaction B holds Lock Y and waits for Lock X — circular wait. SQL Server detects and kills the victim (error 1205). Prevention in .NET: (1) always access tables in the same order across all code paths, (2) keep transactions as short as possible, (3) enable RCSI to reduce lock contention, (4) retry logic in .NET code for error 1205 — catch SqlException where Number == 1205 and retry after a brief delay."
+    },
+    {
+      "q": "What is SNAPSHOT isolation and how does it differ from RCSI?",
+      "a": "Both use row versioning. RCSI enables row versioning for the default READ COMMITTED level at the database level — all readers automatically get this behaviour. SNAPSHOT isolation is an explicit transaction-level setting: each transaction sees a point-in-time snapshot of the database from when the transaction began. SNAPSHOT detects write conflicts (throws an error if two transactions update the same row). RCSI does not detect conflicts — last writer wins. Use SNAPSHOT for long-running read transactions that need a consistent view."
+    },
+    {
+      "q": "What is the WITH (NOLOCK) hint and when should you use it?",
+      "a": "WITH (NOLOCK) is equivalent to READ UNCOMMITTED at the table level — it reads rows without acquiring shared locks, including rows in the middle of an uncommitted transaction (dirty reads). Use it only for approximate counts or dashboards where slightly stale or inconsistent data is acceptable (e.g., a row count for a large table). Never use WITH (NOLOCK) for financial calculations, integrity-critical reads, or any query where reading uncommitted data would cause incorrect results."
+    }
+  ]
+}

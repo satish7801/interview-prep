@@ -1,0 +1,48 @@
+{
+  "id": "day-14",
+  "n": 14,
+  "title": "Architecture patterns, smart/dumb components, full mock",
+  "exp": "Architecture questions test whether you think at the system level. Smart/dumb component pattern, feature-based folder structure, error boundaries, and the full 30-minute mock complete the Angular track. Use your Zintara and BMS migration experience as concrete examples.",
+  "pts": [
+    "**Feature-based folder structure:** group by feature (users/, compliance/, auth/) not by type (components/, services/, pipes/) — scales better, easier to lazy-load, clearer ownership",
+    "**Smart (container) vs dumb (presentational) components:** smart = injects services, owns state, dispatches actions; dumb = receives data via @Input, emits events via @Output, no service deps, easily testable and reusable",
+    "**State lifting:** when two sibling components need the same state, lift it to their nearest common ancestor or to a shared store service",
+    "**Error boundaries:** Angular does not have React-style error boundaries; use global ErrorHandler (`{ provide: ErrorHandler, useClass: GlobalErrorHandler }`) + per-component try/catch in effect() or catchError in Observables",
+    "**SSR considerations:** avoid window/document in component code (use isPlatformBrowser()); use transferState to avoid double HTTP calls; defer browser-only components with @defer",
+    "**Component API design:** prefer specific @Input types over `any`; use `model<T>()` for two-way bindable state; prefer signals over EventEmitter for complex component APIs",
+    "**Barrel files (`index.ts`):** re-export public API of a feature module; consumers import from `features/users` not `features/users/components/user-list.component`"
+  ],
+  "code": "// Feature-based folder structure\n// src/app/\n//   features/\n//     users/\n//       index.ts               ← barrel: public API\n//       users.routes.ts        ← lazy-loaded routes\n//       containers/\n//         user-list.component.ts   ← SMART: injects UserStore\n//       components/\n//         user-card.component.ts   ← DUMB: @Input user; @Output edit\n//       services/\n//         user.store.ts\n//       models/\n//         user.model.ts\n\n// SMART component: owns state, injects store\n@Component({\n  template: \\`<user-card *ngFor=\"let u of store.users()\" [user]=\"u\" (edit)=\"store.openEdit(u)\" />\\`\n})\nexport class UserListContainer {\n  store = inject(UserStore);\n}\n\n// DUMB component: pure UI, easily testable\n@Component({\n  selector: 'user-card',\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: \\`<div>{{ user().name }} <button (click)=\"edit.emit(user())\">Edit</button></div>\\`\n})\nexport class UserCardComponent {\n  user = input.required<User>();\n  edit = output<User>();\n}\n\n// Global error handler\n@Injectable()\nexport class GlobalErrorHandler implements ErrorHandler {\n  private notifications = inject(NotificationService);\n\n  handleError(error: unknown) {\n    const message = error instanceof Error ? error.message : String(error);\n    this.notifications.showError(message);\n    console.error('[GlobalErrorHandler]', error);\n  }\n}\n\n// SSR-safe: check platform before using browser APIs\n@Injectable({ providedIn: 'root' })\nexport class LocalStorageService {\n  private isBrowser = isPlatformBrowser(inject(PLATFORM_ID));\n\n  get(key: string): string | null {\n    return this.isBrowser ? localStorage.getItem(key) : null;\n  }\n}",
+  "pr": [
+    "Refactor a service-heavy smart component into a container + dumb component pair",
+    "Add a GlobalErrorHandler that logs to console and shows a notification"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Full mock: 30 minutes — 1 architecture question (design the Angular side of the compliance evidence viewer), 1 debugging question (component not updating — diagnose), 1 behavioral (architecture decision you'd make differently). Score: stated trade-offs explicitly, used real project examples, clear reasoning under 2 minutes per answer."
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the smart/dumb component pattern and why does it improve maintainability?",
+      "a": "Smart (container) components inject services, own state, and pass data down. Dumb (presentational) components only receive @Input, emit @Output, and contain no business logic. Benefits: dumb components are reusable anywhere (no service dependencies), easily unit-tested (just pass @Input values and verify output), and naturally work with OnPush (all data comes from @Inputs/signals). Smart components contain the side effects and async logic in one place. The pattern also guides code organisation — keep business logic in stores/services, keep templates in dumb components."
+    },
+    {
+      "q": "Why is feature-based folder structure preferred over type-based?",
+      "a": "Type-based (components/, services/, pipes/) groups files by what they are — a component for users and a component for orders live in the same folder. Feature-based (users/, orders/) groups files by what they belong to — all users files are together. Feature-based advantages: lazy loading maps 1:1 to features, team ownership is clearer (the users team owns the users folder), and when you add a user feature you touch one folder instead of five. Type-based creates coupling across features — a change to user logic touches components, services, pipes, and models in separate locations."
+    },
+    {
+      "q": "How do you handle global errors in Angular without component-level try/catch?",
+      "a": "Provide a custom ErrorHandler: { provide: ErrorHandler, useClass: GlobalErrorHandler }. The handleError(error) method is called whenever an unhandled error occurs in any component, service, or effect. Use it to: show a notification toast, log to Sentry or other monitoring, navigate to an error page. For HTTP errors, an error interceptor is more appropriate (handles specific status codes). For Observable errors within components, use catchError in the pipe. The combination — global ErrorHandler + error interceptor + per-Observable catchError — covers most error scenarios."
+    },
+    {
+      "q": "How would you walk through migrating a large Angular 12 NgModule app to modern Angular 22?",
+      "a": "1) Upgrade Angular incrementally to v22. 2) Enable standalone component migration: run ng generate @angular/core:standalone with the mode=convert-to-standalone schematic. 3) Enable OnPush on all components. 4) Replace Observable-based shared state with signal services. 5) Replace @Input()/@Output() with input()/output() and model() for two-way. 6) Add provideExperimentalZonelessChangeDetection() and test. 7) Replace lazy NgModules with loadComponent/loadChildren. 8) Add @defer to below-fold heavy components. 9) Migrate tests from Karma to Vitest. Each step is independently deployable — you don't need to do it all at once."
+    },
+    {
+      "q": "What is a barrel file and what are the trade-offs of using it?",
+      "a": "A barrel file (usually index.ts) re-exports the public API of a feature: export { UserCardComponent } from './components/user-card.component'; export { UserStore } from './services/user.store'. Consumers import from 'features/users' instead of 'features/users/components/user-card.component'. Benefits: consumers are decoupled from internal file structure, refactoring internals doesn't break imports, clear public vs private API. Trade-offs: can cause circular dependency issues if not managed carefully, and some bundlers (Angular's esbuild) can slightly reduce tree-shaking effectiveness — mitigated by keeping barrels lean."
+    }
+  ]
+}

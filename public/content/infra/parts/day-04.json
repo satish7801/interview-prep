@@ -1,0 +1,37 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "Kibana + ELK -- log search, structured logging",
+  "exp": "Where Grafana shows metrics, Kibana shows logs. When your Spark job fails and you need the exact exception at 3am, you search Kibana Discover.",
+  "pts": [
+    "Elasticsearch: distributed document store. Each document is a JSON object.",
+    "KQL: level:ERROR AND service:pipeline -- field:value with AND/OR/NOT.",
+    "Structured JSON logging makes Elasticsearch fields searchable directly without parsing rules.",
+    "ILM (Index Lifecycle Management): Hot -> Warm -> Cold -> Delete -- the Elasticsearch equivalent of S3 lifecycle rules."
+  ],
+  "code": "import logging, json\nfrom datetime import datetime\n\nclass JsonFormatter(logging.Formatter):\n    def format(self, record):\n        return json.dumps({\n            'timestamp': datetime.utcnow().isoformat()+'Z',\n            'level': record.levelname, 'service': 'orders-pipeline',\n            'message': record.getMessage(),\n            'source': getattr(record, 'source', None),\n            'records': getattr(record, 'records', None),\n        })\n\nlogger = logging.getLogger('pipeline')\nh = logging.StreamHandler(); h.setFormatter(JsonFormatter())\nlogger.addHandler(h)\n\nlogger.info('Processing complete', extra={'source':'Bloomberg','records':45000})\nlogger.error('Validation failed', extra={'source':'ICE','records':0})\n\n# KIBANA QUERIES\n# level:ERROR AND source:Bloomberg\n# duration_ms > 600000",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "App logs (JSON)",
+        "Logstash parse",
+        "Elasticsearch index",
+        "Kibana Discover",
+        "Visualize + Alert"
+      ],
+      "cap": "ELK data flow: structured JSON to searchable, visualized logs"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Grafana vs Kibana -- when use each?",
+      "a": "Grafana for metrics -- numerical time-series (CPU%, error rate). Best for how is my system performing. Kibana for logs -- event documents. Best for what exactly happened at 3am. A production platform uses both: Grafana for dashboards, Kibana for log debugging."
+    },
+    {
+      "q": "Why is structured JSON logging better than plain text?",
+      "a": "Plain text requires Logstash grok patterns to parse fields -- fragile, breaks on format changes. JSON logs parse automatically; Elasticsearch creates fields with zero config. You can immediately filter level:ERROR AND source:Bloomberg without writing parsing rules."
+    }
+  ]
+}

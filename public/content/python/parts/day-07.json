@@ -1,0 +1,39 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "requests, REST APIs, retry, rate limiting",
+  "exp": "Fetching from REST APIs with proper error handling is core to the 50-source S&P pipeline.",
+  "pts": [
+    "requests.get(url, params={}, headers={}, timeout=10) -- timeout is mandatory without exception.",
+    "response.raise_for_status() -- raises HTTPError for 4xx/5xx. Call after every request.",
+    "requests.Session() -- reuses TCP connection; persists headers and auth across calls.",
+    "Rate limiting: time.sleep(1/rate_limit) between calls.",
+    "Pagination: loop until next_page is None or results are empty."
+  ],
+  "code": "import requests, time, os\nfrom requests.adapters import HTTPAdapter\nfrom urllib3.util.retry import Retry\n\nsession = requests.Session()\nsession.headers.update({'Authorization': f'Bearer {os.environ[\"API_KEY\"]}'})\nretry = Retry(total=3, backoff_factor=1, status_forcelist=[429,500,502,503,504])\nsession.mount('https://', HTTPAdapter(max_retries=retry))\n\ndef fetch_all(base_url: str) -> list:\n    records, page = [], 1\n    while True:\n        resp = session.get(f'{base_url}?page={page}&per_page=100', timeout=10)\n        resp.raise_for_status()\n        data = resp.json()\n        records.extend(data.get('items', []))\n        if not data.get('next_page'): break\n        page += 1\n        time.sleep(0.5)   # respect rate limits\n    return records",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "Session.get()",
+        "raise_for_status()",
+        "json()",
+        "Check next_page",
+        "Sleep",
+        "Repeat"
+      ],
+      "cap": "Paginated API fetch with retry and rate limiting"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is timeout mandatory in every requests.get()?",
+      "a": "Without a timeout, requests.get() waits forever if the server hangs. In a pipeline running at 2am, a hung call blocks indefinitely with no error. Always set timeout=10 to get a requests.exceptions.Timeout you can catch and handle."
+    },
+    {
+      "q": "How do you distinguish transient from permanent API failures?",
+      "a": "Transient: 429 (rate limit), 500-504 (server temporarily unavailable), Timeout -- worth retrying. Permanent: 404 (not found), 400 (bad request), 403 (auth failure) -- retrying won't fix these; skip, fix, or escalate."
+    }
+  ]
+}

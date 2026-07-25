@@ -1,0 +1,53 @@
+{
+  "id": "day-13",
+  "n": 13,
+  "title": "Azure security and compliance -- Key Vault, Defender for Cloud, Private Endpoints",
+  "exp": "The Azure equivalents of Secrets Manager, Security Hub, and PrivateLink -- the security layer questions that come up once the core pipeline is working.",
+  "pts": [
+    "Key Vault: stores secrets, keys, and certificates -- the direct Azure equivalent of AWS Secrets Manager. Applications read secrets via Managed Identity, never via a hardcoded connection string.",
+    "Key Vault references can be used directly in App Service / Function App configuration, resolving the secret at runtime without the application code ever handling the raw secret value explicitly.",
+    "Defender for Cloud: Azure's security posture management and threat detection service, roughly the combined equivalent of AWS Security Hub + GuardDuty -- surfaces misconfigurations (like a publicly accessible storage account) and active threats in one place.",
+    "Private Endpoints: give a PaaS resource (a Storage Account, a Key Vault, a Databricks workspace) a private IP address inside your VNet, so traffic never traverses the public internet -- the Azure equivalent of an AWS VPC Endpoint / PrivateLink.",
+    "Network Security Groups (NSGs) filter traffic at the subnet or NIC level -- the Azure equivalent of a Security Group, with a similar allow-list rule model.",
+    "Azure encrypts data at rest by default for most services (Storage Accounts, managed disks) using platform-managed keys, with the option to bring your own key via Key Vault -- the same default-encrypted posture AWS has moved toward, worth confirming rather than assuming for any specific service."
+  ],
+  "code": "# Key Vault -- create and grant Managed Identity access\naz keyvault create --name kv-orders-pipeline --resource-group rg-orders-pipeline\n\naz keyvault secret set --vault-name kv-orders-pipeline \\\n  --name \"SourceApiKey\" --value \"the-actual-secret\"\n\naz role assignment create \\\n  --assignee <managed-identity-object-id> \\\n  --role \"Key Vault Secrets User\" \\\n  --scope \"/subscriptions/<sub>/resourceGroups/rg-orders-pipeline/providers/Microsoft.KeyVault/vaults/kv-orders-pipeline\"\n\n# .NET reading a secret via Managed Identity -- no key vault SDK secret handling needed\n// var client = new SecretClient(new Uri(\"https://kv-orders-pipeline.vault.azure.net\"), new DefaultAzureCredential());\n// KeyVaultSecret secret = await client.GetSecretAsync(\"SourceApiKey\");\n\n# Private Endpoint -- storage account only reachable from inside the VNet\naz network private-endpoint create \\\n  --name pe-storage-orders \\\n  --resource-group rg-orders-pipeline \\\n  --vnet-name vnet-pipeline --subnet subnet-data \\\n  --private-connection-resource-id \"/subscriptions/<sub>/.../storageAccounts/satishpipeline\" \\\n  --group-id blob --connection-name storage-connection",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "AWS",
+        "Azure"
+      ],
+      "r": [
+        [
+          "Secrets Manager",
+          "Key Vault"
+        ],
+        [
+          "Security Hub + GuardDuty",
+          "Defender for Cloud"
+        ],
+        [
+          "VPC Endpoint / PrivateLink",
+          "Private Endpoint"
+        ],
+        [
+          "Security Group",
+          "Network Security Group (NSG)"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does an application read a secret from Key Vault without ever handling raw credentials in code?",
+      "a": "The application authenticates via Managed Identity (DefaultAzureCredential), which is granted a Key Vault Secrets User RBAC role scoped to the specific vault. The SDK call to retrieve the secret uses that identity's token -- there's no separate 'Key Vault access key' to manage or leak, and the same Managed Identity that reads Blob Storage or calls other Azure services can also be granted access to specific secrets, keeping the whole credential story consistent."
+    },
+    {
+      "q": "What is a Private Endpoint and what specific problem does it solve that a firewall rule alone doesn't?",
+      "a": "A Private Endpoint gives a PaaS resource a private IP address inside your VNet, so traffic from your Databricks cluster or Function App to that Storage Account or Key Vault travels entirely over the private network backbone rather than the public internet -- even if the traffic would otherwise be allowed by a firewall rule. This closes off exposure to internet-based attacks against the resource's public endpoint entirely, not just restrict who's allowed to reach it, the same value proposition as an AWS VPC Endpoint."
+    }
+  ]
+}

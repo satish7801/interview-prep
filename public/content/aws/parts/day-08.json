@@ -1,0 +1,44 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "CloudWatch Logs Insights + X-Ray distributed tracing",
+  "exp": "Logs Insights is how you query structured logs at scale without standing up Elasticsearch. X-Ray is AWS-native distributed tracing -- useful once your pipeline spans Lambda, Step Functions, and EMR and you need to see one request's full journey.",
+  "pts": [
+    "CloudWatch Logs Insights uses a purpose-built query language: fields, filter, stats, sort, limit -- not SQL, not Lucene.",
+    "`fields @timestamp, @message | filter @message like /ERROR/ | sort @timestamp desc | limit 50` is the most common starting query pattern.",
+    "`stats count() by field` aggregates -- e.g. count errors grouped by source to find which of the 50 feeds is noisiest.",
+    "Logs Insights queries run against raw log text by default, but work much better against structured JSON logs where you can reference fields directly (level, source, duration_ms) instead of regex-matching strings.",
+    "X-Ray traces a single request across multiple AWS services -- a trace is made of segments (one per service) and subsegments (sub-operations within a service).",
+    "The X-Ray Service Map gives a visual graph of your architecture with live latency and error rates per node -- useful for spotting which hop in a Lambda-to-Step-Functions-to-EMR chain is slow.",
+    "`patch_all()` from the X-Ray SDK auto-instruments boto3, requests, and other common libraries with almost no code change.",
+    "X-Ray adds real value once you have 3+ services in a request chain. For a single Spark batch job, structured logs plus CloudWatch metrics are usually sufficient -- don't reach for X-Ray by default."
+  ],
+  "code": "# CloudWatch Logs Insights queries (run in console or via boto3 start_query)\n\n# Find recent errors\nfields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 50\n\n# Against structured JSON logs -- reference fields directly\nfields @timestamp, level, source, duration_ms\n| filter level = \"ERROR\"\n| sort @timestamp desc\n\n# Aggregate -- which source produces the most errors?\nfields source, level\n| filter level = \"ERROR\"\n| stats count() as error_count by source\n| sort error_count desc\n\n# Find slow runs (duration > 10 minutes)\nfields @timestamp, source, duration_ms\n| filter duration_ms > 600000\n| sort duration_ms desc\n\n# Run via boto3\nimport boto3, time\nlogs = boto3.client('logs')\nquery_id = logs.start_query(\n    logGroupName='/pipeline/orders-validation',\n    startTime=int(time.time()) - 3600,\n    endTime=int(time.time()),\n    queryString='fields @timestamp, level, source | filter level=\"ERROR\" | stats count() by source'\n)['queryId']\ntime.sleep(2)\nresult = logs.get_query_results(queryId=query_id)\n\n# X-RAY -- instrument a Python service\nfrom aws_xray_sdk.core import xray_recorder, patch_all\npatch_all()  # auto-instruments boto3, requests, etc.\n\n@xray_recorder.capture('process_source')\ndef process_source(source_name):\n    with xray_recorder.in_subsegment('fetch_from_s3'):\n        data = fetch_s3_data(source_name)\n    with xray_recorder.in_subsegment('validate'):\n        validate(data)\n    return data",
+  "pr": [
+    "Write a Logs Insights query that finds the top 3 noisiest sources by error count in the last 24 hours"
+  ],
+  "viz": [
+    {
+      "t": "none",
+      "note": "X-Ray trace: one user-facing request shown as a horizontal timeline with segments for EventBridge, Lambda, Step Functions, and EMR -- each segment's width shows time spent in that service."
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does CloudWatch Logs Insights query syntax differ from SQL?",
+      "a": "It's a pipeline of stages separated by |, not a single SELECT statement: fields chooses columns, filter applies a WHERE-like condition, stats aggregates (like GROUP BY), sort orders results, limit caps row count. There's no JOIN -- it operates on a single log group's stream of documents per query. Think of it as closer to a Unix pipeline (grep | sort | head) applied to log events than to SQL."
+    },
+    {
+      "q": "Why does structured JSON logging make Logs Insights dramatically more useful?",
+      "a": "Against unstructured text logs, every query needs regex pattern matching against @message, which is fragile and slow. Against structured JSON logs, Logs Insights automatically discovers fields (level, source, duration_ms) and you can filter and aggregate on them directly: filter level=\"ERROR\" instead of filter @message like /ERROR/. This is the same argument for structured logging that applies to Kibana -- it pays off across every observability tool you connect to your logs."
+    },
+    {
+      "q": "What is an X-Ray trace and what problem does it solve that logs alone don't?",
+      "a": "A trace follows one request end-to-end across multiple AWS services, showing exactly how much time was spent in each hop (Lambda invocation, Step Functions transition, EMR step). Logs alone tell you what happened in one service in isolation -- you'd have to manually correlate timestamps across separate log groups to reconstruct the full picture. X-Ray's Service Map visualizes this automatically and highlights which specific hop is the latency bottleneck."
+    },
+    {
+      "q": "When is X-Ray overkill for a data pipeline?",
+      "a": "For a single Spark batch job reading from S3 and writing to S3, there's no multi-service request chain to trace -- structured CloudWatch logs and metrics already tell you everything useful. X-Ray earns its keep once you have a real distributed chain: EventBridge triggers a Lambda, which starts a Step Functions execution, which calls multiple Lambdas and an EMR step. Adding X-Ray to a simple, single-service job adds instrumentation overhead without a corresponding debugging benefit."
+    }
+  ]
+}

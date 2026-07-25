@@ -1,0 +1,29 @@
+{
+  "id": "day-04",
+  "n": 4,
+  "title": "DI lifetimes, HttpClient, Options pattern",
+  "exp": "Captive dependencies and socket exhaustion are classic 4 YOE gotchas. Know Transient/Scoped/Singleton cold.",
+  "pts": [
+    "**Transient** every resolve; **Scoped** per request; **Singleton** app lifetime.",
+    "Never inject Scoped (DbContext) into Singleton — captive dependency.",
+    "In `BackgroundService`, use `IServiceScopeFactory.CreateScope()`.",
+    "Never `new HttpClient()` per call — use `IHttpClientFactory` + Polly (retry/circuit/timeout).",
+    "`IOptions` / `IOptionsSnapshot` / `IOptionsMonitor` — don't inject raw `IConfiguration` everywhere."
+  ],
+  "code": "// BackgroundService\nusing var scope = _scopeFactory.CreateScope();\nvar db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n\n// Program.cs\nbuilder.Services.AddHttpClient<OrdersClient>(c =>\n{\n    c.BaseAddress = new Uri(builder.Configuration[\"Orders:BaseUrl\"]!);\n});",
+  "pr": [
+    "Draw DI lifetime table from memory",
+    "Register a typed HttpClient with a timeout policy"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "Why can't you inject DbContext into a Singleton?",
+      "a": "DbContext is scoped. Captured by a singleton it lives for the app lifetime, becoming shared/unsafe across requests (threading + disposed state). Create a scope per unit of work via IServiceScopeFactory."
+    },
+    {
+      "q": "Why is IHttpClientFactory preferred?",
+      "a": "It manages handler lifetimes and DNS refresh, avoiding socket exhaustion from disposing HttpClient too often or holding one forever. Enables named/typed clients and resilience policies."
+    }
+  ]
+}

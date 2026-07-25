@@ -1,0 +1,29 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "How 4 YOE interviews work + roadmap",
+  "exp": "Interviewers at ~4 years expect ownership of a vertical slice, production debugging, and clear trade-offs — not Staff-level CLR trivia. Typical loop: screen → technical (C#/ASP.NET/SQL) → small system design → behavioral/resume.",
+  "pts": [
+    "**Junior vs 4 YOE vs Staff:** juniors show syntax; mid shows patterns + edge cases + tests; staff shapes org-wide architecture.",
+    "Product companies push design + debugging; consultancies push broad SOLID/SQL/Azure coverage.",
+    "Prepare **5 STAR stories**: incident, performance win, disagreement, mentoring, deadline trade-off.",
+    "Every resume bullet needs: your role, architecture sketch, hardest bug, metric, what you'd redo.",
+    "Prep cadence: 2–3 weeks focused on Parts in this path, then mock interviews."
+  ],
+  "code": "",
+  "pr": [
+    "Write 5 STAR stories with metrics",
+    "List every resume project with architecture + hardest bug"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "What do interviewers expect at ~4 YOE that they don't expect from a junior?",
+      "a": "Trade-off reasoning, production debugging stories with metrics, ownership of API+DB+auth+observability end-to-end, and mentoring/communication — not just CRUD syntax."
+    },
+    {
+      "q": "How would you structure 2 weeks of prep before a mid-senior .NET interview?",
+      "a": "Week 1: async, DI, ASP.NET pipeline, EF/SQL (N+1, indexes, isolation). Week 2: security, messaging, caching, observability, three system designs, and STAR/resume drills. Daily: 30–45 min flashcards + one design sketch."
+    }
+  ]
+}

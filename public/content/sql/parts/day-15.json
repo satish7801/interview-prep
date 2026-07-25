@@ -1,0 +1,84 @@
+{
+  "id": "day-15",
+  "n": 15,
+  "title": "Gotchas everyone forgets -- the traps that pass code review but break production",
+  "exp": "These are not obscure edge cases -- they're the specific mistakes that even experienced developers make under interview pressure or late-Friday deploys, because the wrong version LOOKS correct and often works fine on small test data. Drill this day right before any interview; it is the highest density of 'wait, I do that wrong' per minute in the whole plan.",
+  "pts": [
+    "**COUNT(*) vs COUNT(column):** COUNT(*) counts every row including NULLs. COUNT(column) skips NULLs in that column. Silently different results on the same table if any column has NULLs -- always ask 'am I counting rows or non-null values?'",
+    "**LEFT JOIN + WHERE on the right table = silent INNER JOIN:** `WHERE o.status = 'active'` after a LEFT JOIN drops every row where o.status is NULL (no match) -- because NULL = 'active' is never true. Move the condition into the ON clause to preserve the outer join.",
+    "**NULL = NULL is NULL, not TRUE:** `WHERE col = NULL` returns zero rows, always, silently. Must use IS NULL / IS NOT NULL. This single fact explains half of all NULL-related SQL bugs.",
+    "**NOT IN poisoned by a single NULL:** if the subquery in `WHERE id NOT IN (SELECT ...)` returns even one NULL, the entire NOT IN returns zero rows for every outer row -- not an error, just silently wrong. NOT EXISTS does not have this problem.",
+    "**WHERE cannot use aggregates, HAVING can:** `WHERE COUNT(*) > 5` is a syntax error because WHERE runs before GROUP BY in the logical execution order. This trips people who haven't internalized FROM->WHERE->GROUP BY->HAVING->SELECT->ORDER BY.",
+    "**RANK() vs DENSE_RANK() gap after ties:** two rows tied at rank 1 -> RANK() jumps to 3 for the next row, DENSE_RANK() goes to 2. A 'find the 2nd highest' query using RANK() silently returns nothing when there's a tie at 1st, because rank 2 never gets assigned.",
+    "**GROUP BY column must cover every non-aggregated SELECT column:** selecting a column that's neither in GROUP BY nor wrapped in an aggregate is a hard error in SQL Server/Postgres, but returns an arbitrary unpredictable value in older MySQL -- a silent bug that only appears when porting queries between database engines.",
+    "**UPDATE/DELETE without WHERE:** the single most catastrophic SQL mistake -- always write and verify the WHERE clause (or run the equivalent SELECT first) before running an UPDATE or DELETE, especially in a shared or production environment.",
+    "**BETWEEN is inclusive on both ends:** `WHERE amount BETWEEN 100 AND 200` includes both 100 and 200. Off-by-one bugs happen when someone assumes it behaves like a half-open range.",
+    "**Implicit type conversion silently breaks index usage:** comparing a VARCHAR column to an unquoted number, or an INT column to a quoted string, can force SQL Server to convert every row before comparing -- turning a fast index seek into a full table scan with no error, just unexplained slowness."
+  ],
+  "code": "-- COUNT(*) vs COUNT(column) -- different answers, same table\nSELECT COUNT(*) AS total_rows, COUNT(email) AS rows_with_email\nFROM customers;\n-- If 2 of 10 customers have NULL email: total_rows=10, rows_with_email=8\n\n-- LEFT JOIN trap\nSELECT c.name, o.id FROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id\nWHERE o.status = 'active';              -- ❌ drops customers with NO orders at all\n\nSELECT c.name, o.id FROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id AND o.status = 'active';  -- ✓ correct\n\n-- NOT IN poisoned by NULL\nSELECT name FROM customers\nWHERE id NOT IN (SELECT customer_id FROM orders);  -- ❌ returns NOTHING if any customer_id is NULL\n\nSELECT c.name FROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);  -- ✓ safe\n\n-- RANK vs DENSE_RANK on a tie\n-- Salaries: 100, 100, 90, 80\nSELECT salary,\n  RANK()       OVER (ORDER BY salary DESC) AS rnk,   -- 1, 1, 3, 4  (no rank 2!)\n  DENSE_RANK() OVER (ORDER BY salary DESC) AS drnk    -- 1, 1, 2, 3  (rank 2 exists)\nFROM employees;\n\n-- The classic catastrophic mistake -- ALWAYS check WHERE before running\n-- DELETE FROM orders;                    -- ❌ deletes EVERY row, no confirmation\n-- DELETE FROM orders WHERE id = 42;       -- ✓ run the SELECT version first to verify\n\n-- Implicit conversion silently kills an index\n-- If order_id is VARCHAR but compared to an unquoted number:\nSELECT * FROM orders WHERE order_id = 12345;      -- ❌ may force a full scan\nSELECT * FROM orders WHERE order_id = '12345';    -- ✓ matches the column's actual type",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Gotcha",
+        "What actually happens",
+        "Fix"
+      ],
+      "r": [
+        [
+          "COUNT(*) vs COUNT(col)",
+          "COUNT(col) silently skips NULLs",
+          "Know which one the question needs"
+        ],
+        [
+          "LEFT JOIN + WHERE on right table",
+          "Silently becomes INNER JOIN",
+          "Move condition to ON clause"
+        ],
+        [
+          "col = NULL",
+          "Always returns zero rows, no error",
+          "Use IS NULL / IS NOT NULL"
+        ],
+        [
+          "NOT IN with a NULL in the list",
+          "Returns zero rows for everything",
+          "Use NOT EXISTS"
+        ],
+        [
+          "WHERE COUNT(*) > 5",
+          "Syntax error",
+          "Use HAVING instead"
+        ],
+        [
+          "RANK() on a tie",
+          "Skips the next rank number entirely",
+          "Use DENSE_RANK() for Nth-highest"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why does COUNT(*) sometimes give a different answer than COUNT(some_column) on the exact same query?",
+      "a": "COUNT(*) counts every row regardless of content. COUNT(column) only counts rows where that specific column is NOT NULL. If a table has rows with NULL values in that column, COUNT(*) and COUNT(column) diverge -- and this is not a bug, it's the defined behavior, which is exactly why it's a common source of 'why do these two numbers not match' confusion."
+    },
+    {
+      "q": "What silently breaks when you add a WHERE clause on a right-table column after a LEFT JOIN?",
+      "a": "It converts the LEFT JOIN into an effective INNER JOIN, because any row where the right table had no match has NULL in that column, and NULL never equals anything in a WHERE comparison -- so those rows get filtered out along with the genuinely non-matching ones. The intended 'keep rows even with no match' behavior of LEFT JOIN is destroyed. Fix: move the condition into the ON clause instead of WHERE."
+    },
+    {
+      "q": "Why does 'WHERE id NOT IN (subquery)' sometimes return zero rows even when it obviously shouldn't?",
+      "a": "If the subquery's result set contains even a single NULL value, NOT IN returns UNKNOWN (not TRUE) for every comparison due to SQL's three-valued logic -- meaning the entire outer WHERE clause evaluates to nothing matching, for every row, silently. There's no error message; it just returns an empty result set. NOT EXISTS doesn't have this failure mode because it checks for row absence rather than comparing against a list of values."
+    },
+    {
+      "q": "Why can't you write WHERE COUNT(*) > 5 in SQL, and what should you write instead?",
+      "a": "The logical execution order of a SQL query is FROM -> WHERE -> GROUP BY -> HAVING -> SELECT -> ORDER BY. WHERE executes before GROUP BY has run, so no aggregate values exist yet for WHERE to filter on -- it's a syntax error, not just bad practice. HAVING runs after GROUP BY specifically so it can filter on aggregate results: HAVING COUNT(*) > 5."
+    },
+    {
+      "q": "Someone asks for the '2nd highest salary' using RANK() and gets zero rows even though the data clearly has more than one salary value. What happened?",
+      "a": "If the highest salary is shared by two or more employees (a tie), RANK() assigns both of them rank 1, then skips directly to rank 3 for the next distinct value -- rank 2 never gets assigned to any row. A query filtering WHERE rnk = 2 finds nothing. DENSE_RANK() doesn't have this gap -- ties still share a rank, but the next distinct value gets the very next consecutive rank number, so 'Nth highest' queries should default to DENSE_RANK() unless there's a specific reason not to."
+    }
+  ]
+}

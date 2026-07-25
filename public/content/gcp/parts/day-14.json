@@ -1,0 +1,41 @@
+{
+  "id": "day-14",
+  "n": 14,
+  "title": "GCP capstone -- putting the full stack together",
+  "exp": "Ties every GCP day into the same end-to-end shape as the AWS and Azure capstones -- three confident, concrete answers to 'how would this pipeline look on your cloud' rather than one.",
+  "pts": [
+    "Full pipeline: source APIs -> Cloud Composer (orchestration, dynamic task mapping fan-out) -> Cloud Storage raw landing zone -> Dataproc ephemeral cluster (validate + transform) -> Cloud Storage processed zone (Parquet) or directly into BigQuery native tables -> BigQuery (queryable layer, partitioned + clustered) -> Grafana on Cloud Monitoring + Cloud Logging (dashboard).",
+    "Identity story end to end: every hop uses a Service Account with IAM roles scoped as narrowly as GCP's additive model allows -- no downloaded key files anywhere, mirroring the credential-free design principle from both other clouds while respecting GCP's specific no-narrower-override caveat from Day 2.",
+    "Cost story: ephemeral Dataproc clusters (no idle-cluster risk by design), BigQuery's on-demand or flat-rate pricing chosen based on query volume predictability, and Cloud Storage lifecycle rules moving cold data to Coldline/Archive -- the same three cost levers as both other clouds, GCP-native mechanisms.",
+    "Observability story: Cloud Logging's automatic log capture (no Diagnostic-Settings-equivalent step needed), log-based metrics and Alerting Policies for the same conditions (no data in 25h, error rate > 5%, cluster idle), Grafana as the same single pane of glass across all three clouds' Metrics and Logs.",
+    "The single best interview sentence for this whole track: 'The concepts transfer completely a third time -- object storage, managed Spark, native monitoring, Terraform-managed infrastructure, Grafana as the unifying visualization layer. What's genuinely GCP-specific is the purely additive IAM model with no narrower-scope override, BigQuery being a real data warehouse rather than just a query-over-files engine like Athena, and Cloud Composer's Python-native DAG philosophy versus Step Functions/ADF's more declarative approach.'",
+    "Config-driven design applies unchanged a third time: each of the 50 sources is an entry in the Airflow DAG's dynamic task mapping input list, not a hardcoded branch -- adding source 51 is a data change to that list, not a pipeline redesign, the same principle expressed through Python this time instead of JSON."
+  ],
+  "code": "",
+  "pr": [
+    "Draw the full GCP pipeline architecture diagram from memory, labeling each GCP service and its AWS/Azure equivalent, and name the one structural difference per service that isn't just a naming change"
+  ],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "Cloud Composer (orchestration)",
+        "Cloud Storage raw",
+        "Dataproc ephemeral cluster",
+        "BigQuery (partitioned+clustered)",
+        "Grafana + Cloud Monitoring/Logging"
+      ],
+      "cap": "The complete GCP pipeline -- structurally parallel to AWS and Azure, with IAM model and BigQuery as the genuine differentiators"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Walk through the full GCP-equivalent pipeline architecture end to end.",
+      "a": "Cloud Composer's Airflow DAG triggers on a schedule, dynamically maps a fetch task across 50 sources in parallel, each landing data into a Cloud Storage raw zone. An ephemeral Dataproc cluster validates and transforms the data, writing either to a processed Cloud Storage zone or directly into partitioned, clustered BigQuery native tables. BigQuery serves as the queryable layer, with materialized pre-aggregated tables for anything queried repeatedly. Cloud Logging automatically captures every resource's logs with no manual routing step, log-based metrics and Alerting Policies cover the same conditions as the other two clouds, and Grafana on Cloud Monitoring + Cloud Logging provides the same unified dashboard experience."
+    },
+    {
+      "q": "After building the same pipeline conceptually on all three clouds, what is the single most valuable thing to say in an interview about this experience?",
+      "a": "That the underlying architecture and judgment -- config-driven ingestion so adding a source is a data change not a code change, cost discipline through ephemeral compute and storage tiering, unified observability through Grafana regardless of the native monitoring service underneath, and Terraform's plan-review-apply discipline -- is genuinely cloud-agnostic. Naming the SPECIFIC structural differences explicitly (GCP's additive-only IAM, Azure's Resource Group cascading delete, BigQuery's native warehouse model versus Athena's file-query-only model) is what proves this is real transferable understanding, not a surface find-and-replace of AWS terminology."
+    }
+  ]
+}

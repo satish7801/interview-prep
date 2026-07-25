@@ -1,0 +1,141 @@
+{
+  "id": "angular",
+  "name": "Angular",
+  "color": "--ng",
+  "sub": "Incl. Angular 21 & 22 · 14 days",
+  "desc": "From component fundamentals to signals, zoneless change detection, and the complete Angular 22 API — production v17 experience + everything that shipped since.",
+  "tip": "Narrate your decisions when building live — 'I'd use OnPush here since state comes from an input signal, so change detection only fires when that signal updates.' That reasoning is what's graded at 4 YOE.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Key point"
+    ],
+    "r": [
+      [
+        "@for vs *ngFor",
+        "@for requires track. Missing track = compile error in v17+."
+      ],
+      [
+        "switchMap vs mergeMap",
+        "switchMap cancels previous. mergeMap runs all concurrently."
+      ],
+      [
+        "OnPush triggers",
+        "@Input reference change, async pipe emit, signal update, or manual markForCheck()."
+      ],
+      [
+        "Zoneless (v21+)",
+        "No Zone.js. Change detection driven purely by signals. Default for new projects."
+      ],
+      [
+        "Signal Forms (v22)",
+        "form.value() is a signal. No subscribe needed. Stable in Angular 22."
+      ],
+      [
+        "takeUntilDestroyed()",
+        "Auto-unsubscribes on component destroy. Inject DestroyRef."
+      ],
+      [
+        "InjectionToken",
+        "For non-class DI values (config, primitives, functions)."
+      ],
+      [
+        "ControlValueAccessor",
+        "Lets a custom component work as a native form control with Reactive Forms."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "Components deep dive — content projection, ViewChild, dynamic loading",
+      "summary": "Standalone components are the standard. But senior interviews test the less-common features: multi-slot content projection, ViewChild for DOM access, TemplateRe…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "Template syntax — deferrable views, pipes, ng-template, reference variables",
+      "summary": "Angular's @defer blocks (stable in v17) are now a core performance feature that interviewers ask about. Custom pipes, the async pipe, and template reference var…"
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Dependency injection deep dive — tokens, hierarchical DI, factories",
+      "summary": "Most Angular developers know basic @Injectable DI but struggle with InjectionToken, multi-providers, and hierarchical injectors. These are tested in library aut…"
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "RxJS operators — comprehensive deep dive",
+      "summary": "Most Angular developers know map, filter, switchMap. Senior interviews probe the less-common operators: combineLatest, forkJoin, exhaustMap, shareReplay, catchE…"
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Signals — complete API: toSignal, toObservable, resource, model",
+      "summary": "Signals were introduced in v16 and are now the primary state primitive in Angular. At 4 YOE, know the full API including the interop layer (toSignal/toObservabl…"
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Routing — resolvers, preloading, animations, named outlets",
+      "summary": "Most developers know basic routing. Senior interviews probe resolvers (data before navigation), preloading strategies (performance), and how to handle complex m…"
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Forms deep dive — ControlValueAccessor, async validators, complex patterns",
+      "summary": "Beyond the basics, interviewers test ControlValueAccessor (create a custom form control), async validators (server-side email check), and cross-field validation…"
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "HTTP, interceptors, retry logic, and caching",
+      "summary": "HTTP interceptors — now functional in Angular 15+ — are asked in every enterprise Angular interview. Auth token injection, global error handling, and retry-with…"
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Change detection — complete deep dive, zoneless migration strategy",
+      "summary": "Change detection is the most misunderstood Angular internals topic. At 4 YOE, you need to explain not just 'OnPush is faster' but exactly when OnPush triggers, …"
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Performance — @defer, virtual scroll, trackBy, pure pipes, bundle analysis",
+      "summary": "Performance optimisation is a guaranteed senior topic. Beyond OnPush (covered in Day 9), know @defer for code-splitting, CDK virtual scroll for long lists, and …"
+    },
+    {
+      "id": "day-11",
+      "n": 11,
+      "title": "Testing — TestBed, Vitest (v21+), component harnesses, mocking",
+      "summary": "Angular testing is tested less often in product company interviews but is a common question at companies that prioritize quality. Know TestBed setup, how to tes…"
+    },
+    {
+      "id": "day-12",
+      "n": 12,
+      "title": "State management — signals patterns, when to use NgRx",
+      "summary": "The state management question always comes up for senior Angular roles. At 4 YOE, you should be able to design a signals-based state architecture AND explain wh…"
+    },
+    {
+      "id": "day-13",
+      "n": 13,
+      "title": "Angular 21 & 22 complete feature deep dive",
+      "summary": "Angular 21 (Nov 2025) and Angular 22 (June 2026, current) represent the culmination of the signal-first direction. Being able to discuss specific features in de…"
+    },
+    {
+      "id": "day-14",
+      "n": 14,
+      "title": "Architecture patterns, smart/dumb components, full mock",
+      "summary": "Architecture questions test whether you think at the system level. Smart/dumb component pattern, feature-based folder structure, error boundaries, and the full …"
+    },
+    {
+      "id": "day-15",
+      "n": 15,
+      "title": "Gotchas everyone forgets -- the traps that compile fine and break at runtime",
+      "summary": "Angular's gotchas are worse than SQL's in one specific way: most of these compile without any warning and appear to work in a quick manual test, then silently m…"
+    }
+  ]
+}

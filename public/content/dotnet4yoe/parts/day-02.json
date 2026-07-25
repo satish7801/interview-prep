@@ -1,0 +1,29 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "C# essentials — IEnumerable, boxing, Span, records",
+  "exp": "Language questions at 4 YOE test whether you know where work runs (memory vs SQL) and allocation cost — not trivia for its own sake.",
+  "pts": [
+    "**IEnumerable** = in-memory; **IQueryable** = expression tree for providers (EF→SQL); **IAsyncEnumerable** = async streams (`await foreach`).",
+    "**Boxing** copies a value type to the heap (`object`/interface) — prefer generics (`List<int>`).",
+    "`Span<T>` is a stack-only view (no alloc for slices); cannot be a class field or cross `await` — use `Memory<T>` then.",
+    "`readonly struct` for small immutable values; `record` for value-equality DTOs/events.",
+    "Mention modern C#: pattern matching, `required`, NRTs, `await using`."
+  ],
+  "code": "int x = 42;\nobject boxed = x;           // BOX — heap alloc\nint y = (int)boxed;         // UNBOX_ANY\n\nSpan<byte> slice = buffer.AsSpan(0, 16); // no new array\nIQueryable<Order> q = db.Orders.Where(o => o.Total > 100); // SQL later",
+  "pr": [
+    "Explain boxing cost in a hot loop",
+    "Rewrite a LINQ-to-Objects filter that should be IQueryable"
+  ],
+  "viz": [],
+  "qa": [
+    {
+      "q": "IEnumerable vs IQueryable — when does each execute?",
+      "a": "IEnumerable operators run in-process when enumerated. IQueryable builds an expression tree; the provider (EF) translates to SQL when enumerated/materialized (ToList, First, etc.). Mixing them poorly can pull too much data into memory."
+    },
+    {
+      "q": "When would you use Span<T> and what are its limits?",
+      "a": "Use Span for slicing/parsing contiguous memory without allocations. Limits: ref struct — can't be stored on the heap, can't be class fields, can't be used across await. Use Memory<T> when you need to hold the view longer."
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "Python syntax for C# developers",
+  "exp": "Python and C# share the same concepts but with different syntax. Day 1 goal: re-express everything you know in C# in Python style -- new spelling, not new ideas.",
+  "pts": [
+    "No type declarations: name = 'Satish' -- Python infers type. Optional hints (name: str) exist but are not enforced at runtime.",
+    "Indentation IS structure: 4-space indent replaces braces. Mixing tabs and spaces is a runtime error.",
+    "for x in iterable: -- always iterates over something. Use range(n) for index loops.",
+    "def name(param, default=value): -- default parameters work like C# optional parameters.",
+    "try: / except ValueError as e: / finally: -- identical semantics to C# try/catch/finally.",
+    "class Customer: def __init__(self, name): -- self is Python's this. Every instance method takes self first.",
+    "None is Python's null. Test with 'if x is None:' not 'if x == None:'.",
+    "List comprehension: [x*2 for x in nums if x > 0] -- replaces a 3-line filter+map loop.",
+    "@dataclass auto-generates __init__, __repr__, __eq__ from annotated fields."
+  ],
+  "code": "# C# vs Python\nname = 'Satish'          # string name = 'Satish';\nskills = ['C#','SQL']    # List<string> skills = new(){'C#','SQL'};\nd = {'name': name}       # Dictionary<string,object> d = ...\n\nfor skill in skills:\n    print(skill)\n\ndef calc(salary, rate=0.1):\n    return salary * rate\n\nfrom dataclasses import dataclass, field\n\n@dataclass\nclass Order:\n    id: int\n    amount: float\n    status: str = 'pending'\n    tags: list = field(default_factory=list)  # safe mutable default\n\no = Order(id=1, amount=1500.0)\nprint(o)           # Order(id=1, amount=1500.0, status='pending', tags=[])\nprint(o.amount)    # 1500.0\n\n# List comprehension\nlarge = [o.amount for o in [o] if o.amount > 1000]",
+  "pr": [
+    "Write a Customer class with is_high_value() method",
+    "Write a list comprehension filtering orders over 1000"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Concept",
+        "C#",
+        "Python"
+      ],
+      "r": [
+        [
+          "Variable",
+          "string name = 'x';",
+          "name = 'x'"
+        ],
+        [
+          "List",
+          "List<int> nums = new();",
+          "nums = []"
+        ],
+        [
+          "Loop",
+          "foreach (var x in list)",
+          "for x in list:"
+        ],
+        [
+          "Null",
+          "null",
+          "None"
+        ],
+        [
+          "Try/Catch",
+          "try {} catch (Exception e)",
+          "try: / except Exception as e:"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the most dangerous Python syntax mistake for a C# developer?",
+      "a": "Using a mutable default argument: def f(lst=[]). The list is created ONCE when the function is defined and shared across all calls -- mutations accumulate. Fix: def f(lst=None), then inside: if lst is None: lst = []. This is the single most common Python bug for C# developers."
+    },
+    {
+      "q": "What is a list comprehension?",
+      "a": "[expression for item in iterable if condition] -- compact filter+transform. [x*2 for x in nums if x > 0] equals a for loop with if check and append. Use for simple filter+transform. For complex multi-step logic, a regular for loop is more readable."
+    },
+    {
+      "q": "What does @dataclass eliminate?",
+      "a": "@dataclass auto-generates __init__, __repr__, and __eq__ from annotated fields. Without it a class with 5 fields needs a 5-line __init__, __repr__ for debugging, and __eq__ for comparison -- all boilerplate. Use field(default_factory=list) for mutable defaults."
+    }
+  ]
+}

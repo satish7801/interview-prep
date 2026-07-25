@@ -1,0 +1,51 @@
+{
+  "id": "day-12",
+  "n": 12,
+  "title": "Terraform on GCP -- google provider, state, modules",
+  "exp": "The same Terraform discipline transfers a third time, targeting GCP resources via the google provider -- remote state, plan-before-apply, and modules all carry over unchanged in principle.",
+  "pts": [
+    "The google provider manages GCP resources with the same plan/apply/destroy workflow as aws and azurerm -- the Terraform mental model is genuinely cloud-agnostic at this level.",
+    "Remote state on GCP typically lives in a Cloud Storage bucket, with state locking handled via Cloud Storage's native object versioning and a lock file convention -- similar in spirit to how Azure Blob Storage's lease mechanism removes the need for a separate lock table, another simplification versus the AWS S3+DynamoDB pattern.",
+    "A GCP Project is usually the first resource referenced (often not created by the same Terraform config that uses it, since Project creation sometimes sits in a separate bootstrap configuration) -- similar in spirit to Resource Group being Azure's required-first-resource, though Projects are more often pre-existing than freshly created in the same apply.",
+    "Modules work identically in structure and purpose to the AWS and Azure versions -- a reusable resource package with main.tf/variables.tf/outputs.tf, called with a source and input variables.",
+    "The grafana Terraform provider again works identically against Google Cloud Managed Service for Grafana as it did against the AWS and Azure managed offerings -- same resource types, different workspace endpoint and auth underneath.",
+    "By this third repetition, the interview-ready insight is: 'Terraform's plan-review discipline, remote state, and module reuse pattern are identical regardless of cloud -- what changes is only the provider block and the specific resource type names.'"
+  ],
+  "code": "terraform {\n  required_providers {\n    google = { source = \"hashicorp/google\", version = \"~> 5.0\" }\n  }\n  backend \"gcs\" {\n    bucket = \"satish-tf-state\"\n    prefix = \"orders-pipeline\"\n  }\n}\n\nprovider \"google\" {\n  project = \"orders-pipeline-prod\"\n  region  = \"us-central1\"\n}\n\nresource \"google_storage_bucket\" \"orders_raw\" {\n  name     = \"satish-pipeline-orders-raw\"\n  location = \"US\"\n\n  lifecycle_rule {\n    condition { age = 90 }\n    action    { type = \"SetStorageClass\", storage_class = \"COLDLINE\" }\n  }\n}\n\nmodule \"dataproc_cluster\" {\n  source       = \"./modules/dataproc-ephemeral\"\n  project_id   = \"orders-pipeline-prod\"\n  cluster_name = \"orders-pipeline-cluster\"\n}\n\n# terraform init\n# terraform plan     <- same discipline, third cloud in a row\n# terraform apply",
+  "pr": [
+    "Configure a gcs Terraform backend for remote state, and name the one Terraform concept from the AWS Infrastructure track that required zero adaptation to apply here"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Cloud",
+        "Terraform backend + locking"
+      ],
+      "r": [
+        [
+          "AWS",
+          "S3 bucket + separate DynamoDB lock table"
+        ],
+        [
+          "Azure",
+          "Blob Storage container + native lease locking"
+        ],
+        [
+          "GCP",
+          "GCS bucket + native object versioning locking"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does Terraform remote state locking on GCP compare to the AWS S3+DynamoDB and Azure Blob-lease patterns?",
+      "a": "GCS (Google Cloud Storage) as a Terraform backend uses Cloud Storage's native object generation/versioning mechanism to implement locking, without a separate lock table -- the same simplification pattern as Azure's Blob Storage lease-based locking, and a genuine reduction in setup complexity compared to needing a separate DynamoDB table alongside S3 on AWS."
+    },
+    {
+      "q": "What is the single strongest interview-ready statement to make about Terraform after seeing it applied across all three clouds in this plan?",
+      "a": "That the actual Terraform discipline -- reading the plan output before every apply, using remote state for team safety, packaging repeated patterns as modules, and treating dashboards/alerts as code alongside infrastructure -- is completely cloud-agnostic. What changes between AWS, Azure, and GCP is only the provider block and the specific resource type names; the judgment and workflow around Terraform itself transfers without modification, which is precisely the kind of transferable-skill framing that distinguishes real experience from a AWS-only skillset with new vocabulary memorized on top."
+    }
+  ]
+}

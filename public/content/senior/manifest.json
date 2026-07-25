@@ -1,0 +1,87 @@
+{
+  "id": "senior",
+  "name": "Senior Depth",
+  "color": "--sr",
+  "sub": "4-YOE calibration - 8 days",
+  "desc": "System design, production ownership, leadership signals, scaling — what separates 4-YOE candidates from 2-YOE in final rounds.",
+  "tip": "Strongest answers show judgment: state a clear trade-off, pick a side, explain why, in under 2 minutes. Listing every option without committing reads as inexperience even when the knowledge is solid.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Question type",
+      "What they're really testing"
+    ],
+    "r": [
+      [
+        "System design",
+        "Can you structure an ambiguous problem and make trade-off decisions?"
+      ],
+      [
+        "Production debugging",
+        "Do you own problems end-to-end or defer to others?"
+      ],
+      [
+        "Code review philosophy",
+        "Do you add value beyond \"does it compile\"?"
+      ],
+      [
+        "Scaling decisions",
+        "Do you understand when NOT to over-engineer?"
+      ],
+      [
+        "STAR stories",
+        "Can you describe impact in concrete terms, not just activity?"
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "System design — small-to-medium scale",
+      "summary": "At 4 YOE, system design questions are scoped: \"design a notification service\", not \"design Twitter.\" Interviewers want structured thinking and trade-off reasoni…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "Production debugging — owning problems end-to-end",
+      "summary": "This is the most under-prepared topic at 4 YOE. Interviewers want to know if you own problems or defer. Prepare one real production incident story — a SCIM prov…"
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Leadership & mentoring signals",
+      "summary": "At 4 YOE, you're expected to multiply the team's output, not just your own. Prepare two short STAR stories before any interview."
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "Scaling, API versioning, CI/CD, observability",
+      "summary": "These are the \"have you shipped anything real\" topics. Your compliance platform (multi-tenant, 10+ integrations) and SCIM provisioning give you real answers her…"
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Full mock — senior-style round",
+      "summary": "Thirty minutes, mixed format. Score on reasoning clarity, trade-off commitment, and use of real examples. Generic answers score low; real project examples score…"
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Worked system design 1 -- design the compliance alert notification service",
+      "summary": "This is a full worked example, start to finish, of the exact question type from Day 1 and Day 5's mock -- not just concepts, but an actual 15-minute answer laid…"
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Worked system design 2 -- design a rate-limited API gateway for the 50-source ingestion pipeline",
+      "summary": "A second full worked example, deliberately different in shape from Day 6's -- this one is about protecting a shared resource (API rate limits from 50 external p…"
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Interview red flags -- the non-technical mistakes that sink a strong technical answer",
+      "summary": "Everything else in this track is about having the right answer. This day is about not undermining a right answer with how you deliver it. These are patterns int…"
+    }
+  ]
+}

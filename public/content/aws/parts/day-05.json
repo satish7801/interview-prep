@@ -1,0 +1,39 @@
+{
+  "id": "day-05",
+  "n": 5,
+  "title": "EMR debugging, monitoring, cost control",
+  "exp": "Running your first EMR job and diagnosing failures end to end -- script upload to output verification and the debugging path when something breaks.",
+  "pts": [
+    "Debug path: EMR console -> Steps -> failed step -> View logs -> download stderr from S3.",
+    "The Python exception is always in stderr for the failed step.",
+    "Common failures: wrong S3 path (FileNotFound), insufficient memory (OOM), missing IAM permission (Access Denied).",
+    "VPC Gateway Endpoint for S3: routes EMR-S3 traffic privately, free. Without it, NAT gateway charges ~$0.045/GB.",
+    "Right-sizing: monitor Spark UI executor utilization. 30% utilized means paying for 70% idle."
+  ],
+  "code": "#!/bin/bash\naws s3 cp orders_pipeline.py s3://my-bucket/scripts/\n\nCLUSTER=$(aws emr create-cluster \\\n  --name 'OrdersPipeline' --release-label emr-7.0.0 \\\n  --applications Name=Spark --instance-type m5.xlarge --instance-count 3 \\\n  --use-default-roles --log-uri s3://my-bucket/emr-logs/ \\\n  --steps '[{\"Type\":\"Spark\",\"Name\":\"Process\",\"ActionOnFailure\":\"CONTINUE\",\n             \"Args\":[\"--deploy-mode\",\"cluster\",\"s3://my-bucket/scripts/orders_pipeline.py\"]}]' \\\n  --auto-terminate --query 'JobFlowId' --output text)\n\nwhile true; do\n  STATE=$(aws emr describe-cluster --cluster-id $CLUSTER --query 'Cluster.Status.State' --output text)\n  echo \"$(date): $STATE\"\n  [[ \"$STATE\" == \"TERMINATED\" || \"$STATE\" == \"TERMINATED_WITH_ERRORS\" ]] && break\n  sleep 30\ndone\n\naws s3 ls s3://my-bucket/output/ --recursive\naws s3 cp s3://my-bucket/emr-logs/$CLUSTER/steps/ ./logs/ --recursive",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "s3 cp script",
+        "create-cluster",
+        "Monitor state",
+        "Step COMPLETED",
+        "s3 ls output",
+        "Verify"
+      ],
+      "cap": "Complete EMR lifecycle -- script upload to output verification"
+    }
+  ],
+  "qa": [
+    {
+      "q": "Walk through debugging an EMR Step that failed.",
+      "a": "EMR console -> Steps -> click failed step -> note S3 log path. Download stderr: aws s3 cp s3://bucket/emr-logs/j-XXX/steps/s-XXX/stderr ./. The Python exception is in stderr. Access Denied -> IAM permission. FileNotFoundException -> wrong S3 path. OutOfMemoryError -> increase executor-memory."
+    },
+    {
+      "q": "What is a VPC Gateway Endpoint for S3 and why save money?",
+      "a": "Without it, EMR-to-S3 traffic routes through a NAT gateway at ~$0.045/GB even though both are within AWS. A VPC endpoint routes directly through the AWS backbone at zero cost. On 10TB/day this saves ~$450/day. One-time setup, no code changes."
+    }
+  ]
+}

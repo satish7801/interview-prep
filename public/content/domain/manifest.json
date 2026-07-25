@@ -1,0 +1,81 @@
+{
+  "id": "domain",
+  "name": "S&P Domain + Lead I",
+  "color": "--domain",
+  "sub": "Financial data, architecture, behavioral - 5 days",
+  "desc": "S&P Global domain knowledge plus Lead I behavioral questions. Final round interviews test judgment and ownership, not just code.",
+  "tip": "Every behavioral answer needs a CONCRETE example from your work. Generic I would answers score far below in the BMS migration I... Prepare 5 STAR stories before the interview.",
+  "setup": "",
+  "qr": {
+    "h": [
+      "Topic",
+      "Key point"
+    ],
+    "r": [
+      [
+        "Fundamentals data",
+        "Revenue, EPS, P/E, debt from company filings. Used for valuation and analysis."
+      ],
+      [
+        "STAR format",
+        "Situation -> Task -> Action -> Result. Under 90 seconds each."
+      ],
+      [
+        "Unrealistic deadline",
+        "Respond with trade-offs: we can hit that date if we scope to X."
+      ],
+      [
+        "Config-driven design",
+        "Adding source 51 should not require a code change."
+      ],
+      [
+        "Idempotency",
+        "Re-running the pipeline on the same data produces the same result."
+      ],
+      [
+        "Production incident",
+        "Own the root cause. No blame. Concrete structural change afterward."
+      ],
+      [
+        "Tech debt",
+        "Deliberate and documented debt is fine. Silent debt is what kills teams."
+      ],
+      [
+        "Schema evolution",
+        "Additive changes (new nullable columns) are backward-compatible in Parquet."
+      ]
+    ]
+  },
+  "parts": [
+    {
+      "id": "day-01",
+      "n": 1,
+      "title": "S&P Global domain -- financial data, pipeline architecture",
+      "summary": "Understanding what S&P Global does and what fundamentals data means lets you give concrete contextualised answers. The architecture questions are directly about…"
+    },
+    {
+      "id": "day-02",
+      "n": 2,
+      "title": "Production debugging and technical trade-offs",
+      "summary": "These questions test whether you own production problems or defer them. The strongest answers describe something REAL from your work."
+    },
+    {
+      "id": "day-03",
+      "n": 3,
+      "title": "Leadership and behavioral questions -- STAR preparation",
+      "summary": "Lead I questions test whether you can influence, mentor, and commit -- not just execute. Prepare 5 STAR stories from your real work."
+    },
+    {
+      "id": "day-04",
+      "n": 4,
+      "title": "Cross-stack technical deep dives",
+      "summary": "These test system-level thinking across all tracks -- the questions that separate knows-the-tools from can-lead-a-platform-team."
+    },
+    {
+      "id": "day-05",
+      "n": 5,
+      "title": "Capstone architecture and final mock interview",
+      "summary": "The capstone ties all tracks together. The mock covers exactly the question types in the S&P Global Lead I round."
+    }
+  ]
+}

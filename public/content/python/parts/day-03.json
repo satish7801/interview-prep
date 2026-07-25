@@ -1,0 +1,58 @@
+{
+  "id": "day-03",
+  "n": 3,
+  "title": "Pandas -- DataFrames, groupby, merge, pivot",
+  "exp": "Pandas is the standard Python library for tabular data. Every SQL operation you know has a pandas equivalent.",
+  "pts": [
+    "pd.read_csv(path) reads directly into a DataFrame; infers types unlike csv.DictReader.",
+    "df.head(5), df.info(), df.describe() -- first three calls on any new DataFrame.",
+    "df[df['amount'] > 1000] -- boolean indexing (WHERE clause). Combine with & and |.",
+    "df.groupby('cat')['amount'].sum() -- GROUP BY + SUM. .agg() for multiple aggregations.",
+    ".reset_index() -- after groupby, group keys become the index. Promotes them back to columns.",
+    "pd.merge(df1, df2, on='id', how='left') -- JOIN.",
+    "df.to_sql('Table', engine, if_exists='replace', index=False) -- write back to SQL Server."
+  ],
+  "code": "import pandas as pd\nfrom sqlalchemy import create_engine\n\ndf = pd.read_csv('orders.csv')\n\n# FILTER\nbig = df[df['amount'] > 1000]\nactive_big = df[(df['amount'] > 1000) & (df['status'] == 'active')]\n\n# ADD COLUMN\ndf['tax'] = df['amount'] * 0.2\n\n# GROUP BY\nsummary = (df.groupby('category')\n             .agg(total=('amount','sum'), avg=('amount','mean'))\n             .reset_index()\n             .sort_values('total', ascending=False))\n\n# JOIN\ncustomers = pd.read_csv('customers.csv')\nmerged = pd.merge(df, customers, left_on='customer_id', right_on='id', how='left')\n\n# PIVOT\npivot = df.pivot_table(values='amount', index='month',\n                       columns='category', aggfunc='sum', fill_value=0)\n\n# WRITE TO SQL\nengine = create_engine('mssql+pyodbc://user:pass@server/DB?driver=ODBC+Driver+17+for+SQL+Server')\nsummary.to_sql('SpendSummary', engine, if_exists='replace', index=False)",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "SQL",
+        "Pandas"
+      ],
+      "r": [
+        [
+          "SELECT *",
+          "df"
+        ],
+        [
+          "WHERE amount > 1000",
+          "df[df['amount'] > 1000]"
+        ],
+        [
+          "GROUP BY + SUM",
+          "df.groupby('col')['amount'].sum()"
+        ],
+        [
+          "JOIN",
+          "pd.merge(df1, df2, on='id', how='left')"
+        ],
+        [
+          "INSERT INTO",
+          "df.to_sql('Table', engine, if_exists='replace')"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does pandas boolean indexing compare to SQL WHERE?",
+      "a": "df[df['amount'] > 1000] is equivalent to WHERE amount > 1000. The expression produces a boolean Series (True/False per row). Combine with & (AND) and | (OR) -- not Python's and/or. Always wrap conditions in parentheses: df[(df['a'] > 1) & (df['b'] == 'active')]."
+    },
+    {
+      "q": "When use pandas vs PySpark?",
+      "a": "Pandas for data that fits in memory (up to a few hundred MB). Use PySpark when data does not fit on one machine, you need distributed processing, or you are in an EMR/Databricks environment."
+    }
+  ]
+}

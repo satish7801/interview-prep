@@ -1,0 +1,63 @@
+{
+  "id": "day-11",
+  "n": 11,
+  "title": "BigQuery -- the serverless data warehouse and query engine",
+  "exp": "BigQuery is GCP's most distinctive data service and genuinely the biggest conceptual leap from Athena -- not just a query-over-files engine, but a full serverless data warehouse with its own storage format and a materially different cost/performance model.",
+  "pts": [
+    "BigQuery is NOT simply 'Athena for GCP' -- it's a fully managed data warehouse with its own optimized columnar storage (not just querying externally-held Parquet files, though it can also do that via external tables), automatic query optimization, and built-in streaming ingestion.",
+    "BigQuery pricing has two models: on-demand (pay per TB scanned, the same shape as Athena's $5/TB) and flat-rate/capacity-based (reserve dedicated query slots for predictable, high-volume usage) -- Athena has no direct equivalent of the capacity-based option.",
+    "Partitioned tables (by date, typically) and clustered tables (by frequently-filtered columns within a partition) are BigQuery's two-layer cost/performance optimization -- partition pruning reduces bytes scanned the same way it does in Athena, and clustering further narrows the scan within a partition, a capability with no direct Athena equivalent.",
+    "External tables let BigQuery query Parquet/CSV files sitting in Cloud Storage directly without loading them into BigQuery's native storage first -- this mode is the closest direct equivalent to how Athena always operates.",
+    "BigQuery ML lets you train and run simple ML models directly with SQL syntax inside BigQuery itself -- a genuinely distinctive capability with no direct Athena or Synapse equivalent, relevant given the ML-literacy expectations from the Domain track.",
+    "Streaming inserts (or the newer Storage Write API) let you insert rows into a BigQuery table in near-real-time as they're generated, rather than only via scheduled batch loads -- relevant for the JD's near-real-time dashboard requirement in a way Athena's purely batch-query-over-files model doesn't directly address."
+  ],
+  "code": "-- Native BigQuery table, partitioned and clustered\nCREATE TABLE orders_pipeline.orders_processed (\n  customer_id INT64,\n  amount FLOAT64,\n  order_date DATE,\n  category STRING\n)\nPARTITION BY order_date\nCLUSTER BY category;\n\n-- Partition + cluster pruning keeps the scan (and cost) small\nSELECT category, SUM(amount) AS total\nFROM orders_pipeline.orders_processed\nWHERE order_date = '2024-01-15'   -- partition pruning\n  AND category = 'Electronics'     -- further narrowed by clustering\nGROUP BY category;\n\n-- External table -- query Parquet in Cloud Storage directly, Athena-equivalent mode\nCREATE EXTERNAL TABLE orders_pipeline.orders_raw_external\nOPTIONS (\n  format = 'PARQUET',\n  uris = ['gs://satish-pipeline-orders/processed/orders/*.parquet']\n);\n\n-- Materialize a pre-aggregated table for repeated dashboard queries\nCREATE TABLE orders_pipeline.daily_category_summary\nPARTITION BY order_date\nAS\nSELECT order_date, category, SUM(amount) AS total, COUNT(*) AS order_count\nFROM orders_pipeline.orders_processed\nGROUP BY order_date, category;\n\n-- BigQuery ML -- train a simple model directly in SQL\nCREATE MODEL orders_pipeline.default_risk_model\nOPTIONS(model_type='logistic_reg') AS\nSELECT revenue_growth, debt_to_equity, default_within_12m AS label\nFROM orders_pipeline.company_fundamentals;",
+  "pr": [
+    "Create a partitioned and clustered BigQuery table, then write a query that benefits from both partition pruning and clustering"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Concept",
+        "AWS equivalent"
+      ],
+      "r": [
+        [
+          "BigQuery native storage mode",
+          "Closer to Redshift than Athena"
+        ],
+        [
+          "BigQuery external tables",
+          "Athena (its only mode)"
+        ],
+        [
+          "Partitioning",
+          "Athena partitioning -- same idea"
+        ],
+        [
+          "Clustering",
+          "No direct Athena equivalent"
+        ],
+        [
+          "BigQuery ML",
+          "No direct Athena equivalent"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is it inaccurate to describe BigQuery as simply 'Athena for GCP'?",
+      "a": "Athena is fundamentally a query engine over externally-held files -- it has no native storage format of its own. BigQuery is a full data warehouse with its own optimized columnar storage, automatic query optimization, native streaming ingestion, and even built-in ML training via SQL -- querying external files in Cloud Storage is just one supported mode (via external tables) rather than BigQuery's primary operating model. The closer AWS analogy for BigQuery's native-storage mode is actually Redshift, with Athena only matching BigQuery's external-table mode specifically."
+    },
+    {
+      "q": "What are partitioning and clustering in BigQuery, and how do they combine to reduce query cost beyond what Athena's partition pruning alone achieves?",
+      "a": "Partitioning (typically by date) prunes entire partitions from a scan based on a WHERE filter, the same mechanism as Athena. Clustering additionally sorts data within each partition by one or more frequently-filtered columns, letting BigQuery skip even more data within a matching partition when a clustered column is also filtered on. Athena has no direct clustering equivalent -- this two-layer optimization (partition prune, then cluster-based skip within the partition) is a genuine BigQuery-specific cost/performance capability."
+    },
+    {
+      "q": "How does BigQuery's flat-rate pricing model differ from Athena's pricing, and when would a team choose it?",
+      "a": "On-demand pricing (pay per TB scanned) is the default and the direct equivalent of Athena's only pricing model. Flat-rate/capacity-based pricing lets an organization reserve dedicated query slots for a fixed cost regardless of query volume -- economically favorable for teams running consistently high query volume where per-TB-scanned costs would otherwise be unpredictable or higher in aggregate. Athena has no equivalent reserved-capacity option; this is a genuinely GCP-specific pricing lever."
+    }
+  ]
+}

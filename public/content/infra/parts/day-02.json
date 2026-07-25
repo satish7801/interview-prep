@@ -1,0 +1,30 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "Remote state, modules, capstone infrastructure",
+  "exp": "Remote state is the first thing a real team adds. Modules scale beyond one file -- together they make a team-shared system.",
+  "pts": [
+    "Remote backend (S3+DynamoDB): state in S3 (durable, encrypted); DynamoDB provides mutex preventing concurrent applies.",
+    "Module: reusable resource package. modules/s3-bucket/main.tf + variables.tf + outputs.tf.",
+    "terraform import: bring an existing resource under Terraform management without recreating it.",
+    "Sensitive variables: variable 'db_password' { sensitive = true } -- redacted from output."
+  ],
+  "code": "# backend.tf\nterraform {\n  backend \"s3\" {\n    bucket = \"satish-tf-state\"\n    key    = \"capstone/terraform.tfstate\"\n    region = \"us-east-1\"\n    encrypt = true\n    dynamodb_table = \"terraform-locks\"\n  }\n}\n\n# modules/s3-bucket/main.tf\nresource \"aws_s3_bucket\" \"this\" { bucket = var.bucket_name; tags = var.tags }\nresource \"aws_s3_bucket_versioning\" \"this\" {\n  bucket = aws_s3_bucket.this.id\n  versioning_configuration { status = \"Enabled\" }\n}\n\n# Call the module twice\nmodule \"raw\"       { source = \"./modules/s3-bucket\"; bucket_name = \"satish-raw-${var.env}\" }\nmodule \"processed\" { source = \"./modules/s3-bucket\"; bucket_name = \"satish-proc-${var.env}\" }\n\noutput \"raw_arn\" { value = module.raw.arn }",
+  "pr": [],
+  "viz": [
+    {
+      "t": "none",
+      "note": "Two engineers both terraform apply -> DynamoDB lock table -> one gets lock -> applies -> releases -> second applies. No corruption."
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why S3 + DynamoDB for remote state?",
+      "a": "S3 stores the file centrally, encrypted, with versioning. DynamoDB adds a mutex: before terraform apply, Terraform writes a lock entry; if another apply is running, it waits. Prevents concurrent applies from corrupting state -- essential for CI/CD and team use."
+    },
+    {
+      "q": "What is a Terraform module?",
+      "a": "A reusable package of resources. Instead of copy-pasting the same S3+versioning+public-access-block setup every project, write once and call it. Enforces standards without remembering to add each resource manually every time."
+    }
+  ]
+}

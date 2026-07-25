@@ -1,0 +1,53 @@
+{
+  "id": "day-02",
+  "n": 2,
+  "title": "DataFrames -- read, transform, write",
+  "exp": "The DataFrame API deliberately mirrors SQL and pandas. Key differences: laziness, Parquet output, and explicit schema for production.",
+  "pts": [
+    "spark.read.csv(path, header=True, inferSchema=True) -- inferSchema samples file to guess types (slow on large files in production).",
+    "Explicit StructType schema: faster and safer for production pipelines.",
+    "df.filter(col('amount') > 1000) -- transformation (lazy).",
+    "when(condition, value).otherwise(default) -- inline CASE WHEN.",
+    "result.write.mode('overwrite').parquet('s3://bucket/output/') -- always Parquet, not CSV.",
+    "df.coalesce(4) before write -- reduces small file count without a full shuffle."
+  ],
+  "code": "from pyspark.sql import SparkSession\nfrom pyspark.sql.functions import col, when, to_date\nfrom pyspark.sql.types import StructType, StructField, IntegerType, DoubleType, StringType\n\nspark = SparkSession.builder.appName('Pipeline').getOrCreate()\n\nschema = StructType([\n    StructField('order_id', IntegerType(), False),\n    StructField('amount',   DoubleType(),  True),\n    StructField('status',   StringType(),  True),\n])\ndf = spark.read.csv('s3://bucket/orders/', header=True, schema=schema)\n\ndf_clean = (df\n    .filter(col('amount').isNotNull() & (col('amount') > 0))\n    .withColumn('tier',\n        when(col('amount') > 10000, 'platinum')\n        .when(col('amount') > 1000, 'gold')\n        .otherwise('standard'))\n    .dropDuplicates(['order_id'])\n    .na.fill({'status': 'unknown'}))\n\ndf_clean.coalesce(4).write.mode('overwrite').parquet('s3://bucket/processed/')",
+  "pr": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "SQL",
+        "PySpark"
+      ],
+      "r": [
+        [
+          "SELECT a, b",
+          "df.select('a','b')"
+        ],
+        [
+          "WHERE amount > 1000",
+          "df.filter(col('amount') > 1000)"
+        ],
+        [
+          "CASE WHEN",
+          "when(...).when(...).otherwise(...)"
+        ],
+        [
+          "SELECT DISTINCT key",
+          "df.dropDuplicates(['key'])"
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why write Parquet instead of CSV?",
+      "a": "Parquet is columnar -- analytical queries reading only a few columns read only those from disk. CSV reads entire rows. Parquet also compresses effectively, stores schema (no type inference needed), and supports partition pruning. Typically 10-100x faster to read than CSV for analytics queries."
+    },
+    {
+      "q": "What is the too-many-small-files problem?",
+      "a": "Spark creates one file per partition. With 200 partitions you get 200 small files. Reading 200 small S3 files is much slower than 4-10 larger ones due to per-file overhead. Fix: df.coalesce(4) before writing -- merges partitions without a full shuffle. repartition(4) also works but triggers a full shuffle."
+    }
+  ]
+}

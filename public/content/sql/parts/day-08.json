@@ -1,0 +1,49 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Window functions part 2 — LAG, LEAD, FIRST_VALUE, running totals, frames",
+  "exp": "LAG/LEAD replace self-joins for consecutive-row comparisons. FIRST_VALUE and LAST_VALUE with the right frame are frequently misused — the default frame often gives unexpected results. Running totals and moving averages test whether you understand the ROWS BETWEEN frame clause.",
+  "pts": [
+    "`LAG(col, n, default)` — value n rows before current in the window partition; default returned when no prior row exists",
+    "`LEAD(col, n, default)` — value n rows after current in the window; replaces a self-join to the next row",
+    "`FIRST_VALUE(col) OVER (...)` — first value in the window; use `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` for predictable behaviour",
+    "`LAST_VALUE(col) OVER (...)` — **gotcha:** default frame is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW, not through the end. Must specify `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING` to get the true last value",
+    "**Window frames:** `ROWS` counts physical rows (exact); `RANGE` counts value ranges (can include unexpected rows on ties)",
+    "Running total: `SUM(col) OVER (ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)`",
+    "3-period moving avg: `AVG(col) OVER (ORDER BY date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)`",
+    "Cumulative sum resets per group: `SUM(amount) OVER (PARTITION BY customer_id ORDER BY date ROWS UNBOUNDED PRECEDING)`"
+  ],
+  "code": "-- LAG/LEAD: month-over-month sales change\nSELECT month, sales,\n  LAG(sales, 1, 0)  OVER (ORDER BY month) AS prev_month,\n  LEAD(sales, 1, 0) OVER (ORDER BY month) AS next_month,\n  sales - LAG(sales, 1, 0) OVER (ORDER BY month) AS mom_change,\n  ROUND(100.0 * (sales - LAG(sales,1,0) OVER(ORDER BY month))\n        / NULLIF(LAG(sales,1,0) OVER(ORDER BY month), 0), 2) AS mom_pct\nFROM monthly_sales;\n\n-- FIRST_VALUE: show each row alongside the first value in its group\nSELECT name, dept, salary,\n  FIRST_VALUE(name) OVER (\n    PARTITION BY dept ORDER BY salary DESC\n    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n  ) AS top_earner_in_dept\nFROM employees;\n\n-- LAST_VALUE GOTCHA — must override the default frame\nSELECT name, dept, salary,\n  LAST_VALUE(name) OVER (\n    PARTITION BY dept ORDER BY salary DESC\n    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING  -- ← required!\n  ) AS lowest_earner_in_dept\nFROM employees;\n\n-- Running total\nSELECT date, amount,\n  SUM(amount) OVER (ORDER BY date ROWS UNBOUNDED PRECEDING) AS running_total\nFROM transactions;\n\n-- 7-day moving average\nSELECT date, sales,\n  AVG(sales) OVER (\n    ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW\n  ) AS moving_avg_7d\nFROM daily_sales;\n\n-- Reset running total per customer\nSELECT customer_id, date, amount,\n  SUM(amount) OVER (PARTITION BY customer_id ORDER BY date ROWS UNBOUNDED PRECEDING) AS running_spend\nFROM orders;",
+  "pr": [
+    "LeetCode: Cumulative Salary of an Employee",
+    "LeetCode: Restaurant Growth",
+    "HackerRank: 15 Days of Learning SQL"
+  ],
+  "viz": [
+    {
+      "t": "movingavg"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the LAST_VALUE gotcha and how do you fix it?",
+      "a": "The default window frame for LAST_VALUE is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW — this means LAST_VALUE only looks from the start of the partition up to the current row, so it returns the current row's own value (not the partition's last value). Fix: explicitly set the frame to ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING to make LAST_VALUE look at the entire partition."
+    },
+    {
+      "q": "What is the difference between ROWS and RANGE in window frames?",
+      "a": "ROWS counts physical rows — ROWS BETWEEN 2 PRECEDING AND CURRENT ROW always includes exactly 3 rows (or fewer at the start). RANGE counts by value — RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW includes all rows whose ORDER BY value is less than or equal to the current row's value. With ties in the ORDER BY, RANGE can include more rows than expected. ROWS is almost always what you want for moving averages and running totals."
+    },
+    {
+      "q": "How would you compute a 12-month moving average of monthly revenue?",
+      "a": "SELECT month, revenue, AVG(revenue) OVER (ORDER BY month ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) AS moving_avg_12m FROM monthly_revenue; — ROWS BETWEEN 11 PRECEDING AND CURRENT ROW gives the current month plus the 11 before it = 12 months total. For months with fewer than 12 data points (at the start), AVG divides by however many rows are actually in the frame."
+    },
+    {
+      "q": "How does LAG replace a self-join for consecutive row comparison?",
+      "a": "Before window functions, comparing a row to the previous row required a self-join: SELECT a.value - b.value FROM t a JOIN t b ON b.date = DATEADD(DAY,-1,a.date). With LAG: SELECT value - LAG(value,1,value) OVER (ORDER BY date) AS daily_change FROM t. LAG is a single table scan versus a join that can be O(n log n) or worse on large tables."
+    },
+    {
+      "q": "How do you calculate a running total that resets per group?",
+      "a": "Add PARTITION BY to the window: SUM(amount) OVER (PARTITION BY customer_id ORDER BY date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_spend. The PARTITION BY customer_id resets the cumulative sum to 0 at the start of each customer's rows. Without PARTITION BY, you get a global running total across all customers."
+    }
+  ]
+}

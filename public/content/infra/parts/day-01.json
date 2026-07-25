@@ -1,0 +1,39 @@
+{
+  "id": "day-01",
+  "n": 1,
+  "title": "Terraform -- IaC, plan/apply/destroy, variables, state",
+  "exp": "Terraform turns AWS resources into version-controlled code. .tf files describe what should exist, plan shows the diff, apply makes it real.",
+  "pts": [
+    "terraform init: downloads provider plugins. Run once per project.",
+    "terraform plan: computes diff between current and desired state. Always read before applying.",
+    "Plan symbols: + create, - destroy, ~ modify in-place, -/+ destroy+recreate (renaming an S3 bucket = this, deletes all data!).",
+    "Variables: variable 'bucket_name' { type = string } -- pass via terraform.tfvars.",
+    "terraform.tfstate: Terraform's record of what it built. Never commit to Git -- contains sensitive values."
+  ],
+  "code": "terraform {\n  required_providers {\n    aws = { source = \"hashicorp/aws\", version = \"~> 5.0\" }\n  }\n}\nprovider \"aws\" { region = var.aws_region }\n\nvariable \"aws_region\"   { type = string; default = \"us-east-1\" }\nvariable \"project_name\" { type = string }\nvariable \"environment\"  { type = string; default = \"dev\" }\n\nresource \"aws_s3_bucket\" \"pipeline_data\" {\n  bucket = \"${var.project_name}-${var.environment}-data\"\n  tags = { Project = var.project_name, ManagedBy = \"Terraform\" }\n}\n\nresource \"aws_s3_bucket_versioning\" \"pipeline_data\" {\n  bucket = aws_s3_bucket.pipeline_data.id\n  versioning_configuration { status = \"Enabled\" }\n}\n\nresource \"aws_s3_bucket_public_access_block\" \"pipeline_data\" {\n  bucket = aws_s3_bucket.pipeline_data.id\n  block_public_acls = true; block_public_policy = true\n  ignore_public_acls = true; restrict_public_buckets = true\n}\n\noutput \"bucket_arn\" { value = aws_s3_bucket.pipeline_data.arn }\n\n# terraform init\n# terraform plan      <- always do this first!\n# terraform apply\n# terraform destroy   <- careful!",
+  "pr": [],
+  "viz": [
+    {
+      "t": "pipeline",
+      "steps": [
+        "main.tf",
+        "terraform init",
+        "terraform plan",
+        "Review +/-/~",
+        "terraform apply",
+        "Real resources"
+      ],
+      "cap": "Terraform workflow -- plan is the mandatory safety check"
+    }
+  ],
+  "qa": [
+    {
+      "q": "What does terraform plan show and why always read it first?",
+      "a": "Shows the diff: + created, - destroyed, ~ modified, -/+ destroy+recreate. A common mistake: renaming an S3 bucket shows -/+ which would delete all data. The plan reveals this before it happens. Equivalent to reviewing a database migration before running it."
+    },
+    {
+      "q": "What is Terraform state and why never commit it?",
+      "a": "terraform.tfstate maps your .tf resource blocks to real AWS resource IDs and often contains sensitive values (passwords, keys). Committing exposes these in Git history. For teams, local state means concurrent applies can corrupt it -- solution: remote state in S3 + DynamoDB locking."
+    }
+  ]
+}
