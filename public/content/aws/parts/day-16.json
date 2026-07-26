@@ -1,0 +1,54 @@
+{
+  "id": "day-16",
+  "n": 16,
+  "title": "AWS Security, Networking & Cost Governance",
+  "exp": "Enterprise cloud interviews cover VPC Endpoints, IAM Role Assumption, KMS Envelope Encryption, and AWS Cost Anomaly Detection.",
+  "pts": [
+    "**VPC Interface Endpoints (AWS PrivateLink)** vs **Gateway Endpoints (S3 / DynamoDB)**: routing traffic over AWS internal network without Internet Gateways.",
+    "**IAM Security:** `sts:AssumeRole`, cross-account access, Session Tags, Service Control Policies (SCPs) in AWS Organizations.",
+    "**KMS Envelope Encryption:** Data Encryption Keys (DEKs) generated locally, encrypted by KMS Customer Managed Key (CMK).",
+    "**Cost Control & Governance:** AWS Budgets, Cost Anomaly Detection, S3 Lifecycle Rules (Intelligent-Tiering to Glacier Deep Archive)."
+  ],
+  "code": "// IAM Role Assumption policy snippet:\n{\n  \"Effect\": \"Allow\",\n  \"Action\": \"sts:AssumeRole\",\n  \"Resource\": \"arn:aws:iam::123456789012:role/CrossAccountDataPipelineRole\"\n}",
+  "pr": [
+    "Write a cross-account IAM role trust policy",
+    "Configure S3 Intelligent-Tiering lifecycle rule"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of AWS Security, Networking & Cost Governance under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the difference between VPC Gateway Endpoints and Interface Endpoints (PrivateLink)?",
+      "a": "**Elevator Pitch:** Gateway Endpoints are free VPC route table entries used strictly for S3 and DynamoDB. Interface Endpoints use Elastic Network Interfaces (ENIs) with private IP addresses powered by PrivateLink to securely connect to other AWS services or custom SaaS applications, billed per hour + data processed.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "Explain how Envelope Encryption works in AWS KMS.",
+      "a": "**Elevator Pitch:** KMS generates a plaintext Data Encryption Key (DEK) and an encrypted DEK. The application encrypts payload data locally using the plaintext DEK, discards the plaintext DEK from memory, and stores the encrypted DEK alongside the payload.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

@@ -21,11 +21,11 @@
   "qa": [
     {
       "q": "What is a generator and why use one over a list?",
-      "a": "A generator produces values one at a time on demand without computing all values upfront. Loading a 10GB CSV into a list crashes. A generator reads one batch at a time using constant memory regardless of file size. Use generators whenever processing data larger than available RAM."
+      "a": "**Elevator Pitch:** A generator produces values one at a time on demand without computing all values upfront. Loading a 10GB CSV into a list crashes. A generator reads one batch at a time using constant memory regardless of file size. Use generators whenever processing data larger than available RAM.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "How does a context manager guarantee cleanup?",
-      "a": "The code after yield in a @contextmanager always runs when the with block exits -- whether normally or via an exception. Use for file handles, database connections, threading locks -- anything that must be released even on error."
+      "a": "**Elevator Pitch:** The code after yield in a @contextmanager always runs when the with block exits -- whether normally or via an exception. Use for file handles, database connections, threading locks -- anything that must be released even on error.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

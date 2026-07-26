@@ -1,0 +1,54 @@
+{
+  "id": "day-16",
+  "n": 16,
+  "title": "Azure DevOps, Bicep & Container Apps",
+  "exp": "Modern Azure infrastructure deployment uses Bicep, Azure Container Apps (ACA) with KEDA autoscaling, and Azure Pipelines / GitHub Actions.",
+  "pts": [
+    "**Azure Bicep vs ARM Templates:** concise syntax, type safety, modular resource definitions (`module`).",
+    "**Azure Container Apps (ACA):** serverless container hosting powered by AKS, Envoy, and KEDA (Kubernetes Event-driven Autoscaling).",
+    "**KEDA Trigger Scaling:** scaling container replicas from 0 to N based on Azure Service Bus queue depth or Event Hubs lag.",
+    "**Azure Key Vault Integration:** referencing secrets in Bicep / ACA via Key Vault secret URIs."
+  ],
+  "code": "resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {\n  name: 'api-app'\n  location: location\n  properties: {\n    configuration: { ingress: { external: true, targetPort: 8080 } }\n  }\n}",
+  "pr": [
+    "Write a modular Bicep template for App Service + Key Vault",
+    "Configure KEDA Azure Service Bus queue scale rule in ACA"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Azure DevOps, Bicep & Container Apps under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "When should you choose Azure Container Apps (ACA) over Azure Kubernetes Service (AKS)?",
+      "a": "**Elevator Pitch:** Choose ACA when running microservices or background workers needing container isolation and KEDA event-driven autoscaling (down to 0) without managing Kubernetes control planes, ingress controllers, or node pools.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How does KEDA autoscale Azure Container Apps based on queue depth?",
+      "a": "**Elevator Pitch:** KEDA monitors Azure Service Bus queue lengths. When unconsumed message count exceeds threshold, KEDA signals ACA to spin up additional container instances dynamically, scaling back to zero when idle.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

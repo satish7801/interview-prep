@@ -76,6 +76,18 @@
       "n": 5,
       "title": "Capstone architecture and final mock interview",
       "summary": "The capstone ties all tracks together. The mock covers exactly the question types in the S&P Global Lead I round."
+    },
+    {
+      "id": "day-06",
+      "n": 6,
+      "title": "Financial Data Models, Feeds & Reference Data Normalization",
+      "summary": "S&P Global and fintech domain interviews test real-time market data ingestion (BBO, L1/L2 order books), corporate actions processing, and master data management…"
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Technical Leadership & Strategic Execution (Lead I)",
+      "summary": "Lead I / Engineering Lead interviews test cross-team alignment, architectural RFCs, incident post-mortems, and mentoring frameworks."
     }
   ]
 }

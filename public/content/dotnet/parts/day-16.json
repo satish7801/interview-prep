@@ -1,0 +1,55 @@
+{
+  "id": "day-16",
+  "n": 16,
+  "title": "Modern C# 12, 13 & 14 Deep-Dive",
+  "exp": "Stay current on modern C# enhancements: Primary Constructors, Collection Expressions, ref struct generic parameters, System.Threading.Lock, and field keyword.",
+  "pts": [
+    "**Primary Constructors:** syntax for classes/structs (`public class OrderService(IDbContext db)`).",
+    "**Collection Expressions:** `int[] arr = [1, 2, 3];` with spread operator `[..list1, ..list2]`.",
+    "**`System.Threading.Lock`** (.NET 9+): dedicated lock object providing faster OS primitives than `object` locking.",
+    "**`field` contextual keyword** (C# 13/14): auto-property backed field access inside property getters/setters.",
+    "**Params Collections:** `void Log(params ReadOnlySpan<string> msgs)` avoiding array allocations."
+  ],
+  "code": "public class UserService(IUserRepository repo, ILogger<UserService> logger) {\n  private readonly List<string> _roles = [\"Admin\", ..repo.GetDefaultRoles()];\n  private readonly Lock _gate = new();\n  public string Name { get => field; set => field = value.Trim(); }\n}",
+  "pr": [
+    "Refactor a legacy C# service to use Primary Constructors & Collection Expressions",
+    "Benchmark System.Threading.Lock vs object lock"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Modern C# 12, 13 & 14 Deep-Dive under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What are the advantages of using System.Threading.Lock over locking on object in .NET 9+?",
+      "a": "**Elevator Pitch:** System.Threading.Lock provides a dedicated, lightweight OS synchronization primitive designed specifically for thread locking, avoiding the memory footprint of a full System.Object header and reducing lock contention overhead.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How do collection expressions and the spread operator improve both syntax and allocation efficiency?",
+      "a": "**Elevator Pitch:** Collection expressions [...] provide a unified syntax for arrays, Span<T>, List<T>, and ImmutableCollections. The compiler optimizes allocation by pre-calculating capacity when combining arrays via spread [..a, ..b].\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

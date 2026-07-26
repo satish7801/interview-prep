@@ -21,11 +21,11 @@
   "qa": [
     {
       "q": "What is a pytest fixture?",
-      "a": "A fixture is a function decorated with @pytest.fixture providing reusable test setup. Pytest injects fixtures by matching function parameter names to fixture names. Shared fixtures go in conftest.py -- discovered automatically without importing."
+      "a": "**Elevator Pitch:** A fixture is a function decorated with @pytest.fixture providing reusable test setup. Pytest injects fixtures by matching function parameter names to fixture names. Shared fixtures go in conftest.py -- discovered automatically without importing.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What should you prioritize testing in a data pipeline?",
-      "a": "Transformation logic: given this input DataFrame, produce this exact output. These are pure functions, fast to test, highest-consequence if wrong. Second priority: edge cases -- empty DataFrames, nulls in key columns, duplicate rows. Avoid testing framework code (pandas, SQLAlchemy) -- only test YOUR logic."
+      "a": "**Elevator Pitch:** Transformation logic: given this input DataFrame, produce this exact output. These are pure functions, fast to test, highest-consequence if wrong. Second priority: edge cases -- empty DataFrames, nulls in key columns, duplicate rows. Avoid testing framework code (pandas, SQLAlchemy) -- only test YOUR logic.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

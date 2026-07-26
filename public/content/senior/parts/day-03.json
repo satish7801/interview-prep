@@ -9,7 +9,7 @@
     "**Mentoring:** even informal counts — explaining N+1 to a colleague, teaching comments in a PR, pairing on a tricky edge case",
     "**Two STAR stories to prepare:** (1) technical disagreement/pushback, (2) helping a teammate grow"
   ],
-  "code": "",
+  "code": "// Senior Systems Architecture Configuration / Circuit Breaker:\nvar pipeline = new ResiliencePipelineBuilder()\n    .AddCircuitBreaker(new CircuitBreakerStrategyOptions {\n        FailureRatio = 0.5,\n        SamplingDuration = TimeSpan.FromSeconds(10),\n        BreakDuration = TimeSpan.FromSeconds(30)\n    }).Build();",
   "pr": [],
   "viz": [
     {
@@ -20,15 +20,15 @@
   "qa": [
     {
       "q": "How do you approach a code review when you find significant issues?",
-      "a": "I prioritise by impact: blocking (correctness, security, data loss) vs non-blocking (style, minor improvements). For blocking issues I explain specifically what could go wrong, not just flag it. For non-blocking improvements I prefix with \"optional:\" so the author knows what's required vs suggested. I also note what's good in the PR — positive feedback helps people understand what \"good\" looks like."
+      "a": "**Elevator Pitch:** I prioritise by impact: blocking (correctness, security, data loss) vs non-blocking (style, minor improvements). For blocking issues I explain specifically what could go wrong, not just flag it. For non-blocking improvements I prefix with \"optional:\" so the author knows what's required vs suggested. I also note what's good in the PR — positive feedback helps people understand what \"good\" looks like.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "Tell me about a time you pushed back on a technical decision.",
-      "a": "(Prepare a real story.) Frame it as: the decision, why you disagreed, how you raised it constructively with data/reasoning, the outcome, and what you'd do the same or differently. Interviewers are testing that you can disagree professionally — not that you're contrarian."
+      "a": "**Elevator Pitch:** (Prepare a real story.) Frame it as: the decision, why you disagreed, how you raised it constructively with data/reasoning, the outcome, and what you'd do the same or differently. Interviewers are testing that you can disagree professionally — not that you're contrarian.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "How would you handle a junior developer who keeps submitting code below team standards?",
-      "a": "First understand why: knowledge gap, unclear standards, or time pressure? If knowledge gap: pair program, show specifically what good looks like. If standards are unclear: advocate for documented standards or linter rules. If time pressure causing shortcuts: that's a planning conversation, not a dev conversation. Escalate only if the pattern continues after active support."
+      "a": "**Elevator Pitch:** First understand why: knowledge gap, unclear standards, or time pressure? If knowledge gap: pair program, show specifically what good looks like. If standards are unclear: advocate for documented standards or linter rules. If time pressure causing shortcuts: that's a planning conversation, not a dev conversation. Escalate only if the pattern continues after active support.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

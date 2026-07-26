@@ -1,0 +1,54 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Spark Catalyst Optimizer & Adaptive Query Execution (AQE)",
+  "exp": "Deep-dive into Spark query planning: Unresolved Logical Plan → Analyzed → Optimized → Physical Plan, and AQE runtime optimizations.",
+  "pts": [
+    "**Catalyst Optimizer pipeline:** rule-based transformations, constant folding, predicate pushdown, projection pruning.",
+    "**AQE (Adaptive Query Execution):** dynamic coalescing of shuffle partitions, dynamic join strategy switching (SortMerge to Broadcast), dynamic skew join handling.",
+    "**Skew Join Optimization:** splitting skewed partitions into sub-partitions and duplicating broadcast side rows.",
+    "**Dynamic Partition Pruning (DPP):** filtering partition directories at runtime using dimension table join predicates."
+  ],
+  "code": "spark.conf.set(\"spark.sql.adaptive.enabled\", \"true\")\nspark.conf.set(\"spark.sql.adaptive.skewJoin.enabled\", \"true\")\n# Automatically detects and splits skewed partitions during Shuffle",
+  "pr": [
+    "Inspect Catalyst physical plan via df.explain(True)",
+    "Configure and verify AQE skew join handling on a skewed dataset"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Spark Catalyst Optimizer & Adaptive Query Execution (AQE) under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does Spark AQE dynamically convert a SortMergeJoin to a BroadcastHashJoin at runtime?",
+      "a": "**Elevator Pitch:** During initial shuffle stage execution, AQE measures actual materialized output partition sizes. If one side of the join is smaller than spark.sql.adaptive.autoBroadcastJoinThreshold, Spark dynamically changes the physical execution plan from SortMergeJoin to BroadcastHashJoin without re-running the query.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What causes data skew in PySpark joins and how does AQE mitigate it?",
+      "a": "**Elevator Pitch:** Data skew happens when a specific join key (e.g., NULL or default ID) has millions of rows assigned to a single executor partition. AQE detects partition size imbalance, splits the heavy skewed partition into smaller sub-partitions, and replicates matching keys from the join target.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

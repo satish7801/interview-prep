@@ -1,0 +1,54 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Python Async Internals & Event Loop",
+  "exp": "Understand python asyncio execution engine, TaskGroups (Python 3.11+), free-threaded Python 3.13 (GIL optional), and uvloop.",
+  "pts": [
+    "**`asyncio` Event Loop:** cooperative multitasking, selectors (`epoll`/`kqueue`), coroutine generators.",
+    "**`asyncio.TaskGroup`** (PEP 654 / Python 3.11+): structured concurrency with automatic exception cancellation.",
+    "**GIL (Global Interpreter Lock):** CPython GIL removal in Python 3.13 free-threaded builds (PEP 703).",
+    "**`uvloop`:** Cython-based event loop replacing default `asyncio` loop with `libuv` performance (2x-4x speedup)."
+  ],
+  "code": "async with asyncio.TaskGroup() as tg:\n  task1 = tg.create_task(fetch_user(user_id))\n  task2 = tg.create_task(fetch_orders(user_id))\n# Both awaited; unhandled exception in one cancels the other",
+  "pr": [
+    "Convert a gather() pipeline to asyncio.TaskGroup()",
+    "Compare asyncio default loop vs uvloop throughput"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Python Async Internals & Event Loop under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is asyncio.TaskGroup preferred over asyncio.gather() for concurrent async calls in Python 3.11+?",
+      "a": "**Elevator Pitch:** TaskGroup provides structured concurrency: if any child task raises an exception, TaskGroup automatically cancels all remaining running child tasks and raises an ExceptionGroup, preventing leaked orphaned tasks.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What impact does Python 3.13's optional GIL (PEP 703) have on multi-threaded Python workloads?",
+      "a": "**Elevator Pitch:** Disabling the GIL allows true multi-threaded parallel execution across CPU cores for pure CPython bytecode, eliminating the need for multiprocessing IPC overhead in CPU-bound Python workloads.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

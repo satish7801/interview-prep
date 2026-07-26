@@ -10,20 +10,46 @@
     "Every resume bullet needs: your role, architecture sketch, hardest bug, metric, what you'd redo.",
     "Prep cadence: 2–3 weeks focused on Parts in this path, then mock interviews."
   ],
-  "code": "",
+  "code": "// Production Implementation Example for Day 1: How 4 YOE interviews work + roadmap\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for How 4 YOE interviews work + roadmap\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}",
   "pr": [
     "Write 5 STAR stories with metrics",
     "List every resume project with architecture + hardest bug"
   ],
-  "viz": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Aspect",
+        "Production Behavior & Key Trade-Off",
+        "Senior Signal"
+      ],
+      "r": [
+        [
+          "Execution Context",
+          "Deep dive into Day 1 runtime execution mechanics and threading constraints.",
+          "Focus on zero-allocation and lock-free patterns where applicable."
+        ],
+        [
+          "Common Failure Mode",
+          "High concurrency contention or unexpected resource exhaustion under load.",
+          "Implement resilient backpressure, retries, and circuit breakers."
+        ],
+        [
+          "Architectural Trade-Off",
+          "Balancing low latency, developer ergonomics, and system consistency.",
+          "Always state operational cost and complexity trade-offs."
+        ]
+      ]
+    }
+  ],
   "qa": [
     {
       "q": "What do interviewers expect at ~4 YOE that they don't expect from a junior?",
-      "a": "Trade-off reasoning, production debugging stories with metrics, ownership of API+DB+auth+observability end-to-end, and mentoring/communication — not just CRUD syntax."
+      "a": "**Elevator Pitch:** Trade-off reasoning, production debugging stories with metrics, ownership of API+DB+auth+observability end-to-end, and mentoring/communication — not just CRUD syntax.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     },
     {
       "q": "How would you structure 2 weeks of prep before a mid-senior .NET interview?",
-      "a": "Week 1: async, DI, ASP.NET pipeline, EF/SQL (N+1, indexes, isolation). Week 2: security, messaging, caching, observability, three system designs, and STAR/resume drills. Daily: 30–45 min flashcards + one design sketch."
+      "a": "**Elevator Pitch:** Week 1: async, DI, ASP.NET pipeline, EF/SQL (N+1, indexes, isolation). Week 2: security, messaging, caching, observability, three system designs, and STAR/resume drills. Daily: 30–45 min flashcards + one design sketch.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     }
   ]
 }

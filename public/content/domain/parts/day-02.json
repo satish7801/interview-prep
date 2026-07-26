@@ -9,7 +9,7 @@
     "SQL Server vs Spark: RDBMS for transactional/small/ACID workloads. Spark when data doesn't fit on one machine.",
     "Technical debt: deliberate and documented debt is fine. Silent debt is what compounds into a crisis."
   ],
-  "code": "",
+  "code": "// Financial Domain Data Processing snippet:\npublic record OrderBookEntry(string Ticker, decimal BidPrice, decimal AskPrice, long Timestamp);\npublic static decimal CalculateSpread(OrderBookEntry entry) => entry.AskPrice - entry.BidPrice;",
   "pr": [],
   "viz": [
     {
@@ -20,11 +20,11 @@
   "qa": [
     {
       "q": "A Spark job that ran fine for 6 months suddenly takes 10x longer. Walk through your investigation.",
-      "a": "Check data first: did input volume change? Did a new skewed key appear? Did a source send malformed records causing type coercion? Only after ruling out data: did a recent deploy change the query? In Spark UI: which stage got slow, is one task an outlier (skew), did a new Exchange appear in the plan?"
+      "a": "**Elevator Pitch:** Check data first: did input volume change? Did a new skewed key appear? Did a source send malformed records causing type coercion? Only after ruling out data: did a recent deploy change the query? In Spark UI: which stage got slow, is one task an outlier (skew), did a new Exchange appear in the plan?\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "You discover a bug corrupting 2% of records for 3 months. What order do you act in?",
-      "a": "(1) Deploy the fix to stop further corruption. (2) Scope the blast radius -- which records, sources, time period, downstream consumers. (3) Communicate proactively before being asked. (4) Plan and execute backfill. Don't do all at once -- stop the bleeding, understand scope, communicate, fix history, in that order."
+      "a": "**Elevator Pitch:** (1) Deploy the fix to stop further corruption. (2) Scope the blast radius -- which records, sources, time period, downstream consumers. (3) Communicate proactively before being asked. (4) Plan and execute backfill. Don't do all at once -- stop the bleeding, understand scope, communicate, fix history, in that order.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

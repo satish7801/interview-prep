@@ -27,11 +27,11 @@
   "qa": [
     {
       "q": "Grafana vs Kibana -- when use each?",
-      "a": "Grafana for metrics -- numerical time-series (CPU%, error rate). Best for how is my system performing. Kibana for logs -- event documents. Best for what exactly happened at 3am. A production platform uses both: Grafana for dashboards, Kibana for log debugging."
+      "a": "**Elevator Pitch:** Grafana for metrics -- numerical time-series (CPU%, error rate). Best for how is my system performing. Kibana for logs -- event documents. Best for what exactly happened at 3am. A production platform uses both: Grafana for dashboards, Kibana for log debugging.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "Why is structured JSON logging better than plain text?",
-      "a": "Plain text requires Logstash grok patterns to parse fields -- fragile, breaks on format changes. JSON logs parse automatically; Elasticsearch creates fields with zero config. You can immediately filter level:ERROR AND source:Bloomberg without writing parsing rules."
+      "a": "**Elevator Pitch:** Plain text requires Logstash grok patterns to parse fields -- fragile, breaks on format changes. JSON logs parse automatically; Elasticsearch creates fields with zero config. You can immediately filter level:ERROR AND source:Bloomberg without writing parsing rules.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

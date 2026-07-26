@@ -1,0 +1,54 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Technical Leadership & Strategic Execution (Lead I)",
+  "exp": "Lead I / Engineering Lead interviews test cross-team alignment, architectural RFCs, incident post-mortems, and mentoring frameworks.",
+  "pts": [
+    "**Architectural Decision Records (ADRs) & RFC Process:** driving consensus across engineering teams without dictating.",
+    "**Blameless Post-Mortems:** 5 Whys root cause analysis, MTTR reduction, systemic action item tracking.",
+    "**Managing Technical Dependencies:** API contracts, deprecation policy (`Sunset` headers), versioning grace periods.",
+    "**Engineering Performance & Mentorship:** 1-on-1 feedback frameworks, career growth paths, handling underperformance."
+  ],
+  "code": "// Financial Domain Data Processing snippet:\npublic record OrderBookEntry(string Ticker, decimal BidPrice, decimal AskPrice, long Timestamp);\npublic static decimal CalculateSpread(OrderBookEntry entry) => entry.AskPrice - entry.BidPrice;",
+  "pr": [
+    "Draft a blameless post-mortem template",
+    "Write a 1-on-1 feedback framework for a junior engineer"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Technical Leadership & Strategic Execution (Lead I) under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How do you handle an architectural stalemate between two senior engineers on your team?",
+      "a": "**Elevator Pitch:** Focus the discussion on business requirements, measurable trade-offs (latency, cost, complexity), and operational maintenance. Have each engineer author a brief RFC with pros/cons/risks, prototype if needed, and make a decision aligned with team standards, documenting it in an ADR.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What makes a post-mortem review truly blameless and effective?",
+      "a": "**Elevator Pitch:** A blameless post-mortem focuses on systemic process/tooling failures rather than individual human error. It uses 5 Whys to identify root causes and produces concrete, assigned action items to prevent recurrence.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

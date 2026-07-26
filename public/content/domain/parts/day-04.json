@@ -8,7 +8,7 @@
     "Schema versioning: additive changes backward-compatible in Parquet. Breaking changes need versioned paths.",
     "Always: explicit beats implicit. Config-driven beats hardcoded. Idempotent beats append-only."
   ],
-  "code": "",
+  "code": "// Financial Domain Data Processing snippet:\npublic record OrderBookEntry(string Ticker, decimal BidPrice, decimal AskPrice, long Timestamp);\npublic static decimal CalculateSpread(OrderBookEntry entry) => entry.AskPrice - entry.BidPrice;",
   "pr": [],
   "viz": [
     {
@@ -19,11 +19,11 @@
   "qa": [
     {
       "q": "How would you version a dataset schema without breaking existing consumers?",
-      "a": "Additive (new nullable columns): Parquet handles automatically -- existing readers see null. Breaking changes: new versioned path (v2/) that new consumers opt into while old consumers stay on v1, or a transition period where both field names coexist before deprecating the old one on a communicated timeline. Never break consumers without a migration path."
+      "a": "**Elevator Pitch:** Additive (new nullable columns): Parquet handles automatically -- existing readers see null. Breaking changes: new versioned path (v2/) that new consumers opt into while old consumers stay on v1, or a transition period where both field names coexist before deprecating the old one on a communicated timeline. Never break consumers without a migration path.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "How do you test transformation logic without running the full dataset?",
-      "a": "Create a representative test dataset: 10-20 rows covering edge cases (nulls, duplicates, boundary values). Write unit tests: given this input, assert this output. pytest + assert_frame_equal for pandas; local SparkSession for PySpark. Test the function in isolation -- integration tests on full pipelines live separately as slower tests."
+      "a": "**Elevator Pitch:** Create a representative test dataset: 10-20 rows covering edge cases (nulls, duplicates, boundary values). Write unit tests: given this input, assert this output. pytest + assert_frame_equal for pandas; local SparkSession for PySpark. Test the function in isolation -- integration tests on full pipelines live separately as slower tests.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

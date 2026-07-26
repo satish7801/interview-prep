@@ -150,6 +150,18 @@
       "n": 14,
       "title": "GCP capstone -- putting the full stack together",
       "summary": "Ties every GCP day into the same end-to-end shape as the AWS and Azure capstones -- three confident, concrete answers to 'how would this pipeline look on your c…"
+    },
+    {
+      "id": "day-15",
+      "n": 15,
+      "title": "BigQuery Architecture & Performance Optimization",
+      "summary": "Google Cloud platform interviews center on BigQuery architecture (Dremel, Colossus, Capacitor), partitioning, clustering, and slot management."
+    },
+    {
+      "id": "day-16",
+      "n": 16,
+      "title": "GCP Cloud Native Architecture — Cloud Run v2 & Pub/Sub",
+      "summary": "Build serverless microservices on GCP using Cloud Run v2, Cloud Pub/Sub ordering keys, and Cloud Spanner."
     }
   ]
 }

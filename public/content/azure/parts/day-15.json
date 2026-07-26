@@ -1,0 +1,54 @@
+{
+  "id": "day-15",
+  "n": 15,
+  "title": "Azure Native Security, Identity & Cosmos DB at Scale",
+  "exp": "Senior Azure interviews cover Entra ID Managed Identity, Workload Identity Federation, and Cosmos DB global replication & consistency models.",
+  "pts": [
+    "**Azure Entra ID (Azure AD):** User-assigned vs System-assigned Managed Identity for passwordless access to Key Vault and SQL Database.",
+    "**Workload Identity Federation:** authenticating GitHub Actions / AKS pods to Azure without storing client secrets.",
+    "**Cosmos DB Consistency Levels:** Strong, Bounded Staleness, Session (default), Consistent Prefix, Eventual.",
+    "**Cosmos DB Partitioning & Request Units (RUs):** choosing high-cardinality synthetic partition keys to prevent hot partitions."
+  ],
+  "code": "// Connecting to Azure SQL with Managed Identity (passwordless):\nvar conn = new SqlConnection(\"Server=tcp:sql-server.database.windows.net;Database=AppDb;Authentication=Active Directory Default;\");",
+  "pr": [
+    "Configure Azure SQL connection using Managed Identity in C#",
+    "Design Cosmos DB synthetic partition key for tenant event logs"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Azure Native Security, Identity & Cosmos DB at Scale under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What are the 5 consistency levels in Azure Cosmos DB and which is default?",
+      "a": "**Elevator Pitch:** Strong, Bounded Staleness, Session (default), Consistent Prefix, and Eventual. Session consistency provides monotonic reads and writes within a client session at low latency and standard RU cost.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "Why is Managed Identity superior to storing Azure Service Principal secrets in App Settings?",
+      "a": "**Elevator Pitch:** Managed Identity eliminates credential management entirely: Azure automatically creates and rotates secrets under the hood, binding identity to the Azure resource lifespan.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

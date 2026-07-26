@@ -1,0 +1,54 @@
+{
+  "id": "day-15",
+  "n": 15,
+  "title": "BigQuery Architecture & Performance Optimization",
+  "exp": "Google Cloud platform interviews center on BigQuery architecture (Dremel, Colossus, Capacitor), partitioning, clustering, and slot management.",
+  "pts": [
+    "**BigQuery Storage & Compute Separation:** Dremel execution engine over Borg, Capacitor columnar storage over Colossus file system.",
+    "**Partitioning vs Clustering:** Date/Ingestion-time partitioning + multi-column clustering (up to 4 columns) for maximum query cost reduction.",
+    "**BigQuery Slots:** virtual CPUs for query execution; On-demand vs Reservations (Editions: Standard, Enterprise, Enterprise Plus).",
+    "**BigQuery BI Engine:** in-memory analysis service for ultra-fast sub-second dashboard rendering."
+  ],
+  "code": "CREATE TABLE mydataset.orders (\n  order_id STRING, customer_id STRING, amount NUMERIC, order_date DATE\n)\nPARTITION BY order_date\nCLUSTER BY customer_id;\n-- Filters on order_date + customer_id prune data scanned (reducing slot cost)",
+  "pr": [
+    "Write DDL for a partitioned and clustered BigQuery table",
+    "Compare query bytes scanned before and after clustering"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of BigQuery Architecture & Performance Optimization under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How do Partitioning and Clustering combine to reduce BigQuery query costs?",
+      "a": "**Elevator Pitch:** Partitioning splits tables into daily/monthly directories, allowing BigQuery to prune entire time blocks. Clustering sorts data within each partition by specific columns, allowing Capacitor storage to skip unreferenced file blocks within partitions.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What is the difference between On-Demand and Reservations (Slots) pricing in BigQuery?",
+      "a": "**Elevator Pitch:** On-demand charges per TB of data scanned ($6.25/TB). Slot reservations allocate dedicated query processing slots per hour (BigQuery Editions), providing predictable costs for enterprise workloads.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

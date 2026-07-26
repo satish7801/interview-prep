@@ -20,7 +20,7 @@
   "qa": [
     {
       "q": "How should a .NET app on EC2 access S3 without hardcoded credentials?",
-      "a": "Attach an IAM Role (instance profile) to the EC2 instance. The AWS SDK automatically reads temporary credentials from the EC2 metadata service -- no access keys in code. Credentials auto-rotate every hour. Same pattern applies to Lambda (execution role), ECS (task role), and EMR (cluster role)."
+      "a": "**Elevator Pitch:** Attach an IAM Role (instance profile) to the EC2 instance. The AWS SDK automatically reads temporary credentials from the EC2 metadata service -- no access keys in code. Credentials auto-rotate every hour. Same pattern applies to Lambda (execution role), ECS (task role), and EMR (cluster role).\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

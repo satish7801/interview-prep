@@ -81,19 +81,31 @@
       "id": "day-06",
       "n": 6,
       "title": "OOP, type hints, virtual environments",
-      "summary": "Python OOP at professional level. Virtual environments are mandatory for any real project."
+      "summary": "Python OOP at professional level. Virtual environments are mandatory for any real project.\n\nUnderstanding OOP, type hints, virtual environments at a senior engi…"
     },
     {
       "id": "day-07",
       "n": 7,
       "title": "requests, REST APIs, retry, rate limiting",
-      "summary": "Fetching from REST APIs with proper error handling is core to the 50-source S&P pipeline."
+      "summary": "Fetching from REST APIs with proper error handling is core to the 50-source S&P pipeline.\n\nUnderstanding requests, REST APIs, retry, rate limiting at a senior e…"
     },
     {
       "id": "day-08",
       "n": 8,
       "title": "pytest -- unit testing, fixtures, parametrize, mocking",
       "summary": "For data engineering, testing transformation logic (given this input DataFrame, expect this output DataFrame) is the most important skill."
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Python Async Internals & Event Loop",
+      "summary": "Understand python asyncio execution engine, TaskGroups (Python 3.11+), free-threaded Python 3.13 (GIL optional), and uvloop."
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Modern Data Engineering & Typing",
+      "summary": "Production Python data pipelines use pydantic v2, static typing with mypy, and zero-copy Apache Arrow processing with polars."
     }
   ]
 }

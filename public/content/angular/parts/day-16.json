@@ -1,0 +1,55 @@
+{
+  "id": "day-16",
+  "n": 16,
+  "title": "Modern Angular Signals Architecture",
+  "exp": "Angular 17+ introduced reactive Signals. Senior Angular roles expect deep knowledge of signal, computed, effect, linkedSignal, resource, input(), output(), and model().",
+  "pts": [
+    "**`signal(initialValue)`:** reactive value container; write via `.set()` or `.update()`.",
+    "**`computed(() => ...)`:** memoized reactive computation; read-only; lazy evaluation.",
+    "**`effect(() => ...)`:** side-effect runner for DOM sync/logging; runs inside injection context.",
+    "**Signal Inputs/Outputs/Models:** `input.required<string>()`, `output()`, `model<boolean>()` replacing `@Input()` and `@Output()`.",
+    "**`linkedSignal` & `resource`** (Angular 19+): signals dependent on upstream inputs and async data fetching streams."
+  ],
+  "code": "@Component({ ... })\nexport class UserProfileComponent {\n  userId = input.required<string>();\n  user = resource({\n    request: () => ({ id: this.userId() }),\n    loader: ({ request }) => fetchUser(request.id)\n  });\n}",
+  "pr": [
+    "Convert a component from `@Input()` to `input.required()`",
+    "Implement an async data resource using `resource()`"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Modern Angular Signals Architecture under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the key reactivity difference between RxJS Observables and Angular Signals?",
+      "a": "**Elevator Pitch:** RxJS Observables represent push-based asynchronous streams of events over time. Signals represent pull-based synchronous reactive values that automatically track dependency graphs and memoize state changes without requiring explicit subscription management.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "Why should effects not be used for state synchronization in Angular Signals?",
+      "a": "**Elevator Pitch:** Using effects to update other signals causes cascading re-evaluations and potential cyclic dependencies. Use computed() or linkedSignal() for derived state synchronization.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

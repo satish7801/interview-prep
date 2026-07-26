@@ -1,0 +1,54 @@
+{
+  "id": "day-06",
+  "n": 6,
+  "title": "Financial Data Models, Feeds & Reference Data Normalization",
+  "exp": "S&P Global and fintech domain interviews test real-time market data ingestion (BBO, L1/L2 order books), corporate actions processing, and master data management.",
+  "pts": [
+    "**Market Data Streams:** Level 1 (Top of Book / BBO - Best Bid Offer) vs Level 2 (Depth of Book) tick streams.",
+    "**Corporate Actions:** Stock splits, dividends, mergers; adjusting historical price series retroactively.",
+    "**Security Master & CUSIP/ISIN/SEDOL mapping:** entity resolution for global instruments across exchanges.",
+    "**Financial Data Storage:** Time-series databases (TimescaleDB, kdb+) for tick data vs relational databases for balance sheets."
+  ],
+  "code": "// CUSIP to ISIN conversion logic pattern:\n// ISIN = US + 9-digit CUSIP + Luhn mod-10 check digit",
+  "pr": [
+    "Design a relational schema for a Security Master database",
+    "Write a pseudo-code algorithm for Luhn check-digit calculation"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Financial Data Models, Feeds & Reference Data Normalization under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How do stock splits affect historical price data and how must a financial data pipeline handle them?",
+      "a": "**Elevator Pitch:** A 2-for-1 stock split doubles share count and halves price per share. Financial data pipelines apply an adjustment factor to all historical OHLC (Open/High/Low/Close) prices and volume records to maintain continuous technical analysis charts.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What is a Security Master and why is entity resolution critical in financial analytics?",
+      "a": "**Elevator Pitch:** A Security Master is a centralized repository of all financial instruments traded across exchanges, mapping disparate identifiers (CUSIP, ISIN, SEDOL, Ticker) to a canonical entity ID, ensuring corporate actions and pricing map to the correct asset.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

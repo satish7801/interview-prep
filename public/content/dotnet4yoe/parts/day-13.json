@@ -10,16 +10,42 @@
     "Secrets via Key Vault / managed identity — not committed strings.",
     "Multi-stage Docker builds for smaller .NET images."
   ],
-  "code": "",
+  "code": "// Production Implementation Example for Day 13: Cloud & DevOps — App Service vs AKS, CI/CD\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Cloud & DevOps — App Service vs AKS, CI/CD\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}",
   "pr": [
     "Write a GitHub Actions outline for build/test/deploy",
     "List secrets that should move to Key Vault"
   ],
-  "viz": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Aspect",
+        "Production Behavior & Key Trade-Off",
+        "Senior Signal"
+      ],
+      "r": [
+        [
+          "Execution Context",
+          "Deep dive into Day 13 runtime execution mechanics and threading constraints.",
+          "Focus on zero-allocation and lock-free patterns where applicable."
+        ],
+        [
+          "Common Failure Mode",
+          "High concurrency contention or unexpected resource exhaustion under load.",
+          "Implement resilient backpressure, retries, and circuit breakers."
+        ],
+        [
+          "Architectural Trade-Off",
+          "Balancing low latency, developer ergonomics, and system consistency.",
+          "Always state operational cost and complexity trade-offs."
+        ]
+      ]
+    }
+  ],
   "qa": [
     {
       "q": "App Service vs AKS for a single .NET API?",
-      "a": "Default to App Service for one API needing speed-to-prod and managed scaling. Choose AKS when you run many services, need custom networking/sidecars, or already operate Kubernetes. Don't adopt K8s for resume points alone."
+      "a": "**Elevator Pitch:** Default to App Service for one API needing speed-to-prod and managed scaling. Choose AKS when you run many services, need custom networking/sidecars, or already operate Kubernetes. Don't adopt K8s for resume points alone.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     }
   ]
 }

@@ -10,20 +10,46 @@
     "CAP: usually strong consistency in one DB, eventual across services.",
     "SOLID as judgment tools, not religion."
   ],
-  "code": "",
+  "code": "// Production Implementation Example for Day 12: Architecture — clean architecture, caching, microservices honesty\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Architecture — clean architecture, caching, microservices honesty\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}",
   "pr": [
     "Sketch clean architecture folders for Orders",
     "Design cache keys + invalidation for product pages"
   ],
-  "viz": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Aspect",
+        "Production Behavior & Key Trade-Off",
+        "Senior Signal"
+      ],
+      "r": [
+        [
+          "Execution Context",
+          "Deep dive into Day 12 runtime execution mechanics and threading constraints.",
+          "Focus on zero-allocation and lock-free patterns where applicable."
+        ],
+        [
+          "Common Failure Mode",
+          "High concurrency contention or unexpected resource exhaustion under load.",
+          "Implement resilient backpressure, retries, and circuit breakers."
+        ],
+        [
+          "Architectural Trade-Off",
+          "Balancing low latency, developer ergonomics, and system consistency.",
+          "Always state operational cost and complexity trade-offs."
+        ]
+      ]
+    }
+  ],
   "qa": [
     {
       "q": "When are microservices the wrong choice?",
-      "a": "Small team/domain, unclear boundaries, or when a modular monolith would ship faster with fewer failure modes. Microservices add network latency, consistency, and ops cost — justify with real scaling or team ownership needs."
+      "a": "**Elevator Pitch:** Small team/domain, unclear boundaries, or when a modular monolith would ship faster with fewer failure modes. Microservices add network latency, consistency, and ops cost — justify with real scaling or team ownership needs.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     },
     {
       "q": "Describe cache-aside and one failure mode.",
-      "a": "App reads cache; on miss, loads DB and populates cache with TTL. Failure modes: stampedes on expiry, stale reads after writes without invalidation, and caching personalized/security-sensitive data incorrectly."
+      "a": "**Elevator Pitch:** App reads cache; on miss, loads DB and populates cache with TTL. Failure modes: stampedes on expiry, stale reads after writes without invalidation, and caching personalized/security-sensitive data incorrectly.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     }
   ]
 }

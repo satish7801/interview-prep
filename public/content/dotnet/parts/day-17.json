@@ -1,0 +1,55 @@
+{
+  "id": "day-17",
+  "n": 17,
+  "title": "High-Performance EF Core 8/9/10",
+  "exp": "Master recent EF Core capabilities: Primitive Collections, Complex Types, Bulk Operations (ExecuteUpdateAsync), Interceptors, and JSON columns.",
+  "pts": [
+    "**`ExecuteUpdateAsync` / `ExecuteDeleteAsync`:** bulk SQL updates/deletes without loading entities into DbContext change tracker.",
+    "**Complex Types (`[ComplexType]`):** value objects mapped to column groups without identity.",
+    "**Primitive Collections:** storing `List<string>` or `int[]` mapped directly to SQL JSON arrays (`OPENJSON`).",
+    "**EF Core Interceptors:** intercepting command execution, connection opening, or transaction commit for audit logging.",
+    "**Compiled Queries:** pre-compiling Expression trees into delegates for high-frequency API endpoints."
+  ],
+  "code": "await db.Orders\n  .Where(o => o.Status == OrderStatus.Pending && o.CreatedAt < cutoff)\n  .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatus.Expired));",
+  "pr": [
+    "Convert a loop update to ExecuteUpdateAsync",
+    "Create a DbCommandInterceptor for SQL query duration audit"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of High-Performance EF Core 8/9/10 under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why are ExecuteUpdateAsync and ExecuteDeleteAsync game-changers for EF Core?",
+      "a": "**Elevator Pitch:** They execute directly on the database in a single SQL UPDATE/DELETE statement without pulling thousands of rows into client memory, initializing entity tracking, or firing individual UPDATE commands.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How does EF Core map primitive collections (e.g., List<string> Tags) to SQL Server?",
+      "a": "**Elevator Pitch:** EF Core converts the collection to a JSON string stored in an nvarchar column and queries it using SQL Server's native OPENJSON / JSON_VALUE functions under the hood.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

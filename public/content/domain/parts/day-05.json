@@ -9,7 +9,7 @@
     "Mock: 15 min system design, 10 min technical depth, 5 min STAR story.",
     "Lead I signals: multiplying team output, owning decisions end-to-end, communicating trade-offs to non-technical stakeholders."
   ],
-  "code": "",
+  "code": "// Financial Domain Data Processing snippet:\npublic record OrderBookEntry(string Ticker, decimal BidPrice, decimal AskPrice, long Timestamp);\npublic static decimal CalculateSpread(OrderBookEntry entry) => entry.AskPrice - entry.BidPrice;",
   "pr": [
     "Push capstone to GitHub with README: architecture diagram, setup, lessons learned",
     "Do the 30-minute mock interview and record yourself"
@@ -31,11 +31,11 @@
   "qa": [
     {
       "q": "Walk me through your capstone project end-to-end.",
-      "a": "Template using your real capstone: Source -> Python extraction (pandas+pyodbc) -> S3 raw -> EMR Spark validates and transforms -> Parquet partitioned by date -> Grafana dashboard (records, duration, errors). Idempotent via mode('overwrite'). State one honest thing you'd change -- for example, shuffle partitions set too high for the data volume."
+      "a": "**Elevator Pitch:** Template using your real capstone: Source -> Python extraction (pandas+pyodbc) -> S3 raw -> EMR Spark validates and transforms -> Parquet partitioned by date -> Grafana dashboard (records, duration, errors). Idempotent via mode('overwrite'). State one honest thing you'd change -- for example, shuffle partitions set too high for the data volume.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is your 90-day plan as Lead I?",
-      "a": "Day 1-30: understand before changing -- read all code, run every job, interview the team, review 6 months of incidents. Day 31-60: deliver the highest-value lowest-risk improvement to build credibility. Day 61-90: propose the medium-term architectural improvement as a written document with trade-offs, lead the discussion, begin execution."
+      "a": "**Elevator Pitch:** Day 1-30: understand before changing -- read all code, run every job, interview the team, review 6 months of incidents. Day 31-60: deliver the highest-value lowest-risk improvement to build credibility. Day 61-90: propose the medium-term architectural improvement as a written document with trade-offs, lead the discussion, begin execution.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

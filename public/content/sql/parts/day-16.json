@@ -1,0 +1,54 @@
+{
+  "id": "day-16",
+  "n": 16,
+  "title": "Advanced Window Functions & Analytical SQL",
+  "exp": "Senior SQL interviews test window framing (ROWS/RANGE BETWEEN), analytical functions like QUALIFY, PERCENTILE_CONT, and CUME_DIST.",
+  "pts": [
+    "**ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW** vs **RANGE** (RANGE evaluates duplicates as single frame boundary).",
+    "**PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY latency)** for continuous median calculation across millions of rows.",
+    "**CUME_DIST()** (cumulative distribution percentage) vs **PERCENT_RANK()**.",
+    "Filtering window function outputs efficiently without wrapping everything in nested CTEs."
+  ],
+  "code": "SELECT customer_id, order_date, amount,\n  SUM(amount) OVER (\n    PARTITION BY customer_id\n    ORDER BY order_date\n    ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n  ) AS moving_avg_3_orders\nFROM Orders;",
+  "pr": [
+    "Write a moving 7-day revenue calculation using ROWS BETWEEN",
+    "Compare execution plan of RANK vs DENSE_RANK vs ROW_NUMBER"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Advanced Window Functions & Analytical SQL under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What is the key performance difference between ROWS and RANGE in SQL window functions?",
+      "a": "**Elevator Pitch:** ROWS operates on physical row offsets and is fast/memory-efficient. RANGE operates on logical values, requiring SQL Server to sort and aggregate duplicate values together, which often causes costly tempdb spills for large datasets.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How do you compute the 95th percentile latency per API endpoint in T-SQL?",
+      "a": "**Elevator Pitch:** Use PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) OVER (PARTITION BY endpoint_path).\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

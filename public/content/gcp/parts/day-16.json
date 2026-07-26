@@ -1,0 +1,54 @@
+{
+  "id": "day-16",
+  "n": 16,
+  "title": "GCP Cloud Native Architecture — Cloud Run v2 & Pub/Sub",
+  "exp": "Build serverless microservices on GCP using Cloud Run v2, Cloud Pub/Sub ordering keys, and Cloud Spanner.",
+  "pts": [
+    "**Cloud Run v2:** serverless container platform; custom concurrency per instance, startup CPU boost, gRPC streaming support.",
+    "**Cloud Pub/Sub:** ordering keys for guaranteed per-key message order, Dead Letter Topics, push vs pull subscriptions.",
+    "**Cloud Spanner:** globally distributed Relational DB providing strict ACID serializability at global scale via TrueTime atomic clocks.",
+    "**Cloud Monitoring & Trace:** GCP native OpenTelemetry ingestion, Google Cloud Logging syntax."
+  ],
+  "code": "# Deploy Cloud Run container with gRPC and concurrency limit:\ngcloud run deploy api-service --image gcr.io/my-project/api:v1 --concurrency 80 --use-http2",
+  "pr": [
+    "Deploy a container to Cloud Run with gRPC enabled",
+    "Configure Cloud Pub/Sub topic with ordering key and DLQ"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of GCP Cloud Native Architecture — Cloud Run v2 & Pub/Sub under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does Cloud Pub/Sub guarantee message ordering for specific keys?",
+      "a": "**Elevator Pitch:** By attaching an Ordering Key to messages, Cloud Pub/Sub ensures that messages with the same ordering key are delivered to subscribers in the exact order they were published.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What makes Cloud Spanner unique compared to traditional relational databases like PostgreSQL?",
+      "a": "**Elevator Pitch:** Cloud Spanner provides global scale-out horizontal partitioning while maintaining strict external consistency and ACID transactions worldwide, powered by Google's TrueTime hardware GPS/atomic clock infrastructure.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

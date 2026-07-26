@@ -20,11 +20,11 @@
   "qa": [
     {
       "q": "What is SQL injection and how does ? placeholder prevent it?",
-      "a": "SQL injection is when user input is concatenated into SQL and executed as code. The ? placeholder passes the value separately as pure data -- the driver never interprets it as executable SQL regardless of content. This is the #1 database security question in every senior interview."
+      "a": "**Elevator Pitch:** SQL injection is when user input is concatenated into SQL and executed as code. The ? placeholder passes the value separately as pure data -- the driver never interprets it as executable SQL regardless of content. This is the #1 database security question in every senior interview.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "When use pyodbc vs SQLAlchemy?",
-      "a": "pyodbc for fine-grained control: transactions, stored procedure OUTPUT parameters. SQLAlchemy for pandas integration (pd.read_sql, df.to_sql) and ORM features. For data analysis, SQLAlchemy + pandas is the standard."
+      "a": "**Elevator Pitch:** pyodbc for fine-grained control: transactions, stored procedure OUTPUT parameters. SQLAlchemy for pandas integration (pd.read_sql, df.to_sql) and ORM features. For data analysis, SQLAlchemy + pandas is the standard.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

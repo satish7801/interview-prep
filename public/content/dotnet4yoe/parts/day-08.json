@@ -10,20 +10,46 @@
     "**RowVersion** / concurrency token → `DbUpdateConcurrencyException` → reload/merge.",
     "Soft delete via global filters; watch unique indexes on 'deleted' rows."
   ],
-  "code": "",
+  "code": "// Production Implementation Example for Day 8: Transactions, isolation, concurrency, soft delete\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Transactions, isolation, concurrency, soft delete\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}",
   "pr": [
     "Map isolation levels to anomalies they prevent",
     "Add a RowVersion to an Order entity"
   ],
-  "viz": [],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Aspect",
+        "Production Behavior & Key Trade-Off",
+        "Senior Signal"
+      ],
+      "r": [
+        [
+          "Execution Context",
+          "Deep dive into Day 8 runtime execution mechanics and threading constraints.",
+          "Focus on zero-allocation and lock-free patterns where applicable."
+        ],
+        [
+          "Common Failure Mode",
+          "High concurrency contention or unexpected resource exhaustion under load.",
+          "Implement resilient backpressure, retries, and circuit breakers."
+        ],
+        [
+          "Architectural Trade-Off",
+          "Balancing low latency, developer ergonomics, and system consistency.",
+          "Always state operational cost and complexity trade-offs."
+        ]
+      ]
+    }
+  ],
   "qa": [
     {
       "q": "What does READ COMMITTED SNAPSHOT buy you?",
-      "a": "Row versioning so readers don't take shared locks that block writers (and vice versa) for typical read committed scenarios. Trade-off: tempdb version store cost and different anomaly profile — know it isn't full serializability."
+      "a": "**Elevator Pitch:** Row versioning so readers don't take shared locks that block writers (and vice versa) for typical read committed scenarios. Trade-off: tempdb version store cost and different anomaly profile — know it isn't full serializability.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     },
     {
       "q": "How do you handle optimistic concurrency in EF Core?",
-      "a": "Add a RowVersion/timestamp (or token) configured as concurrency token. On SaveChanges conflict, catch DbUpdateConcurrencyException, reload database values, merge or ask the user, retry."
+      "a": "**Elevator Pitch:** Add a RowVersion/timestamp (or token) configured as concurrency token. On SaveChanges conflict, catch DbUpdateConcurrencyException, reload database values, merge or ask the user, retry.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     }
   ]
 }

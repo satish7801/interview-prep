@@ -136,6 +136,24 @@
       "n": 15,
       "title": "Gotchas everyone forgets -- the traps that pass code review but break production",
       "summary": "These are not obscure edge cases -- they're the specific mistakes that even experienced developers make under interview pressure or late-Friday deploys, because…"
+    },
+    {
+      "id": "day-16",
+      "n": 16,
+      "title": "Advanced Window Functions & Analytical SQL",
+      "summary": "Senior SQL interviews test window framing (ROWS/RANGE BETWEEN), analytical functions like QUALIFY, PERCENTILE_CONT, and CUME_DIST."
+    },
+    {
+      "id": "day-17",
+      "n": 17,
+      "title": "Query Execution Plan Deep-Dive & Parameter Sniffing",
+      "summary": "Diagnosing production SQL slowness requires reading execution plans, catching parameter sniffing, implicit conversions, and memory grant issues."
+    },
+    {
+      "id": "day-18",
+      "n": 18,
+      "title": "Columnstore Indexes & TempDB Optimization",
+      "summary": "Modern data platform interviews cover Columnstore for analytical queries and TempDB bottleneck resolution."
     }
   ]
 }

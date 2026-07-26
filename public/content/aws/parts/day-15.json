@@ -1,0 +1,54 @@
+{
+  "id": "day-15",
+  "n": 15,
+  "title": "Advanced Serverless Architectures & EventBridge",
+  "exp": "Architect enterprise AWS serverless applications using Lambda Provisioned Concurrency, EventBridge Pipes, DynamoDB Single-Table Design, and SQS DLQ handling.",
+  "pts": [
+    "**Lambda Execution Lifecycle:** Cold starts vs Warm starts; Provisioned Concurrency for zero cold start SLA.",
+    "**EventBridge Pipes:** point-to-point integration connecting sources (DynamoDB Streams, SQS, Kinesis) to targets (Step Functions, Lambda, EventBus) with built-in filtering & enrichment.",
+    "**DynamoDB Single-Table Design:** modeling multiple entity types in a single table using generic `PK` / `SK` and Global Secondary Indexes (GSIs).",
+    "**Dead Letter Queues (DLQ) & Lambda Event Source Mapping:** max retry attempts, bisect on function error, failure destination."
+  ],
+  "code": "// Single-Table DynamoDB Schema:\n// PK: USER#1001, SK: METADATA\n// PK: USER#1001, SK: ORDER#2026-001\n// Enables fetching user profile + all orders in a single Query call",
+  "pr": [
+    "Design a single-table DynamoDB schema for E-commerce",
+    "Configure EventBridge Pipe with SQS source and Lambda target"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Advanced Serverless Architectures & EventBridge under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why use EventBridge Pipes instead of writing custom Lambda functions for event filtering and transformation?",
+      "a": "**Elevator Pitch:** EventBridge Pipes provides built-in, serverless point-to-point integration with zero custom code, filtering and enriching events in-transit between SQS/DynamoDB Streams and downstream targets, reducing Lambda execution costs and maintenance.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What are the trade-offs of DynamoDB Single-Table Design versus Multi-Table Design?",
+      "a": "**Elevator Pitch:** Single-table design minimizes HTTP connection overhead and enables fetching related entities (User + Orders) in one network request (Query). Trade-off: high design complexity, steep learning curve, inflexible ad-hoc query capabilities without creating new GSIs.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

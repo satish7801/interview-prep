@@ -1,0 +1,54 @@
+{
+  "id": "day-18",
+  "n": 18,
+  "title": "Modern Control Flow & Deferrable Views",
+  "exp": "Angular 17+ control flow (@if, @for, @switch) and @defer blocks revolutionize template performance and lazy loading.",
+  "pts": [
+    "**`@if / @else` & `@switch`:** native template control flow syntax replacing `*ngIf` and `*ngSwitch`.",
+    "**`@for (item of items; track item.id)`:** mandatory `track` expression for optimal DOM reuse without `trackBy` boilerplate.",
+    "**`@defer (on viewport; prefetch on idle)`:** deferred loading of heavy components, automatically generating separate JS bundles.",
+    "**`@placeholder`, `@loading`, `@error`** blocks for smooth deferred UI loading states."
+  ],
+  "code": "@defer (on viewport) {\n  <app-heavy-chart [data]=\"chartData()\" />\n} @placeholder {\n  <div class=\"skeleton\">Loading chart...</div>\n}",
+  "pr": [
+    "Refactor *ngFor templates to @for with track",
+    "Add @defer with placeholder skeletons to a heavy dashboard component"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Modern Control Flow & Deferrable Views under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is the `track` expression mandatory in `@for` loops?",
+      "a": "**Elevator Pitch:** Mandatory track forces developers to provide a unique key for DOM node identity, ensuring Angular reuses existing DOM elements on array mutation rather than destroying and recreating the entire DOM sub-tree.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "Explain how `@defer (on viewport)` improves Initial Page Load (Core Web Vitals).",
+      "a": "**Elevator Pitch:** Components inside @defer are code-split into separate bundle chunks and not downloaded or compiled until the deferred DOM container scrolls into the browser viewport, lowering initial JavaScript bundle execution time.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

@@ -82,6 +82,18 @@
       "n": 8,
       "title": "Interview red flags -- the non-technical mistakes that sink a strong technical answer",
       "summary": "Everything else in this track is about having the right answer. This day is about not undermining a right answer with how you deliver it. These are patterns int…"
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "System Architecture Trade-Off Frameworks",
+      "summary": "Senior candidates must articulate architectural trade-offs using structured frameworks (CAP theorem, PACELC, CQRS, Strangler Fig)."
+    },
+    {
+      "id": "day-10",
+      "n": 10,
+      "title": "Disaster Recovery, High Availability & Engineering Leadership",
+      "summary": "Senior & Staff interviews test production governance: RPO/RTO SLAs, multi-region setups, ADRs, and tech debt prioritization."
     }
   ]
 }

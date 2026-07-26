@@ -10,7 +10,7 @@
     "**Passkey/WebAuthn in Identity:** built-in passwordless auth using device biometrics or hardware keys — no third-party library needed",
     "**Tighter OpenTelemetry:** more built-in meters for request duration, queue depth, active connections"
   ],
-  "code": "",
+  "code": "// Production C# / .NET Example:\npublic async Task<IResult> ProcessOrderAsync(OrderRequest req, AppDbContext db, CancellationToken ct)\n{\n    var order = new Order { CustomerId = req.CustomerId, Total = req.Total };\n    db.Orders.Add(order);\n    await db.SaveChangesAsync(ct);\n    return Results.Created($\"/orders/{order.Id}\", order);\n}",
   "pr": [],
   "viz": [
     {
@@ -42,15 +42,15 @@
   "qa": [
     {
       "q": "What changed about OpenAPI generation in ASP.NET Core 10?",
-      "a": "It now produces OpenAPI 3.1 documents conforming to JSON Schema 2020-12. Nullable reference types are represented as a type array [\"string\",\"null\"] instead of {type: \"string\", nullable: true}. This means client generators that expect strict JSON Schema compliance now work correctly without workarounds."
+      "a": "**Elevator Pitch:** It now produces OpenAPI 3.1 documents conforming to JSON Schema 2020-12. Nullable reference types are represented as a type array [\"string\",\"null\"] instead of {type: \"string\", nullable: true}. This means client generators that expect strict JSON Schema compliance now work correctly without workarounds.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is IOpenApiDocumentProvider in .NET 10?",
-      "a": "A new interface injectable via DI that lets you programmatically access the generated OpenAPI document outside an HTTP request context. Use cases: startup task that uploads your API schema to an API gateway, background service that validates the schema, or integration tests that inspect the generated document without making an HTTP call."
+      "a": "**Elevator Pitch:** A new interface injectable via DI that lets you programmatically access the generated OpenAPI document outside an HTTP request context. Use cases: startup task that uploads your API schema to an API gateway, background service that validates the schema, or integration tests that inspect the generated document without making an HTTP call.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "How would you tie .NET 10 passkey support to your SCIM/SSO project in an interview?",
-      "a": "The SCIM system handles user lifecycle while SSO handles authentication. .NET 10's built-in passkey support means you could replace the password+JWT flow with WebAuthn using the same ASP.NET Core Identity framework you're already using — no third-party FIDO2 library. It's a direct extension of the auth work you're already doing."
+      "a": "**Elevator Pitch:** The SCIM system handles user lifecycle while SSO handles authentication. .NET 10's built-in passkey support means you could replace the password+JWT flow with WebAuthn using the same ASP.NET Core Identity framework you're already using — no third-party FIDO2 library. It's a direct extension of the auth work you're already doing.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

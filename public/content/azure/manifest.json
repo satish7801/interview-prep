@@ -125,7 +125,7 @@
       "id": "day-10",
       "n": 10,
       "title": "Azure Data Factory + Logic Apps -- orchestration",
-      "summary": "The Azure equivalent of Step Functions + EventBridge for sequencing the daily pipeline run."
+      "summary": "The Azure equivalent of Step Functions + EventBridge for sequencing the daily pipeline run.\n\nUnderstanding Azure Data Factory + Logic Apps -- orchestration at a…"
     },
     {
       "id": "day-11",
@@ -150,6 +150,18 @@
       "n": 14,
       "title": "Azure capstone -- putting the full stack together",
       "summary": "Ties every Azure day into the same end-to-end shape as the AWS capstone -- the question 'walk me through how this pipeline would look on Azure' should now have …"
+    },
+    {
+      "id": "day-15",
+      "n": 15,
+      "title": "Azure Native Security, Identity & Cosmos DB at Scale",
+      "summary": "Senior Azure interviews cover Entra ID Managed Identity, Workload Identity Federation, and Cosmos DB global replication & consistency models."
+    },
+    {
+      "id": "day-16",
+      "n": 16,
+      "title": "Azure DevOps, Bicep & Container Apps",
+      "summary": "Modern Azure infrastructure deployment uses Bicep, Azure Container Apps (ACA) with KEDA autoscaling, and Azure Pipelines / GitHub Actions."
     }
   ]
 }

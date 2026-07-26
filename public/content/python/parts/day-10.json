@@ -1,0 +1,54 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Modern Data Engineering & Typing",
+  "exp": "Production Python data pipelines use pydantic v2, static typing with mypy, and zero-copy Apache Arrow processing with polars.",
+  "pts": [
+    "**`pydantic` v2:** Rust-core validation engine (10x-50x faster validation than v1), `BaseModel`, `TypeAdapter`.",
+    "**`polars`:** Rust-backed columnar DataFrame library using Apache Arrow, lazy execution engine (`lazy()`), zero-copy memory operations.",
+    "**Pandas vs Polars:** Pandas uses eager execution and single-threaded Numpy arrays; Polars uses parallel multithreaded query optimization.",
+    "**Python static typing:** `Generic[T]`, `Protocol` (structural subtyping / duck typing), `TypedDict`, `Literal`."
+  ],
+  "code": "import polars as pl\n\ndf = (pl.scan_parquet(\"orders.parquet\")\n     .filter(pl.col(\"amount\") > 100)\n     .group_by(\"customer_id\")\n     .agg(pl.col(\"amount\").sum())\n     .collect())  # Lazy evaluation query optimization",
+  "pr": [
+    "Benchmark a 1GB dataset transformation in Pandas vs Polars",
+    "Create a Pydantic v2 model with custom field validators"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Modern Data Engineering & Typing under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is Polars significantly faster and more memory-efficient than Pandas for large CSV/Parquet files?",
+      "a": "**Elevator Pitch:** Polars is built in Rust on Apache Arrow memory format, executing queries in parallel across CPU threads with a lazy query engine that optimizes predicate pushdown and projection pruning before loading data.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How does structural subtyping (typing.Protocol) differ from nominal subtyping (ABC/inheritance) in Python?",
+      "a": "**Elevator Pitch:** Protocol enables static duck typing: a class satisfies a Protocol interface simply by implementing the required methods and properties, without inheriting explicitly from a base class.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

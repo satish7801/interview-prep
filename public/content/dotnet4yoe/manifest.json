@@ -2,10 +2,10 @@
   "id": "dotnet4yoe",
   "name": ".NET · 4 YOE Path",
   "color": "--dotnet",
-  "sub": "Mid–senior interview path · 14 days",
-  "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, and system-design drills interviewers actually ask around 4 years experience.",
+  "sub": "Mid–senior interview path · 17 days",
+  "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, memory diagnostics, CQRS, SCIM, and system-design drills interviewers actually ask around 4 years experience.",
   "tip": "At 4 YOE, lead with trade-offs and production stories. Depth beats buzzwords — explain why you chose async, a cache TTL, or an isolation level.",
-  "setup": "Cadence: Week 1 — C#/async/DI/ASP.NET/EF.\nWeek 2 — Security, messaging, caching, observability + 3 designs.\nWeek 3 — Mock interviews, resume deep-dives, STAR stories.",
+  "setup": "Cadence: Week 1 — C#/async/DI/ASP.NET/EF.\nWeek 2 — Security, messaging, caching, observability, memory/GC + 3 designs.\nWeek 3 — CQRS, SCIM/OAuth2, Mock interviews, resume deep-dives, STAR stories.",
   "qr": {
     "h": [
       "Topic",
@@ -31,6 +31,18 @@
       [
         "Outbox",
         "Avoid dual-write between DB and bus"
+      ],
+      [
+        "Memory/GC",
+        "dotnet-dump/gcdump to diagnose leaks; LOH/POH bounds"
+      ],
+      [
+        "CQRS/MediatR",
+        "In-process mediator vs out-of-process event bus"
+      ],
+      [
+        "SCIM 2.0",
+        "Automated IdP provisioning (/Users, /Groups)"
       ]
     ]
   },
@@ -118,6 +130,24 @@
       "n": 14,
       "title": "System design drills + behavioral finals",
       "summary": "Practice mid-senior designs (~35 min): URL shortener, notifications, rate limiter, checkout. Close with STAR stories."
+    },
+    {
+      "id": "day-15",
+      "n": 15,
+      "title": "Advanced Memory Diagnostics, GC Internals & Profiling",
+      "summary": "Production debugging at 4 YOE requires explaining Server vs Workstation GC, Gen 0/1/2, LOH/POH, memory leak diagnosis using dotnet-dump, dotnet-gcdump, and memo…"
+    },
+    {
+      "id": "day-16",
+      "n": 16,
+      "title": "CQRS, MediatR & Integration Event Patterns",
+      "summary": "Mid-senior roles test your understanding of separating reads from writes, pipeline behaviors, and reliable inter-service event communication."
+    },
+    {
+      "id": "day-17",
+      "n": 17,
+      "title": "Enterprise Auth — OAuth2, SCIM 2.0, Rate Limiting & Token Security",
+      "summary": "Senior interviews for enterprise SaaS expect deep knowledge of identity provisioning (SCIM), OAuth2/OIDC token security, and API rate limiting."
     }
   ]
 }

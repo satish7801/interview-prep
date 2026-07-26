@@ -1,0 +1,54 @@
+{
+  "id": "day-17",
+  "n": 17,
+  "title": "Query Execution Plan Deep-Dive & Parameter Sniffing",
+  "exp": "Diagnosing production SQL slowness requires reading execution plans, catching parameter sniffing, implicit conversions, and memory grant issues.",
+  "pts": [
+    "**Parameter Sniffing:** SQL Server compiles a plan based on the first parameter passed; bad for skewed data distributions.",
+    "**Mitigations:** `OPTION (RECOMPILE)`, `OPTION (OPTIMIZE FOR (@var = value))`, local variable assignment, Query Store hints.",
+    "**Implicit Conversions:** passing `VARCHAR` to `NVARCHAR` indexed column causes index scan instead of index seek.",
+    "**Memory Grant Warnings:** `RESOURCE_SEMAPHORE` waits when hash joins/sorts request excessive memory allocations."
+  ],
+  "code": "-- Fix parameter sniffing for skewed tenant data:\nSELECT * FROM TenantLogs WITH (NOLOCK)\nWHERE TenantId = @TenantId\nOPTION (OPTIMIZE FOR (@TenantId = 1001));",
+  "pr": [
+    "Identify implicit conversion in an execution plan XML",
+    "Simulate and resolve a parameter sniffing issue with Query Store"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Query Execution Plan Deep-Dive & Parameter Sniffing under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What causes parameter sniffing and what are three ways to solve it?",
+      "a": "**Elevator Pitch:** Parameter sniffing happens when SQL Server reuses an execution plan compiled for an unusual initial parameter value. Solutions: 1. OPTION (RECOMPILE) for infrequent queries with high parameter variance. 2. OPTION (OPTIMIZE FOR ...) for known average values. 3. Copying parameters to local variables inside stored procedures.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "Why does an implicit datatype conversion destroy index seek performance?",
+      "a": "**Elevator Pitch:** If an indexed column is VARCHAR(50) but the query parameter is passed as NVARCHAR(50), SQL Server must apply the CONVERT() function to every row in the column before comparing, converting an index seek into an index scan.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

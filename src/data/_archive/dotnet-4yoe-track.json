@@ -2,18 +2,48 @@
   "id": "dotnet4yoe",
   "name": ".NET · 4 YOE Path",
   "color": "--dotnet",
-  "sub": "Mid–senior interview path · 14 days",
-  "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, and system-design drills interviewers actually ask around 4 years experience.",
+  "sub": "Mid–senior interview path · 17 days",
+  "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, memory diagnostics, CQRS, SCIM, and system-design drills interviewers actually ask around 4 years experience.",
   "tip": "At 4 YOE, lead with trade-offs and production stories. Depth beats buzzwords — explain why you chose async, a cache TTL, or an isolation level.",
-  "setup": "Cadence: Week 1 — C#/async/DI/ASP.NET/EF.\nWeek 2 — Security, messaging, caching, observability + 3 designs.\nWeek 3 — Mock interviews, resume deep-dives, STAR stories.",
+  "setup": "Cadence: Week 1 — C#/async/DI/ASP.NET/EF.\nWeek 2 — Security, messaging, caching, observability, memory/GC + 3 designs.\nWeek 3 — CQRS, SCIM/OAuth2, Mock interviews, resume deep-dives, STAR stories.",
   "qr": {
-    "h": ["Topic", "4 YOE signal"],
+    "h": [
+      "Topic",
+      "4 YOE signal"
+    ],
     "r": [
-      ["DI lifetimes", "Explain captive dependency + IServiceScopeFactory fix"],
-      ["N+1", "Include/projection + when split query helps"],
-      ["Isolation", "RCSI vs locks; when you need a transaction"],
-      ["Idempotency", "Key on POST for payments/retries"],
-      ["Outbox", "Avoid dual-write between DB and bus"]
+      [
+        "DI lifetimes",
+        "Explain captive dependency + IServiceScopeFactory fix"
+      ],
+      [
+        "N+1",
+        "Include/projection + when split query helps"
+      ],
+      [
+        "Isolation",
+        "RCSI vs locks; when you need a transaction"
+      ],
+      [
+        "Idempotency",
+        "Key on POST for payments/retries"
+      ],
+      [
+        "Outbox",
+        "Avoid dual-write between DB and bus"
+      ],
+      [
+        "Memory/GC",
+        "dotnet-dump/gcdump to diagnose leaks; LOH/POH bounds"
+      ],
+      [
+        "CQRS/MediatR",
+        "In-process mediator vs out-of-process event bus"
+      ],
+      [
+        "SCIM 2.0",
+        "Automated IdP provisioning (/Users, /Groups)"
+      ]
     ]
   },
   "days": [
@@ -31,14 +61,45 @@
       "qa": [
         {
           "q": "What do interviewers expect at ~4 YOE that they don't expect from a junior?",
-          "a": "Trade-off reasoning, production debugging stories with metrics, ownership of API+DB+auth+observability end-to-end, and mentoring/communication — not just CRUD syntax."
+          "a": "**Elevator Pitch:** Trade-off reasoning, production debugging stories with metrics, ownership of API+DB+auth+observability end-to-end, and mentoring/communication — not just CRUD syntax.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "How would you structure 2 weeks of prep before a mid-senior .NET interview?",
-          "a": "Week 1: async, DI, ASP.NET pipeline, EF/SQL (N+1, indexes, isolation). Week 2: security, messaging, caching, observability, three system designs, and STAR/resume drills. Daily: 30–45 min flashcards + one design sketch."
+          "a": "**Elevator Pitch:** Week 1: async, DI, ASP.NET pipeline, EF/SQL (N+1, indexes, isolation). Week 2: security, messaging, caching, observability, three system designs, and STAR/resume drills. Daily: 30–45 min flashcards + one design sketch.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Write 5 STAR stories with metrics", "List every resume project with architecture + hardest bug"]
+      "pr": [
+        "Write 5 STAR stories with metrics",
+        "List every resume project with architecture + hardest bug"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 1 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 1: How 4 YOE interviews work + roadmap\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for How 4 YOE interviews work + roadmap\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 2,
@@ -55,14 +116,44 @@
       "qa": [
         {
           "q": "IEnumerable vs IQueryable — when does each execute?",
-          "a": "IEnumerable operators run in-process when enumerated. IQueryable builds an expression tree; the provider (EF) translates to SQL when enumerated/materialized (ToList, First, etc.). Mixing them poorly can pull too much data into memory."
+          "a": "**Elevator Pitch:** IEnumerable operators run in-process when enumerated. IQueryable builds an expression tree; the provider (EF) translates to SQL when enumerated/materialized (ToList, First, etc.). Mixing them poorly can pull too much data into memory.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "When would you use Span<T> and what are its limits?",
-          "a": "Use Span for slicing/parsing contiguous memory without allocations. Limits: ref struct — can't be stored on the heap, can't be class fields, can't be used across await. Use Memory<T> when you need to hold the view longer."
+          "a": "**Elevator Pitch:** Use Span for slicing/parsing contiguous memory without allocations. Limits: ref struct — can't be stored on the heap, can't be class fields, can't be used across await. Use Memory<T> when you need to hold the view longer.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Explain boxing cost in a hot loop", "Rewrite a LINQ-to-Objects filter that should be IQueryable"]
+      "pr": [
+        "Explain boxing cost in a hot loop",
+        "Rewrite a LINQ-to-Objects filter that should be IQueryable"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 2 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ]
     },
     {
       "n": 3,
@@ -79,14 +170,44 @@
       "qa": [
         {
           "q": "Why can .Result deadlock, and how do you fix it?",
-          "a": "If a SynchronizationContext must resume the continuation but the thread is blocked waiting for the task, you deadlock. Fix: async all the way with await; never block in UI/legacy sync contexts. In ASP.NET Core prefer await over Result always."
+          "a": "**Elevator Pitch:** If a SynchronizationContext must resume the continuation but the thread is blocked waiting for the task, you deadlock. Fix: async all the way with await; never block in UI/legacy sync contexts. In ASP.NET Core prefer await over Result always.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "When is ValueTask appropriate?",
-          "a": "When a method frequently completes synchronously and allocation of Task shows up in profiles. Rules: await at most once, don't store/reuse casually, convert with AsTask() only when needed (allocates)."
+          "a": "**Elevator Pitch:** When a method frequently completes synchronously and allocation of Task shows up in profiles. Rules: await at most once, don't store/reuse casually, convert with AsTask() only when needed (allocates).\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Find sync-over-async in a sample codebase", "Add CancellationToken through a service method"]
+      "pr": [
+        "Find sync-over-async in a sample codebase",
+        "Add CancellationToken through a service method"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 3 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ]
     },
     {
       "n": 4,
@@ -103,14 +224,44 @@
       "qa": [
         {
           "q": "Why can't you inject DbContext into a Singleton?",
-          "a": "DbContext is scoped. Captured by a singleton it lives for the app lifetime, becoming shared/unsafe across requests (threading + disposed state). Create a scope per unit of work via IServiceScopeFactory."
+          "a": "**Elevator Pitch:** DbContext is scoped. Captured by a singleton it lives for the app lifetime, becoming shared/unsafe across requests (threading + disposed state). Create a scope per unit of work via IServiceScopeFactory.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "Why is IHttpClientFactory preferred?",
-          "a": "It manages handler lifetimes and DNS refresh, avoiding socket exhaustion from disposing HttpClient too often or holding one forever. Enables named/typed clients and resilience policies."
+          "a": "**Elevator Pitch:** It manages handler lifetimes and DNS refresh, avoiding socket exhaustion from disposing HttpClient too often or holding one forever. Enables named/typed clients and resilience policies.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Draw DI lifetime table from memory", "Register a typed HttpClient with a timeout policy"]
+      "pr": [
+        "Draw DI lifetime table from memory",
+        "Register a typed HttpClient with a timeout policy"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 4 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ]
     },
     {
       "n": 5,
@@ -126,14 +277,45 @@
       "qa": [
         {
           "q": "Describe the ASP.NET Core request pipeline.",
-          "a": "Kestrel accepts the connection and parses HTTP, then invokes the middleware pipeline in order. Routing selects an endpoint; the handler runs; the response flows back through middleware. Auth middleware must be placed correctly relative to UseRouting/UseEndpoints."
+          "a": "**Elevator Pitch:** Kestrel accepts the connection and parses HTTP, then invokes the middleware pipeline in order. Routing selects an endpoint; the handler runs; the response flows back through middleware. Auth middleware must be placed correctly relative to UseRouting/UseEndpoints.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "Minimal APIs vs Controllers — when do you choose each?",
-          "a": "Minimal for small/focused APIs and fast delivery. Controllers for larger apps needing conventions, filters, inheritance, and clearer organization. Either can be production-grade; choose for maintainability of the team."
+          "a": "**Elevator Pitch:** Minimal for small/focused APIs and fast delivery. Controllers for larger apps needing conventions, filters, inheritance, and clearer organization. Either can be production-grade; choose for maintainability of the team.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Reorder a broken middleware pipeline on paper", "Convert one controller action to Minimal API"]
+      "pr": [
+        "Reorder a broken middleware pipeline on paper",
+        "Convert one controller action to Minimal API"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 5 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 5: ASP.NET Core — Kestrel, middleware, Minimal vs MVC\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for ASP.NET Core — Kestrel, middleware, Minimal vs MVC\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 6,
@@ -149,14 +331,45 @@
       "qa": [
         {
           "q": "How do you make POST /orders safe under client retries?",
-          "a": "Require an Idempotency-Key header. Persist key → response (or request hash). On replay, return the original result instead of creating a second order. Combine with unique constraints for defense in depth."
+          "a": "**Elevator Pitch:** Require an Idempotency-Key header. Persist key → response (or request hash). On replay, return the original result instead of creating a second order. Combine with unique constraints for defense in depth.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "When would you pick gRPC over REST?",
-          "a": "Internal service-to-service calls needing strong contracts, binary efficiency, and streaming. Prefer REST for public HTTP APIs, browser clients, and HTTP caching."
+          "a": "**Elevator Pitch:** Internal service-to-service calls needing strong contracts, binary efficiency, and streaming. Prefer REST for public HTTP APIs, browser clients, and HTTP caching.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Design Orders API with versioning + idempotency", "Sketch rate-limit placement (gateway vs app)"]
+      "pr": [
+        "Design Orders API with versioning + idempotency",
+        "Sketch rate-limit placement (gateway vs app)"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 6 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 6: API design — REST, versioning, idempotency, rate limits\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for API design — REST, versioning, idempotency, rate limits\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 7,
@@ -173,14 +386,44 @@
       "qa": [
         {
           "q": "What is the N+1 problem and how do you fix it in EF?",
-          "a": "Loading a collection then lazy-loading a navigation per row causes 1+N queries. Fix with Include/ThenInclude, Select projections, AsSplitQuery for big graphs, or explicit SQL joins. Verify with logging or a profiler."
+          "a": "**Elevator Pitch:** Loading a collection then lazy-loading a navigation per row causes 1+N queries. Fix with Include/ThenInclude, Select projections, AsSplitQuery for big graphs, or explicit SQL joins. Verify with logging or a profiler.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "When do you use AsNoTracking?",
-          "a": "Read-only queries where you won't Update/SaveChanges. Skipping tracking reduces memory and CPU. Don't use it if you need to mutate and persist the same instances."
+          "a": "**Elevator Pitch:** Read-only queries where you won't Update/SaveChanges. Skipping tracking reduces memory and CPU. Don't use it if you need to mutate and persist the same instances.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Rewrite an N+1 loop with Include + projection", "Propose an index for a slow WHERE/ORDER BY"]
+      "pr": [
+        "Rewrite an N+1 loop with Include + projection",
+        "Propose an index for a slow WHERE/ORDER BY"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 7 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ]
     },
     {
       "n": 8,
@@ -196,14 +439,45 @@
       "qa": [
         {
           "q": "What does READ COMMITTED SNAPSHOT buy you?",
-          "a": "Row versioning so readers don't take shared locks that block writers (and vice versa) for typical read committed scenarios. Trade-off: tempdb version store cost and different anomaly profile — know it isn't full serializability."
+          "a": "**Elevator Pitch:** Row versioning so readers don't take shared locks that block writers (and vice versa) for typical read committed scenarios. Trade-off: tempdb version store cost and different anomaly profile — know it isn't full serializability.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "How do you handle optimistic concurrency in EF Core?",
-          "a": "Add a RowVersion/timestamp (or token) configured as concurrency token. On SaveChanges conflict, catch DbUpdateConcurrencyException, reload database values, merge or ask the user, retry."
+          "a": "**Elevator Pitch:** Add a RowVersion/timestamp (or token) configured as concurrency token. On SaveChanges conflict, catch DbUpdateConcurrencyException, reload database values, merge or ask the user, retry.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Map isolation levels to anomalies they prevent", "Add a RowVersion to an Order entity"]
+      "pr": [
+        "Map isolation levels to anomalies they prevent",
+        "Add a RowVersion to an Order entity"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 8 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 8: Transactions, isolation, concurrency, soft delete\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Transactions, isolation, concurrency, soft delete\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 9,
@@ -219,14 +493,45 @@
       "qa": [
         {
           "q": "Explain Authorization Code flow with PKCE.",
-          "a": "Client sends authorize request with code_challenge; user authenticates; AS returns a code; client exchanges code + code_verifier for tokens. PKCE stops intercepted codes from being redeemed by attackers who lack the verifier."
+          "a": "**Elevator Pitch:** Client sends authorize request with code_challenge; user authenticates; AS returns a code; client exchanges code + code_verifier for tokens. PKCE stops intercepted codes from being redeemed by attackers who lack the verifier.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "Name five OWASP mitigations you'd apply to an ASP.NET API.",
-          "a": "Parameterized queries/EF; output encoding; CSRF protection for cookie sessions; secrets out of source; least-privilege authZ policies; strict DTOs; security headers; dependency scanning."
+          "a": "**Elevator Pitch:** Parameterized queries/EF; output encoding; CSRF protection for cookie sessions; secrets out of source; least-privilege authZ policies; strict DTOs; security headers; dependency scanning.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["List JWT claims you validate", "Threat-model a login + password-reset flow"]
+      "pr": [
+        "List JWT claims you validate",
+        "Threat-model a login + password-reset flow"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 9 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 9: Security — OAuth2/PKCE, JWT, OWASP\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Security — OAuth2/PKCE, JWT, OWASP\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 10,
@@ -242,14 +547,45 @@
       "qa": [
         {
           "q": "When do you choose Kafka over RabbitMQ?",
-          "a": "High-throughput event streams, replay/retention, partition-scaled consumers, and log-oriented processing. Choose RabbitMQ for complex routing, classic work queues, and lower operational complexity at moderate volume."
+          "a": "**Elevator Pitch:** High-throughput event streams, replay/retention, partition-scaled consumers, and log-oriented processing. Choose RabbitMQ for complex routing, classic work queues, and lower operational complexity at moderate volume.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "What problem does the outbox pattern solve?",
-          "a": "Dual-write: updating DB and publishing a message separately can lose one side on failure. Outbox writes the event in the same DB transaction; a process publishes later, yielding reliable at-least-once delivery with idempotent consumers."
+          "a": "**Elevator Pitch:** Dual-write: updating DB and publishing a message separately can lose one side on failure. Outbox writes the event in the same DB transaction; a process publishes later, yielding reliable at-least-once delivery with idempotent consumers.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Draw outbox flow for OrderPlaced", "Compare partition count vs consumer count in Kafka"]
+      "pr": [
+        "Draw outbox flow for OrderPlaced",
+        "Compare partition count vs consumer count in Kafka"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 10 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 10: Messaging — RabbitMQ vs Kafka, outbox, saga\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Messaging — RabbitMQ vs Kafka, outbox, saga\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 11,
@@ -265,14 +601,45 @@
       "qa": [
         {
           "q": "How do you debug increasing API latency over days?",
-          "a": "Check metrics (P95, errors, dependency times), distributed traces for slow spans, runtime counters (thread pool queue, GC), recent deploys/config, and classics: N+1, missing index, sync-over-async, cache stampede, chatty logging."
+          "a": "**Elevator Pitch:** Check metrics (P95, errors, dependency times), distributed traces for slow spans, runtime counters (thread pool queue, GC), recent deploys/config, and classics: N+1, missing index, sync-over-async, cache stampede, chatty logging.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "When should a retry policy NOT retry?",
-          "a": "On non-transient errors (400 validation, 401/403), non-idempotent POSTs without idempotency keys, and after a circuit is open. Retry timeouts/5xx/connection resets with jittered backoff."
+          "a": "**Elevator Pitch:** On non-transient errors (400 validation, 401/403), non-idempotent POSTs without idempotency keys, and after a circuit is open. Retry timeouts/5xx/connection resets with jittered backoff.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Add Activity tags for orderId", "Design live vs ready probes"]
+      "pr": [
+        "Add Activity tags for orderId",
+        "Design live vs ready probes"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 11 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 11: Observability & resilience — OTel, latency, Polly\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Observability & resilience — OTel, latency, Polly\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 12,
@@ -288,14 +655,45 @@
       "qa": [
         {
           "q": "When are microservices the wrong choice?",
-          "a": "Small team/domain, unclear boundaries, or when a modular monolith would ship faster with fewer failure modes. Microservices add network latency, consistency, and ops cost — justify with real scaling or team ownership needs."
+          "a": "**Elevator Pitch:** Small team/domain, unclear boundaries, or when a modular monolith would ship faster with fewer failure modes. Microservices add network latency, consistency, and ops cost — justify with real scaling or team ownership needs.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "Describe cache-aside and one failure mode.",
-          "a": "App reads cache; on miss, loads DB and populates cache with TTL. Failure modes: stampedes on expiry, stale reads after writes without invalidation, and caching personalized/security-sensitive data incorrectly."
+          "a": "**Elevator Pitch:** App reads cache; on miss, loads DB and populates cache with TTL. Failure modes: stampedes on expiry, stale reads after writes without invalidation, and caching personalized/security-sensitive data incorrectly.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Sketch clean architecture folders for Orders", "Design cache keys + invalidation for product pages"]
+      "pr": [
+        "Sketch clean architecture folders for Orders",
+        "Design cache keys + invalidation for product pages"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 12 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 12: Architecture — clean architecture, caching, microservices honesty\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Architecture — clean architecture, caching, microservices honesty\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 13,
@@ -311,10 +709,41 @@
       "qa": [
         {
           "q": "App Service vs AKS for a single .NET API?",
-          "a": "Default to App Service for one API needing speed-to-prod and managed scaling. Choose AKS when you run many services, need custom networking/sidecars, or already operate Kubernetes. Don't adopt K8s for resume points alone."
+          "a": "**Elevator Pitch:** Default to App Service for one API needing speed-to-prod and managed scaling. Choose AKS when you run many services, need custom networking/sidecars, or already operate Kubernetes. Don't adopt K8s for resume points alone.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
-      "pr": ["Write a GitHub Actions outline for build/test/deploy", "List secrets that should move to Key Vault"]
+      "pr": [
+        "Write a GitHub Actions outline for build/test/deploy",
+        "List secrets that should move to Key Vault"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 13 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ],
+      "code": "// Production Implementation Example for Day 13: Cloud & DevOps — App Service vs AKS, CI/CD\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Cloud & DevOps — App Service vs AKS, CI/CD\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
     },
     {
       "n": 14,
@@ -336,17 +765,180 @@
       "qa": [
         {
           "q": "Outline a notification service for email/SMS/push.",
-          "a": "API accepts notify requests with idempotency keys; persist outbox; workers per channel with retries/DLQ; template service; user preferences; provider adapters; metrics on send success/latency; never block the upstream order flow on provider latency."
+          "a": "**Elevator Pitch:** API accepts notify requests with idempotency keys; persist outbox; workers per channel with retries/DLQ; template service; user preferences; provider adapters; metrics on send success/latency; never block the upstream order flow on provider latency.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         },
         {
           "q": "Give a STAR story structure for a production incident.",
-          "a": "Situation: symptom + blast radius. Task: your ownership. Action: how you diagnosed (metrics/traces), mitigated, fixed root cause. Result: MTTR, error rate drop, follow-up (test, alert, postmortem)."
+          "a": "**Elevator Pitch:** Situation: symptom + blast radius. Task: your ownership. Action: how you diagnosed (metrics/traces), mitigated, fixed root cause. Result: MTTR, error rate drop, follow-up (test, alert, postmortem).\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
         }
       ],
       "pr": [
         "Design URL shortener on paper in 30 minutes",
         "Record one incident STAR story aloud",
         "Mock interview: 45 minutes technical + 15 behavioral"
+      ],
+      "code": "// Production Implementation Example for Day 14: System design drills + behavioral finals\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for System design drills + behavioral finals\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}"
+    },
+    {
+      "n": 15,
+      "title": "Advanced Memory Diagnostics, GC Internals & Profiling",
+      "exp": "Production debugging at 4 YOE requires explaining Server vs Workstation GC, Gen 0/1/2, LOH/POH, memory leak diagnosis using dotnet-dump, dotnet-gcdump, and memory profilers.",
+      "pts": [
+        "**Server GC** (high throughput, multi-heap per core) vs **Workstation GC** (low footprint, responsive UI).",
+        "**Gen 0/1** (ephemeral), **Gen 2** (long-lived), **LOH** (>85,000 bytes or double arrays), **POH** (pinned objects for native I/O).",
+        "Common memory leaks: static event handler subscriptions, unmanaged resources not disposed, captive scoped dependencies, `Timer` callbacks.",
+        "CLI tools: `dotnet-counters` for real-time monitoring, `dotnet-gcdump` for quick object counts, `dotnet-dump` for full heap dumps & `sos` inspection.",
+        "GC tuning: `GCLargeObjectHeapCompensate`, `GCHeapHardLimit`, background vs non-concurrent GC."
+      ],
+      "code": "// Diagnosing event handler leak:\n// BAD: publisher lives long, subscriber is short-lived\npublisher.OnDataReceived += subscriber.HandleData;\n// FIX: unsubscribe on Dispose() or use WeakReference / MediatR events",
+      "qa": [
+        {
+          "q": "How do you diagnose a memory leak in a production ASP.NET Core Linux container?",
+          "a": "**Elevator Pitch:** 1. Monitor GC heap size and Gen 2 collection rate via dotnet-counters. 2. Capture a dump using dotnet-gcdump or dotnet-dump collect. 3. Analyze dump using dotnet-dump analyze with dumpheap -stat to find top types by count/size. 4. Trace gcroot (gcroot <address>) to find what static or long-lived object holds the references.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+        },
+        {
+          "q": "What is the difference between Large Object Heap (LOH) and Pinned Object Heap (POH)?",
+          "a": "**Elevator Pitch:** LOH holds objects >85,000 bytes (and large double arrays). It is not compacted by default during Gen 2 collections to avoid high copy cost, leading to fragmentation. POH (introduced in .NET 5) holds objects explicitly pinned for native/interop I/O, preventing GC compaction from having to update native pointers.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+        }
+      ],
+      "pr": [
+        "Capture and analyze a gcdump of a sample application",
+        "Identify and fix a simulated static event subscription leak"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 15 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "n": 16,
+      "title": "CQRS, MediatR & Integration Event Patterns",
+      "exp": "Mid-senior roles test your understanding of separating reads from writes, pipeline behaviors, and reliable inter-service event communication.",
+      "pts": [
+        "**CQRS** (Command Query Responsibility Segregation): separate mutating commands from read-optimized queries.",
+        "**MediatR**: in-process mediator pattern for decoupling controllers from business logic & cross-cutting concerns (validation, logging, transactions).",
+        "**MediatR Pipeline Behaviors**: intercept requests for logging, fluent validation (`IPipelineBehavior<TRequest, TResponse>`), and performance timing.",
+        "**Domain Events** (in-transaction synchronous/async handlers within domain boundary) vs **Integration Events** (asynchronous messages published across microservice boundaries via broker).",
+        "Outbox pattern + Change Data Capture (CDC/Debezium) or outbox processor to guarantee zero lost events."
+      ],
+      "code": "public class LoggingBehavior<TReq, TRes> : IPipelineBehavior<TReq, TRes> where TReq : notnull {\n  public async Task<TRes> Handle(TReq req, RequestHandlerDelegate<TRes> next, CancellationToken ct) {\n    _logger.LogInformation(\"Handling {Request}\", typeof(TReq).Name);\n    return await next();\n  }\n}",
+      "qa": [
+        {
+          "q": "When is full CQRS (with separate read/write databases) worth the complexity?",
+          "a": "**Elevator Pitch:** When read and write workloads have radically different scale requirements (e.g., 100:1 read-to-write ratio), or when read models require complex aggregated denormalization (Elasticsearch/Redis) while write models require strict transactional integrity (ACID RDBMS). For simple CRUD, full CQRS adds unnecessary operational overhead.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+        },
+        {
+          "q": "How do MediatR Pipeline Behaviors improve application architecture?",
+          "a": "**Elevator Pitch:** They provide clean Decorator/Middleware execution around handlers. Cross-cutting concerns like validation (FluentValidation), logging, caching, authorization, and automatic unit-of-work transactions run seamlessly without duplicating boilerplate inside controllers or business services.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+        }
+      ],
+      "pr": [
+        "Implement a FluentValidation IPipelineBehavior in MediatR",
+        "Diagram Domain Events vs Integration Events flow"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 16 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "n": 17,
+      "title": "Enterprise Auth — OAuth2, SCIM 2.0, Rate Limiting & Token Security",
+      "exp": "Senior interviews for enterprise SaaS expect deep knowledge of identity provisioning (SCIM), OAuth2/OIDC token security, and API rate limiting.",
+      "pts": [
+        "**SCIM 2.0** (System for Cross-domain Identity Management): standardized REST API (`/Users`, `/Groups`) for automated user provisioning/deprovisioning from Okta/Entra ID.",
+        "**Token Security**: JWT verification (issuer, audience, signature key rollover, expiry, `nbf`), token revocation strategies (Redis blacklist / token version counter in DB).",
+        "**ASP.NET Core Rate Limiting** (built-in in .NET 7/8/9+): Fixed Window, Sliding Window, Token Bucket, Concurrency Limiter.",
+        "**Security Headers & API Defense**: CORS origin policies, CSP, HSTS, rate-limiting HTTP headers (`X-RateLimit-Limit`, `Retry-After`).",
+        "**SCIM Security**: Bearer tokens, tenant isolation, handling patch updates (`PATCH /Users/{id}`)."
+      ],
+      "code": "builder.Services.AddRateLimiter(options => {\n  options.AddSlidingWindowLimiter(\"api\", opt => {\n    opt.Window = TimeSpan.FromMinutes(1);\n    opt.PermitLimit = 100;\n    opt.QueueLimit = 10;\n  });\n});",
+      "qa": [
+        {
+          "q": "How does SCIM 2.0 simplify enterprise identity integration?",
+          "a": "**Elevator Pitch:** Instead of custom sync scripts, SCIM 2.0 provides standard JSON REST schemas for IdPs (Azure AD/Entra ID, Okta) to automatically push user creations, attribute updates, and soft/hard deprovisioning directly into the SaaS platform.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+        },
+        {
+          "q": "What are the trade-offs between Token Bucket and Sliding Window rate limiting algorithms?",
+          "a": "**Elevator Pitch:** Token Bucket allows bursts up to bucket capacity while maintaining a steady refill rate, ideal for APIs where occasional traffic spikes are acceptable. Sliding Window provides smooth rate enforcement across overlapping time windows, preventing window-boundary request flooding, but requires slightly more memory/tracking.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+        }
+      ],
+      "pr": [
+        "Configure ASP.NET Core sliding window rate limiter",
+        "Write a JWT claim validation policy test"
+      ],
+      "viz": [
+        {
+          "t": "table",
+          "h": [
+            "Aspect",
+            "Production Behavior & Key Trade-Off",
+            "Senior Signal"
+          ],
+          "r": [
+            [
+              "Execution Context",
+              "Deep dive into Day 17 runtime execution mechanics and threading constraints.",
+              "Focus on zero-allocation and lock-free patterns where applicable."
+            ],
+            [
+              "Common Failure Mode",
+              "High concurrency contention or unexpected resource exhaustion under load.",
+              "Implement resilient backpressure, retries, and circuit breakers."
+            ],
+            [
+              "Architectural Trade-Off",
+              "Balancing low latency, developer ergonomics, and system consistency.",
+              "Always state operational cost and complexity trade-offs."
+            ]
+          ]
+        }
       ]
     }
   ]

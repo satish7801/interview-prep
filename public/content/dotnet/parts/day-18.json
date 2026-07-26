@@ -1,0 +1,54 @@
+{
+  "id": "day-18",
+  "n": 18,
+  "title": "High-Throughput .NET Pipelines — Pipelines, Channels & Hybrid Cache",
+  "exp": "Architecting low-latency .NET applications requires System.IO.Pipelines, System.Threading.Channels, and Hybrid Cache.",
+  "pts": [
+    "**`System.IO.Pipelines`:** high-performance byte parsing without buffer allocations or array copies.",
+    "**`Channel<T>`:** thread-safe, high-throughput producer-consumer queue for background work (`Channel.CreateBounded<T>`).",
+    "**`HybridCache`** (.NET 9+): unified L1 (in-memory) + L2 (Redis) caching API with stampede protection (lock per key).",
+    "**Backpressure handling:** bounded channels with `BoundedChannelFullMode.Wait` or `DropOldest`."
+  ],
+  "code": "private readonly Channel<AuditLog> _channel = Channel.CreateBounded<AuditLog>(1000);\n// Producer:\nawait _channel.Writer.WriteAsync(logItem, ct);\n// Consumer (BackgroundService):\nawait foreach (var log in _channel.Reader.ReadAllAsync(ct)) { ... }",
+  "pr": [
+    "Build an async log processor using Channel<T>",
+    "Benchmark HybridCache against raw Redis calls"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of High-Throughput .NET Pipelines — Pipelines, Channels & Hybrid Cache under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "What problem does .NET 9 HybridCache solve compared to using IMemoryCache + IDistributedCache manually?",
+      "a": "**Elevator Pitch:** HybridCache combines local in-process memory (L1) with distributed Redis (L2) in a single API, handling serialization, multi-node cache invalidation, and built-in cache stampede (thundering herd) protection automatically.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "Why choose Channel<T> over BlockingCollection<T> or ConcurrentQueue<T> in async code?",
+      "a": "**Elevator Pitch:** Channel<T> is fully asynchronous (WriteAsync, ReadAsync, ReadAllAsync), avoiding thread-blocking synchronization. It natively supports async backpressure, cancellation tokens, and bounded capacity.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

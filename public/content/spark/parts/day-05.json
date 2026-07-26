@@ -22,11 +22,11 @@
   "qa": [
     {
       "q": "What is data skew and how do you detect it?",
-      "a": "Data skew is when one key in a groupBy or join has far more rows than others -- one task becomes the bottleneck. Detect in Spark UI: Tasks tab of the slow stage, look for one task with duration or input size 100x larger than the median."
+      "a": "**Elevator Pitch:** Data skew is when one key in a groupBy or join has far more rows than others -- one task becomes the bottleneck. Detect in Spark UI: Tasks tab of the slow stage, look for one task with duration or input size 100x larger than the median.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What does Adaptive Query Execution do?",
-      "a": "AQE allows Spark to modify the execution plan mid-query based on runtime statistics. After filtering, Spark may discover a table is now small enough to broadcast and switches join strategy mid-execution. Also auto-coalesces shuffle partitions. Default in Spark 3.2+."
+      "a": "**Elevator Pitch:** AQE allows Spark to modify the execution plan mid-query based on runtime statistics. After filtering, Spark may discover a table is now small enough to broadcast and switches join strategy mid-execution. Also auto-coalesces shuffle partitions. Default in Spark 3.2+.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

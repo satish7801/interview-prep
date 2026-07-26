@@ -63,7 +63,7 @@
       "id": "day-03",
       "n": 3,
       "title": "Grafana -- dashboards, panels, alerting",
-      "summary": "Grafana turns metrics into visibility. The JD's near-real-time dashboard is likely Grafana."
+      "summary": "Grafana turns metrics into visibility. The JD's near-real-time dashboard is likely Grafana.\n\nUnderstanding Grafana -- dashboards, panels, alerting at a senior e…"
     },
     {
       "id": "day-04",
@@ -82,6 +82,18 @@
       "n": 6,
       "title": "ML literacy -- precision/recall, overfitting, MLOps",
       "summary": "The JD mentions ML. You need to understand concepts well enough to discuss them in context, not build models from scratch."
+    },
+    {
+      "id": "day-07",
+      "n": 7,
+      "title": "Enterprise Terraform Patterns & State Management",
+      "summary": "Senior DevOps/Platform interviews test Terraform state locking, workspace organization, import blocks, and OpenTofu migration."
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Production Observability Stack — OTel Collector, Prometheus & Loki",
+      "summary": "Architect full-stack observability pipelines using OpenTelemetry Collector, Prometheus Alertmanager, and Grafana Loki."
     }
   ]
 }

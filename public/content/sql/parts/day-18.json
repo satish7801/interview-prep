@@ -1,0 +1,54 @@
+{
+  "id": "day-18",
+  "n": 18,
+  "title": "Columnstore Indexes & TempDB Optimization",
+  "exp": "Modern data platform interviews cover Columnstore for analytical queries and TempDB bottleneck resolution.",
+  "pts": [
+    "**Clustered Columnstore Indexes (CCI):** compressed columnar storage, segment elimination, batch mode execution for analytics.",
+    "**Non-clustered Columnstore Indexes (NCCI):** added onto transactional OLTP tables for real-time operational analytics (HTAP).",
+    "**TempDB Contention:** `PAGELATCH_UP` / `PAGELATCH_EX` on allocation maps (PFS/GAM/SGAM) under high concurrency.",
+    "**Table Variables vs Temp Tables (`#tbl`):** `#tbl` has statistics and supports indexes; table variables lack column statistics (estimated 1 row)."
+  ],
+  "code": "CREATE CLUSTERED COLUMNSTORE INDEX CCI_FactSales ON FactSales;\n-- Enables batch mode processing and 10x-50x compression ratio",
+  "pr": [
+    "Measure compression ratio of Columnstore on a sample table",
+    "Compare Temp Table vs Table Variable execution plans"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Columnstore Indexes & TempDB Optimization under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "When should you use Columnstore indexes instead of B-Tree indexes?",
+      "a": "**Elevator Pitch:** Use Columnstore for data warehousing, analytical queries scanning millions of rows, and aggregations (SUM, AVG). Columnstore uses column-based compression and batch mode execution. Stick to B-Tree indexes for OLTP workloads doing point lookups and single-row updates.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "Why can Table Variables cause terrible performance for large datasets compared to Temp Tables?",
+      "a": "**Elevator Pitch:** Table Variables do not maintain column statistics. The query optimizer assumes a table variable has 1 row regardless of actual size, frequently choosing nested loop joins instead of hash joins and under-allocating memory.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

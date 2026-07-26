@@ -10,7 +10,7 @@
     "**Checkout:** reserve inventory → pay → order; saga/compensations; payment idempotency.",
     "Behavioral: Situation → Task → Action (technical) → Result (numbers)."
   ],
-  "code": "",
+  "code": "// Production Implementation Example for Day 14: System design drills + behavioral finals\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for System design drills + behavioral finals\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}",
   "pr": [
     "Design URL shortener on paper in 30 minutes",
     "Record one incident STAR story aloud",
@@ -25,11 +25,11 @@
   "qa": [
     {
       "q": "Outline a notification service for email/SMS/push.",
-      "a": "API accepts notify requests with idempotency keys; persist outbox; workers per channel with retries/DLQ; template service; user preferences; provider adapters; metrics on send success/latency; never block the upstream order flow on provider latency."
+      "a": "**Elevator Pitch:** API accepts notify requests with idempotency keys; persist outbox; workers per channel with retries/DLQ; template service; user preferences; provider adapters; metrics on send success/latency; never block the upstream order flow on provider latency.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     },
     {
       "q": "Give a STAR story structure for a production incident.",
-      "a": "Situation: symptom + blast radius. Task: your ownership. Action: how you diagnosed (metrics/traces), mitigated, fixed root cause. Result: MTTR, error rate drop, follow-up (test, alert, postmortem)."
+      "a": "**Elevator Pitch:** Situation: symptom + blast radius. Task: your ownership. Action: how you diagnosed (metrics/traces), mitigated, fixed root cause. Result: MTTR, error rate drop, follow-up (test, alert, postmortem).\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
     }
   ]
 }

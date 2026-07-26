@@ -1,0 +1,55 @@
+{
+  "id": "day-10",
+  "n": 10,
+  "title": "Disaster Recovery, High Availability & Engineering Leadership",
+  "exp": "Senior & Staff interviews test production governance: RPO/RTO SLAs, multi-region setups, ADRs, and tech debt prioritization.",
+  "pts": [
+    "**RPO (Recovery Point Objective):** acceptable data loss duration.",
+    "**RTO (Recovery Time Objective):** acceptable downtime duration.",
+    "**Multi-Region Setups:** Active-Active (Global Aurora/Cosmos DB + Traffic Manager) vs Active-Passive (Warm Standby).",
+    "**Architectural Decision Records (ADRs):** documenting context, options considered, decisions, and consequences for future teams.",
+    "**Managing Technical Debt:** 20% allocation rule, refactoring spikes, establishing SLOs/Error Budgets with Product."
+  ],
+  "code": "// Senior Systems Architecture Configuration / Circuit Breaker:\nvar pipeline = new ResiliencePipelineBuilder()\n    .AddCircuitBreaker(new CircuitBreakerStrategyOptions {\n        FailureRatio = 0.5,\n        SamplingDuration = TimeSpan.FromSeconds(10),\n        BreakDuration = TimeSpan.FromSeconds(30)\n    }).Build();",
+  "pr": [
+    "Write an ADR for choosing EventBus vs REST for inter-service communication",
+    "Calculate RPO/RTO for an active-passive architecture"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Disaster Recovery, High Availability & Engineering Leadership under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How do you calculate RPO and RTO for a mission-critical payments platform?",
+      "a": "**Elevator Pitch:** RPO determines backup frequency and replication strategy (e.g., synchronous DB replication for RPO=0). RTO determines automated failover mechanisms (e.g., automated DNS failover & health probes for RTO < 60 seconds).\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How do you align product management on prioritizing technical debt?",
+      "a": "**Elevator Pitch:** Frame tech debt in terms of business impact: system availability SLOs, developer velocity metrics, MTTR during incidents, and the cost of non-compliance/outages, backed by error budget burn rates.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

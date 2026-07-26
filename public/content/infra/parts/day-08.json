@@ -1,0 +1,54 @@
+{
+  "id": "day-08",
+  "n": 8,
+  "title": "Production Observability Stack — OTel Collector, Prometheus & Loki",
+  "exp": "Architect full-stack observability pipelines using OpenTelemetry Collector, Prometheus Alertmanager, and Grafana Loki.",
+  "pts": [
+    "**OpenTelemetry Collector:** Receiver → Processor (memory limiter, batch) → Exporter (Prometheus, OTLP/Jaeger).",
+    "**Prometheus Alerting:** PromQL rules, firing states, Alertmanager grouping, inhibition, and silences.",
+    "**Grafana Loki Log Aggregation:** label-based log indexing (like Prometheus labels), LogQL queries (`{app=\"api\"} |= \"error\"`).",
+    "**Distributed Tracing Correlation:** linking TraceID to Loki log lines and Prometheus metrics panels."
+  ],
+  "code": "# Otel Collector pipeline config:\nservice:\n  pipelines:\n    metrics:\n      receivers: [otlp]\n      processors: [memory_limiter, batch]\n      exporters: [prometheus]\n    logs:\n      receivers: [otlp]\n      processors: [batch]\n      exporters: [loki]",
+  "pr": [
+    "Write an OpenTelemetry Collector YAML pipeline configuration",
+    "Craft a LogQL query with rate aggregation in Grafana Loki"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Production Observability Stack — OTel Collector, Prometheus & Loki under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is OpenTelemetry Collector preferred over agent-specific metrics exporters?",
+      "a": "**Elevator Pitch:** The OTel Collector provides a vendor-neutral proxy that decouples application code from monitoring backends, allowing you to route, filter, batch, and re-export metrics/logs/traces to Prometheus, Datadog, or Jaeger without changing application code.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How does Grafana Loki achieve massive cost savings compared to Elasticsearch/Kibana for logs?",
+      "a": "**Elevator Pitch:** Loki does not index log line full text; it only indexes log metadata labels (e.g., service, env), storing compressed log chunks directly in object storage (S3/GCS), dramatically reducing storage and CPU costs.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

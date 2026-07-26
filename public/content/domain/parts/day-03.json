@@ -9,7 +9,7 @@
     "Disagreement stories: did you raise it with data/reasoning? Did you support the outcome afterward?",
     "Your material: BMS migration, ComplySec360 evidence pipeline, SCIM provisioning, Zintara AI platform."
   ],
-  "code": "",
+  "code": "// Financial Domain Data Processing snippet:\npublic record OrderBookEntry(string Ticker, decimal BidPrice, decimal AskPrice, long Timestamp);\npublic static decimal CalculateSpread(OrderBookEntry entry) => entry.AskPrice - entry.BidPrice;",
   "pr": [],
   "viz": [
     {
@@ -20,15 +20,15 @@
   "qa": [
     {
       "q": "Tell me about a time you disagreed with a technical decision.",
-      "a": "Template: describe the decision and why you disagreed. How you raised it -- specific reasoning or a small prototype, not just opinion. Result: even if overruled, you supported the team decision and ideally something from your concern was addressed. Interviewers want professional disagreement AND commitment afterward."
+      "a": "**Elevator Pitch:** Template: describe the decision and why you disagreed. How you raised it -- specific reasoning or a small prototype, not just opinion. Result: even if overruled, you supported the team decision and ideally something from your concern was addressed. Interviewers want professional disagreement AND commitment afterward.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "How would you push back on an unrealistic deadline?",
-      "a": "Lead with trade-offs not refusal: we can hit that date if we scope to X, or hit full scope two weeks later. Give the decision-maker a real choice. Back it with a breakdown of remaining work. Accept they might still choose the original deadline -- your job is ensuring they decide with full information."
+      "a": "**Elevator Pitch:** Lead with trade-offs not refusal: we can hit that date if we scope to X, or hit full scope two weeks later. Give the decision-maker a real choice. Back it with a breakdown of remaining work. Accept they might still choose the original deadline -- your job is ensuring they decide with full information.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What does code review mean to you?",
-      "a": "Beyond syntax: correctness under edge cases, testability, security/performance risks (non-parameterized query, .collect() on a large DataFrame), intent clarity for someone reading cold in 6 months. Also: specific positive feedback so people understand what good looks like, not just what's wrong."
+      "a": "**Elevator Pitch:** Beyond syntax: correctness under edge cases, testability, security/performance risks (non-parameterized query, .collect() on a large DataFrame), intent clarity for someone reading cold in 6 months. Also: specific positive feedback so people understand what good looks like, not just what's wrong.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

@@ -136,6 +136,24 @@
       "n": 15,
       "title": "Gotchas everyone forgets -- the traps that compile fine and break at runtime",
       "summary": "Angular's gotchas are worse than SQL's in one specific way: most of these compile without any warning and appear to work in a quick manual test, then silently m…"
+    },
+    {
+      "id": "day-16",
+      "n": 16,
+      "title": "Modern Angular Signals Architecture",
+      "summary": "Angular 17+ introduced reactive Signals. Senior Angular roles expect deep knowledge of signal, computed, effect, linkedSignal, resource, input(), output(), and …"
+    },
+    {
+      "id": "day-17",
+      "n": 17,
+      "title": "Zoneless Angular & Change Detection",
+      "summary": "Angular is evolving away from Zone.js. Master provideExperimentalZonelessChangeDetection() and signal-based change detection."
+    },
+    {
+      "id": "day-18",
+      "n": 18,
+      "title": "Modern Control Flow & Deferrable Views",
+      "summary": "Angular 17+ control flow (@if, @for, @switch) and @defer blocks revolutionize template performance and lazy loading."
     }
   ]
 }

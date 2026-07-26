@@ -146,6 +146,18 @@
       "n": 14,
       "title": "Glue Data Catalog, Athena, and the observability capstone",
       "summary": "Glue's Data Catalog and Athena complete the AWS-native picture: a schema registry for your Parquet data and a serverless SQL engine over S3. This closes the AWS…"
+    },
+    {
+      "id": "day-15",
+      "n": 15,
+      "title": "Advanced Serverless Architectures & EventBridge",
+      "summary": "Architect enterprise AWS serverless applications using Lambda Provisioned Concurrency, EventBridge Pipes, DynamoDB Single-Table Design, and SQS DLQ handling."
+    },
+    {
+      "id": "day-16",
+      "n": 16,
+      "title": "AWS Security, Networking & Cost Governance",
+      "summary": "Enterprise cloud interviews cover VPC Endpoints, IAM Role Assumption, KMS Envelope Encryption, and AWS Cost Anomaly Detection."
     }
   ]
 }

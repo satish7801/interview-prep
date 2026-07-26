@@ -22,11 +22,11 @@
   "qa": [
     {
       "q": "What is KeepJobFlowAliveWhenNoSteps and why is it critical?",
-      "a": "When False: the cluster auto-terminates when all Steps finish. When True: the cluster stays running indefinitely -- a major cost leak. An EMR cluster left running overnight with 6 instances costs ~$50. Always set False for production jobs and add a CloudWatch alarm as a safety net."
+      "a": "**Elevator Pitch:** When False: the cluster auto-terminates when all Steps finish. When True: the cluster stays running indefinitely -- a major cost leak. An EMR cluster left running overnight with 6 instances costs ~$50. Always set False for production jobs and add a CloudWatch alarm as a safety net.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is the difference between Core and Task nodes?",
-      "a": "Core nodes run HDFS storage AND compute -- losing one risks data loss. Task nodes run only compute, no HDFS -- safe for Spot Instances since if reclaimed, Spark reschedules the failed tasks with no data loss. Never put core or master on Spot in production."
+      "a": "**Elevator Pitch:** Core nodes run HDFS storage AND compute -- losing one risks data loss. Task nodes run only compute, no HDFS -- safe for Spot Instances since if reclaimed, Spark reschedules the failed tasks with no data loss. Never put core or master on Spot in production.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

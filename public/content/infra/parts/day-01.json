@@ -29,11 +29,11 @@
   "qa": [
     {
       "q": "What does terraform plan show and why always read it first?",
-      "a": "Shows the diff: + created, - destroyed, ~ modified, -/+ destroy+recreate. A common mistake: renaming an S3 bucket shows -/+ which would delete all data. The plan reveals this before it happens. Equivalent to reviewing a database migration before running it."
+      "a": "**Elevator Pitch:** Shows the diff: + created, - destroyed, ~ modified, -/+ destroy+recreate. A common mistake: renaming an S3 bucket shows -/+ which would delete all data. The plan reveals this before it happens. Equivalent to reviewing a database migration before running it.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is Terraform state and why never commit it?",
-      "a": "terraform.tfstate maps your .tf resource blocks to real AWS resource IDs and often contains sensitive values (passwords, keys). Committing exposes these in Git history. For teams, local state means concurrent applies can corrupt it -- solution: remote state in S3 + DynamoDB locking."
+      "a": "**Elevator Pitch:** terraform.tfstate maps your .tf resource blocks to real AWS resource IDs and often contains sensitive values (passwords, keys). Committing exposes these in Git history. For teams, local state means concurrent applies can corrupt it -- solution: remote state in S3 + DynamoDB locking.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

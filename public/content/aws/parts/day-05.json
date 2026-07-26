@@ -29,11 +29,11 @@
   "qa": [
     {
       "q": "Walk through debugging an EMR Step that failed.",
-      "a": "EMR console -> Steps -> click failed step -> note S3 log path. Download stderr: aws s3 cp s3://bucket/emr-logs/j-XXX/steps/s-XXX/stderr ./. The Python exception is in stderr. Access Denied -> IAM permission. FileNotFoundException -> wrong S3 path. OutOfMemoryError -> increase executor-memory."
+      "a": "**Elevator Pitch:** EMR console -> Steps -> click failed step -> note S3 log path. Download stderr: aws s3 cp s3://bucket/emr-logs/j-XXX/steps/s-XXX/stderr ./. The Python exception is in stderr. Access Denied -> IAM permission. FileNotFoundException -> wrong S3 path. OutOfMemoryError -> increase executor-memory.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is a VPC Gateway Endpoint for S3 and why save money?",
-      "a": "Without it, EMR-to-S3 traffic routes through a NAT gateway at ~$0.045/GB even though both are within AWS. A VPC endpoint routes directly through the AWS backbone at zero cost. On 10TB/day this saves ~$450/day. One-time setup, no code changes."
+      "a": "**Elevator Pitch:** Without it, EMR-to-S3 traffic routes through a NAT gateway at ~$0.045/GB even though both are within AWS. A VPC endpoint routes directly through the AWS backbone at zero cost. On 10TB/day this saves ~$450/day. One-time setup, no code changes.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

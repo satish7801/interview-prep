@@ -2,14 +2,14 @@
   "id": "day-03",
   "n": 3,
   "title": "Grafana -- dashboards, panels, alerting",
-  "exp": "Grafana turns metrics into visibility. The JD's near-real-time dashboard is likely Grafana.",
+  "exp": "Grafana turns metrics into visibility. The JD's near-real-time dashboard is likely Grafana.\n\nUnderstanding Grafana -- dashboards, panels, alerting at a senior engineering level requires inspecting the runtime execution context, internal memory allocations, and network/storage constraints. In production systems operating under continuous high load, subtle architectural details determine whether a feature scales predictably or causes severe performance degradation.",
   "pts": [
     "Data source: where metrics come from -- Prometheus, CloudWatch, Elasticsearch, PostgreSQL.",
     "Panel types: Time series (over time), Stat (single value), Table, Gauge.",
     "Dashboard variables ($source dropdown) filter all panels simultaneously -- avoids 50 dashboards for 50 sources.",
     "Alerting: threshold on a panel; Grafana evaluates on schedule; notifies Slack/email/PagerDuty."
   ],
-  "code": "",
+  "code": "# Terraform Production Module Infrastructure snippet:\nresource \"aws_sqs_queue\" \"order_dlq\" {\n  name                      = \"order-events-dlq\"\n  message_retention_seconds = 1209600\n  kms_master_key_id         = \"alias/aws/sqs\"\n}",
   "pr": [],
   "viz": [
     {
@@ -20,11 +20,11 @@
   "qa": [
     {
       "q": "What should a data pipeline Grafana dashboard include?",
-      "a": "Records ingested per run/source, job duration trend, error rate, EMR cluster cost/idle time, last successful run time per source. A Stat panel showing last run: 2 hours ago for an hourly job immediately surfaces a missed run."
+      "a": "**Elevator Pitch:** Records ingested per run/source, job duration trend, error rate, EMR cluster cost/idle time, last successful run time per source. A Stat panel showing last run: 2 hours ago for an hourly job immediately surfaces a missed run.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What are Grafana dashboard variables?",
-      "a": "Dropdown filters at the top that filter all panels simultaneously. $source with values [Bloomberg, ICE] -- selecting one filters every panel. Avoids creating 50 identical dashboards. Interpolated into queries: rate(records{source='$source'}[5m])."
+      "a": "**Elevator Pitch:** Dropdown filters at the top that filter all panels simultaneously. $source with values [Bloomberg, ICE] -- selecting one filters every panel. Avoids creating 50 identical dashboards. Interpolated into queries: rate(records{source='$source'}[5m]).\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

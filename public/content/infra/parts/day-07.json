@@ -1,0 +1,54 @@
+{
+  "id": "day-07",
+  "n": 7,
+  "title": "Enterprise Terraform Patterns & State Management",
+  "exp": "Senior DevOps/Platform interviews test Terraform state locking, workspace organization, import blocks, and OpenTofu migration.",
+  "pts": [
+    "**Remote State Backend:** S3 for state storage + DynamoDB for state locking (`LockID`).",
+    "**Terraform `import` blocks** (v1.5+): declarative infrastructure import without manual `terraform import` CLI commands.",
+    "**Module Design & Dynamic Blocks:** reusable modules with strict input validation, `for_each` vs `count`, dynamic nested blocks.",
+    "**Drift Detection & CI/CD:** running `terraform plan` on PRs, automated drift remediation, OpenTofu compatibility."
+  ],
+  "code": "import {\n  to = aws_s3_bucket.legacy_data\n  id = \"my-existing-bucket-name\"\n}\n# Terraform 1.5+ generates resource block automatically via -generate-config-out",
+  "pr": [
+    "Configure S3 + DynamoDB remote backend for Terraform",
+    "Write a declarative import block for an existing AWS bucket"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Enterprise Terraform Patterns & State Management under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "Why is state locking with DynamoDB critical when using S3 remote backend in team environments?",
+      "a": "**Elevator Pitch:** State locking prevents concurrent terraform apply executions from corrupting the remote state file or creating conflicting cloud resources.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What is the advantage of declarative import blocks over legacy terraform import CLI command?",
+      "a": "**Elevator Pitch:** Declarative import blocks can be version-controlled in .tf files and reviewed in CI/CD pipelines, allowing terraform plan to validate the imported state before modifying remote infrastructure.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "System Architecture Trade-Off Frameworks",
+  "exp": "Senior candidates must articulate architectural trade-offs using structured frameworks (CAP theorem, PACELC, CQRS, Strangler Fig).",
+  "pts": [
+    "**PACELC Theorem:** If Partitioned (P), trade-off Availability (A) vs Consistency (C); Else (E), trade-off Latency (L) vs Consistency (C).",
+    "**Event-Driven vs Request-Response:** Coupling vs Debuggability vs Real-time delivery.",
+    "**Strangler Fig Pattern:** Incrementally migrating legacy monoliths to microservices via API Gateway routing.",
+    "**Chaos Engineering:** Injecting latency/failures in staging (`Chaos Mesh`, `Gremlin`) to validate circuit breakers & fallbacks."
+  ],
+  "code": "// Senior Systems Architecture Configuration / Circuit Breaker:\nvar pipeline = new ResiliencePipelineBuilder()\n    .AddCircuitBreaker(new CircuitBreakerStrategyOptions {\n        FailureRatio = 0.5,\n        SamplingDuration = TimeSpan.FromSeconds(10),\n        BreakDuration = TimeSpan.FromSeconds(30)\n    }).Build();",
+  "pr": [
+    "Sketch a Strangler Fig migration plan for a legacy billing system",
+    "Evaluate a system design using PACELC theorem"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of System Architecture Trade-Off Frameworks under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How do you explain PACELC when choosing between DynamoDB (eventual consistency) and PostgreSQL (ACID)?",
+      "a": "**Elevator Pitch:** PACELC states that even when there are no network partitions, a system must trade off Latency (L) for Consistency (C). DynamoDB defaults to eventual consistency for lower latency (L), whereas PostgreSQL guarantees strong consistency (C) at the cost of higher latency per write lock.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "How do you execute a Strangler Fig migration without downtime?",
+      "a": "**Elevator Pitch:** Place an API Gateway in front of the monolith. Identify a self-contained domain capability. Build the new service, sync DB state via CDC outbox, route a small percentage of traffic (canary/shadow), compare results, and gradually route 100% traffic before decommissioning the legacy code path.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

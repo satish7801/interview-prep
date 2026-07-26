@@ -2,7 +2,7 @@
   "id": "day-06",
   "n": 6,
   "title": "OOP, type hints, virtual environments",
-  "exp": "Python OOP at professional level. Virtual environments are mandatory for any real project.",
+  "exp": "Python OOP at professional level. Virtual environments are mandatory for any real project.\n\nUnderstanding OOP, type hints, virtual environments at a senior engineering level requires inspecting the runtime execution context, internal memory allocations, and network/storage constraints. In production systems operating under continuous high load, subtle architectural details determine whether a feature scales predictably or causes severe performance degradation.",
   "pts": [
     "@dataclass auto-generates __init__, __repr__, __eq__. Use field(default_factory=list) for mutable defaults.",
     "@property makes a method callable without parentheses -- like C# auto-properties.",
@@ -21,7 +21,7 @@
   "qa": [
     {
       "q": "What is a virtual environment and why mandatory?",
-      "a": "A venv is an isolated Python installation per project. Without one, pip install affects the system Python -- if project A needs pandas 1.5 and project B needs pandas 2.0, they conflict. With a venv each project has its own packages at the exact version it needs."
+      "a": "**Elevator Pitch:** A venv is an isolated Python installation per project. Without one, pip install affects the system Python -- if project A needs pandas 1.5 and project B needs pandas 2.0, they conflict. With a venv each project has its own packages at the exact version it needs.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

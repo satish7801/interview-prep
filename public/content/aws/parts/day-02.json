@@ -21,11 +21,11 @@
   "qa": [
     {
       "q": "What is an S3 lifecycle rule and when is it essential?",
-      "a": "A lifecycle rule auto-transitions objects to cheaper storage or deletes after N days. Without it, data accumulates in S3 Standard indefinitely. Standard-IA is 45% cheaper for infrequent access, Glacier Deep Archive 95% cheaper for archives. Lifecycle rules are the primary S3 cost control mechanism."
+      "a": "**Elevator Pitch:** A lifecycle rule auto-transitions objects to cheaper storage or deletes after N days. Without it, data accumulates in S3 Standard indefinitely. Standard-IA is 45% cheaper for infrequent access, Glacier Deep Archive 95% cheaper for archives. Lifecycle rules are the primary S3 cost control mechanism.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is a presigned URL?",
-      "a": "A URL encoding AWS credentials and a signature, granting temporary access to a private object without AWS credentials. After ExpiresIn seconds it returns 403. Use to share reports with external partners without making the bucket public."
+      "a": "**Elevator Pitch:** A URL encoding AWS credentials and a signature, granting temporary access to a private object without AWS credentials. After ExpiresIn seconds it returns 403. Use to share reports with external partners without making the bucket public.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

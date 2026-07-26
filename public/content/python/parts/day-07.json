@@ -2,7 +2,7 @@
   "id": "day-07",
   "n": 7,
   "title": "requests, REST APIs, retry, rate limiting",
-  "exp": "Fetching from REST APIs with proper error handling is core to the 50-source S&P pipeline.",
+  "exp": "Fetching from REST APIs with proper error handling is core to the 50-source S&P pipeline.\n\nUnderstanding requests, REST APIs, retry, rate limiting at a senior engineering level requires inspecting the runtime execution context, internal memory allocations, and network/storage constraints. In production systems operating under continuous high load, subtle architectural details determine whether a feature scales predictably or causes severe performance degradation.",
   "pts": [
     "requests.get(url, params={}, headers={}, timeout=10) -- timeout is mandatory without exception.",
     "response.raise_for_status() -- raises HTTPError for 4xx/5xx. Call after every request.",
@@ -29,11 +29,11 @@
   "qa": [
     {
       "q": "Why is timeout mandatory in every requests.get()?",
-      "a": "Without a timeout, requests.get() waits forever if the server hangs. In a pipeline running at 2am, a hung call blocks indefinitely with no error. Always set timeout=10 to get a requests.exceptions.Timeout you can catch and handle."
+      "a": "**Elevator Pitch:** Without a timeout, requests.get() waits forever if the server hangs. In a pipeline running at 2am, a hung call blocks indefinitely with no error. Always set timeout=10 to get a requests.exceptions.Timeout you can catch and handle.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "How do you distinguish transient from permanent API failures?",
-      "a": "Transient: 429 (rate limit), 500-504 (server temporarily unavailable), Timeout -- worth retrying. Permanent: 404 (not found), 400 (bad request), 403 (auth failure) -- retrying won't fix these; skip, fix, or escalate."
+      "a": "**Elevator Pitch:** Transient: 429 (rate limit), 500-504 (server temporarily unavailable), Timeout -- worth retrying. Permanent: 404 (not found), 400 (bad request), 403 (auth failure) -- retrying won't fix these; skip, fix, or escalate.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

@@ -22,7 +22,7 @@
   "qa": [
     {
       "q": "What is a broadcast join and when should you use it?",
-      "a": "A broadcast join copies the smaller table to every executor -- the large table never moves. Eliminates the shuffle on the large table, typically 5-20x speedup. Use broadcast() explicitly for tables Spark does not auto-broadcast (above 10MB but below ~100MB). Check explain() to confirm BroadcastHashJoin appears in the plan."
+      "a": "**Elevator Pitch:** A broadcast join copies the smaller table to every executor -- the large table never moves. Eliminates the shuffle on the large table, typically 5-20x speedup. Use broadcast() explicitly for tables Spark does not auto-broadcast (above 10MB but below ~100MB). Check explain() to confirm BroadcastHashJoin appears in the plan.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

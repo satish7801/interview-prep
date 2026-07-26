@@ -12,7 +12,7 @@
     "Data quality matters -- wrong data affects trading decisions. Dead-letter queues and validation alerts are non-negotiable.",
     "Idempotency: re-running on the same data produces the same result -- mode('overwrite') for safe reruns."
   ],
-  "code": "",
+  "code": "// Financial Domain Data Processing snippet:\npublic record OrderBookEntry(string Ticker, decimal BidPrice, decimal AskPrice, long Timestamp);\npublic static decimal CalculateSpread(OrderBookEntry entry) => entry.AskPrice - entry.BidPrice;",
   "pr": [],
   "viz": [
     {
@@ -31,15 +31,15 @@
   "qa": [
     {
       "q": "Design a pipeline ingesting fundamentals from 50 sources daily, serving batch analytics and a near-real-time dashboard.",
-      "a": "Three layers: (1) Ingestion -- NiFi fetches data and lands raw files in S3, config-driven per source. (2) Processing -- Spark validates types and business rules; invalid records go to dead-letter S3 with alerts; valid records become Parquet partitioned by date. (3) Serving -- Spark batch jobs query processed data for full analytics; pre-aggregated daily rollups feed the dashboard so it does not hit the heavy pipeline on every page load."
+      "a": "**Elevator Pitch:** Three layers: (1) Ingestion -- NiFi fetches data and lands raw files in S3, config-driven per source. (2) Processing -- Spark validates types and business rules; invalid records go to dead-letter S3 with alerts; valid records become Parquet partitioned by date. (3) Serving -- Spark batch jobs query processed data for full analytics; pre-aggregated daily rollups feed the dashboard so it does not hit the heavy pipeline on every page load.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "How do you design so adding source 51 doesn't require a code change?",
-      "a": "Config-driven: store per-source metadata in a config table (DynamoDB or S3 JSON) -- URL, auth, format, schema, validation rules, schedule. The ingestion code reads this at runtime and operates generically. Adding source 51 is adding a config row. Zero code changes, zero deploy."
+      "a": "**Elevator Pitch:** Config-driven: store per-source metadata in a config table (DynamoDB or S3 JSON) -- URL, auth, format, schema, validation rules, schedule. The ingestion code reads this at runtime and operates generically. Adding source 51 is adding a config row. Zero code changes, zero deploy.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is idempotency and why is it essential?",
-      "a": "An idempotent pipeline produces the same result regardless of how many times it runs on the same input. Re-running today's pipeline should not duplicate records. Implement via mode('overwrite') on Parquet partitions, MERGE statements in SQL, date-partitioned output paths. Enables safe reruns -- how you fix bugs without corrupting data."
+      "a": "**Elevator Pitch:** An idempotent pipeline produces the same result regardless of how many times it runs on the same input. Re-running today's pipeline should not duplicate records. Implement via mode('overwrite') on Parquet partitions, MERGE statements in SQL, date-partitioned output paths. Enables safe reruns -- how you fix bugs without corrupting data.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

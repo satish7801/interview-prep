@@ -1,0 +1,54 @@
+{
+  "id": "day-17",
+  "n": 17,
+  "title": "Zoneless Angular & Change Detection",
+  "exp": "Angular is evolving away from Zone.js. Master provideExperimentalZonelessChangeDetection() and signal-based change detection.",
+  "pts": [
+    "**Zone.js Overhead:** monkey-patching browser async APIs (`setTimeout`, `Promise`, `addEventListener`) causes global change detection cycles.",
+    "**Zoneless Angular:** `provideExperimentalZonelessChangeDetection()` reduces bundle size and eliminates unnecessary dirty checking.",
+    "**Signal-driven updates:** component trees update precisely at signal consumer nodes without checking un-impacted branches.",
+    "**RxJS Interop:** `toSignal()` converts Observables to Signals; `toObservable()` converts Signals to Observables."
+  ],
+  "code": "// app.config.ts\nexport const appConfig: ApplicationConfig = {\n  providers: [\n    provideExperimentalZonelessChangeDetection(),\n    provideRouter(routes)\n  ]\n};",
+  "pr": [
+    "Migrate a sample app to zoneless change detection",
+    "Benchmark change detection cycles with Zoneless vs Zone.js"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Zoneless Angular & Change Detection under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does Zoneless Angular alter change detection execution?",
+      "a": "**Elevator Pitch:** In Zoneless mode, Angular no longer listens to Zone.js async events. Change detection triggers strictly when a Signal value changes, when ChangeDetectorRef.markForCheck() is called, or when an async pipe emits, boosting performance dramatically.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What caution must you take when using toSignal() with an RxJS Observable?",
+      "a": "**Elevator Pitch:** toSignal() subscribes immediately upon invocation and unsubscribes when the injection context is destroyed. If the Observable emits an error or completes before initialization, you must handle initialValue or requireSync options carefully.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

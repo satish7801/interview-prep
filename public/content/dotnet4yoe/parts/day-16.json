@@ -1,0 +1,55 @@
+{
+  "id": "day-16",
+  "n": 16,
+  "title": "CQRS, MediatR & Integration Event Patterns",
+  "exp": "Mid-senior roles test your understanding of separating reads from writes, pipeline behaviors, and reliable inter-service event communication.",
+  "pts": [
+    "**CQRS** (Command Query Responsibility Segregation): separate mutating commands from read-optimized queries.",
+    "**MediatR**: in-process mediator pattern for decoupling controllers from business logic & cross-cutting concerns (validation, logging, transactions).",
+    "**MediatR Pipeline Behaviors**: intercept requests for logging, fluent validation (`IPipelineBehavior<TRequest, TResponse>`), and performance timing.",
+    "**Domain Events** (in-transaction synchronous/async handlers within domain boundary) vs **Integration Events** (asynchronous messages published across microservice boundaries via broker).",
+    "Outbox pattern + Change Data Capture (CDC/Debezium) or outbox processor to guarantee zero lost events."
+  ],
+  "code": "public class LoggingBehavior<TReq, TRes> : IPipelineBehavior<TReq, TRes> where TReq : notnull {\n  public async Task<TRes> Handle(TReq req, RequestHandlerDelegate<TRes> next, CancellationToken ct) {\n    _logger.LogInformation(\"Handling {Request}\", typeof(TReq).Name);\n    return await next();\n  }\n}",
+  "pr": [
+    "Implement a FluentValidation IPipelineBehavior in MediatR",
+    "Diagram Domain Events vs Integration Events flow"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Aspect",
+        "Production Behavior & Key Trade-Off",
+        "Senior Signal"
+      ],
+      "r": [
+        [
+          "Execution Context",
+          "Deep dive into Day 16 runtime execution mechanics and threading constraints.",
+          "Focus on zero-allocation and lock-free patterns where applicable."
+        ],
+        [
+          "Common Failure Mode",
+          "High concurrency contention or unexpected resource exhaustion under load.",
+          "Implement resilient backpressure, retries, and circuit breakers."
+        ],
+        [
+          "Architectural Trade-Off",
+          "Balancing low latency, developer ergonomics, and system consistency.",
+          "Always state operational cost and complexity trade-offs."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "When is full CQRS (with separate read/write databases) worth the complexity?",
+      "a": "**Elevator Pitch:** When read and write workloads have radically different scale requirements (e.g., 100:1 read-to-write ratio), or when read models require complex aggregated denormalization (Elasticsearch/Redis) while write models require strict transactional integrity (ACID RDBMS). For simple CRUD, full CQRS adds unnecessary operational overhead.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+    },
+    {
+      "q": "How do MediatR Pipeline Behaviors improve application architecture?",
+      "a": "**Elevator Pitch:** They provide clean Decorator/Middleware execution around handlers. Cross-cutting concerns like validation (FluentValidation), logging, caching, authorization, and automatic unit-of-work transactions run seamlessly without duplicating boilerplate inside controllers or business services.\n\n**Under the Hood & Mechanics:** Operating at ~4 YOE requires knowing how the runtime behaves under memory and CPU constraints. Execution paths must preserve context without incurring unnecessary thread context switches or unneeded heap allocations.\n\n**Production Failure Mode & Gotcha:** A classic failure mode in production is ignoring thread pool queue depths or unhandled transient network exceptions, leading to cascading failures across microservice boundaries.\n\n**Senior Trade-Off Signal:** Always evaluate the trade-offs between simplicity, operational overhead, and scalability. Never over-engineer before profiling actual bottlenecks."
+    }
+  ]
+}

@@ -29,11 +29,11 @@
   "qa": [
     {
       "q": "Why convert CSV values before comparing?",
-      "a": "csv.DictReader reads every value as a string. '1500' > 1000 raises TypeError in Python 3. Convert explicitly: float(row['amount']) > 1000. Add type conversion as the first step after reading any CSV."
+      "a": "**Elevator Pitch:** csv.DictReader reads every value as a string. '1500' > 1000 raises TypeError in Python 3. Convert explicitly: float(row['amount']) > 1000. Add type conversion as the first step after reading any CSV.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "json.loads vs json.load?",
-      "a": "json.loads('string') parses a JSON STRING -- the s stands for string. json.load(file) reads from a FILE OBJECT directly. Similarly dumps serializes to string, dump writes to a file handle."
+      "a": "**Elevator Pitch:** json.loads('string') parses a JSON STRING -- the s stands for string. json.load(file) reads from a FILE OBJECT directly. Similarly dumps serializes to string, dump writes to a file handle.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

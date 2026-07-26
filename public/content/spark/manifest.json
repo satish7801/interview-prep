@@ -88,6 +88,18 @@
       "n": 7,
       "title": "Production Spark -- EMR deployment, Spark UI, Structured Streaming",
       "summary": "Reading the Spark UI is the difference between guessing at performance problems and diagnosing them."
+    },
+    {
+      "id": "day-08",
+      "n": 8,
+      "title": "Spark Catalyst Optimizer & Adaptive Query Execution (AQE)",
+      "summary": "Deep-dive into Spark query planning: Unresolved Logical Plan → Analyzed → Optimized → Physical Plan, and AQE runtime optimizations."
+    },
+    {
+      "id": "day-09",
+      "n": 9,
+      "title": "Data Lakehouse Architecture & Delta Lake Compaction",
+      "summary": "Senior data engineers must master Delta Lake ACID guarantees, Z-Ordering, Liquid Clustering, Time Travel, and VACUUM compaction."
     }
   ]
 }

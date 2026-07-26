@@ -1,0 +1,54 @@
+{
+  "id": "day-09",
+  "n": 9,
+  "title": "Data Lakehouse Architecture & Delta Lake Compaction",
+  "exp": "Senior data engineers must master Delta Lake ACID guarantees, Z-Ordering, Liquid Clustering, Time Travel, and VACUUM compaction.",
+  "pts": [
+    "**Delta Lake ACID Log (`_delta_log/`):** JSON transaction commit logs enabling ACID isolation and time travel.",
+    "**Z-Ordering & Liquid Clustering:** Z-Ordering co-locates related data in the same file set; Liquid Clustering (Delta 3.0+) provides dynamic data layout without static partitioning.",
+    "**OPTIMIZE & VACUUM:** compacting small files (small-file problem) and removing tombstoned files past retention threshold.",
+    "**CDC (Change Data Capture) with `MERGE INTO`:** idempotent upserts from streaming or batch source into Delta table."
+  ],
+  "code": "from delta.tables import DeltaTable\n\ndeltaTable = DeltaTable.forPath(spark, \"/data/events\")\ndeltaTable.alias(\"target\").merge(\n    sourceDF.alias(\"source\"),\n    \"target.id = source.id\"\n).whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()",
+  "pr": [
+    "Perform Delta Lake time travel query using versionAsOf",
+    "Execute OPTIMIZE Z-ORDER BY on a multi-column table"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Dimension",
+        "Production Reality & Gotcha",
+        "Senior Engineering Signal"
+      ],
+      "r": [
+        [
+          "Runtime Behavior",
+          "Deep mechanics of Data Lakehouse Architecture & Delta Lake Compaction under concurrent execution.",
+          "Always design for idempotency, cancellation propagation, and thread safety."
+        ],
+        [
+          "Performance Impact",
+          "Memory allocation spikes or CPU bound thread starvation.",
+          "Use profiling tools to measure actual baseline allocation before optimizing."
+        ],
+        [
+          "Architecture Trade-Off",
+          "Balancing developer velocity with operational maintenance complexity.",
+          "Favor simple, well-tested modular architectures over premature complexity."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does Delta Lake solve the 'small file problem' in data lakes?",
+      "a": "**Elevator Pitch:** Using OPTIMIZE, Delta Lake merges small files (e.g., megabyte-sized files produced by streaming ingest) into uniform 1GB Parquet files, reducing S3/ADLS metadata request overhead.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    },
+    {
+      "q": "What is Liquid Clustering in Delta Lake and how does it replace traditional static partitioning?",
+      "a": "**Elevator Pitch:** Liquid Clustering dynamically adjusts data clustering based on actual query access patterns without hardcoding static directory partition columns (e.g., year/month/day), avoiding over-partitioning and partition skew.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
+    }
+  ]
+}

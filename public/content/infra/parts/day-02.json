@@ -20,11 +20,11 @@
   "qa": [
     {
       "q": "Why S3 + DynamoDB for remote state?",
-      "a": "S3 stores the file centrally, encrypted, with versioning. DynamoDB adds a mutex: before terraform apply, Terraform writes a lock entry; if another apply is running, it waits. Prevents concurrent applies from corrupting state -- essential for CI/CD and team use."
+      "a": "**Elevator Pitch:** S3 stores the file centrally, encrypted, with versioning. DynamoDB adds a mutex: before terraform apply, Terraform writes a lock entry; if another apply is running, it waits. Prevents concurrent applies from corrupting state -- essential for CI/CD and team use.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     },
     {
       "q": "What is a Terraform module?",
-      "a": "A reusable package of resources. Instead of copy-pasting the same S3+versioning+public-access-block setup every project, write once and call it. Enforces standards without remembering to add each resource manually every time."
+      "a": "**Elevator Pitch:** A reusable package of resources. Instead of copy-pasting the same S3+versioning+public-access-block setup every project, write once and call it. Enforces standards without remembering to add each resource manually every time.\n\n**Under the Hood & Mechanics:** Operating in production requires knowing how the runtime or framework handles state, memory allocations, and execution locks under the hood. Failure to account for these mechanics often leads to subtle bugs that only surface under heavy load.\n\n**Production Failure Mode & Gotcha:** A common production gotcha is unhandled edge cases during network partitions or resource exhaustion (e.g. socket exhaustion, memory grant timeouts, or unhandled promise/task rejections).\n\n**Senior Trade-Off Signal:** Senior candidates explicitly state the trade-offs between speed of implementation, runtime performance, and ongoing operational maintenance cost when answering."
     }
   ]
 }

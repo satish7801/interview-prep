@@ -4,10 +4,10 @@
       "id": "dotnet4yoe",
       "name": ".NET · 4 YOE Path",
       "color": "--dotnet",
-      "sub": "Mid–senior interview path · 14 days",
-      "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, and system-design drills interviewers actually ask around 4 years experience.",
-      "dayCount": 14,
-      "qaCount": 27,
+      "sub": "Mid–senior interview path · 17 days",
+      "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, memory diagnostics, CQRS, SCIM, and system-design drills interviewers actually ask around 4 years experience.",
+      "dayCount": 17,
+      "qaCount": 33,
       "featured": true
     },
     {
@@ -16,8 +16,8 @@
       "color": "--sql",
       "sub": "T-SQL / SQL Server · 14 days",
       "desc": "The gap that costs most people offers. Every topic covered at interview depth — syntax, gotchas, edge cases, and the \"why\" behind each concept.",
-      "dayCount": 15,
-      "qaCount": 75,
+      "dayCount": 18,
+      "qaCount": 81,
       "featured": false
     },
     {
@@ -26,8 +26,8 @@
       "color": "--dotnet",
       "sub": "Incl. .NET 10 & C# 14 - 15 days",
       "desc": "OOP depth, async mastery, C# 14 new features, ASP.NET Core, EF Core — tied to your SCIM and compliance platform work.",
-      "dayCount": 15,
-      "qaCount": 54,
+      "dayCount": 18,
+      "qaCount": 60,
       "featured": false
     },
     {
@@ -36,8 +36,8 @@
       "color": "--ng",
       "sub": "Incl. Angular 21 & 22 · 14 days",
       "desc": "From component fundamentals to signals, zoneless change detection, and the complete Angular 22 API — production v17 experience + everything that shipped since.",
-      "dayCount": 15,
-      "qaCount": 75,
+      "dayCount": 18,
+      "qaCount": 81,
       "featured": false
     },
     {
@@ -46,8 +46,8 @@
       "color": "--sr",
       "sub": "4-YOE calibration - 8 days",
       "desc": "System design, production ownership, leadership signals, scaling — what separates 4-YOE candidates from 2-YOE in final rounds.",
-      "dayCount": 8,
-      "qaCount": 25,
+      "dayCount": 10,
+      "qaCount": 29,
       "featured": false
     },
     {
@@ -56,8 +56,8 @@
       "color": "--py",
       "sub": "For .NET devs - 8 days",
       "desc": "Python through a C# lens. Syntax, pandas, file I/O, SQL integration, generators, decorators, testing.",
-      "dayCount": 8,
-      "qaCount": 16,
+      "dayCount": 10,
+      "qaCount": 20,
       "featured": false
     },
     {
@@ -66,8 +66,8 @@
       "color": "--spark",
       "sub": "Distributed data engineering - 7 days",
       "desc": "Spark processes data that doesn't fit on one machine. Every PySpark concept maps to something you already know from Python and SQL.",
-      "dayCount": 7,
-      "qaCount": 12,
+      "dayCount": 9,
+      "qaCount": 16,
       "featured": false
     },
     {
@@ -76,8 +76,8 @@
       "color": "--cloud",
       "sub": "S3, EMR, CloudWatch, Grafana, orchestration - 14 days",
       "desc": "The cloud infrastructure and observability layer for your data pipeline. Goes deep on CloudWatch and Grafana -- the exact AWS-native monitoring stack the JD's near-real-time dashboard implies -- plus serverless orchestration, Glue/Athena, and cost control.",
-      "dayCount": 14,
-      "qaCount": 44,
+      "dayCount": 16,
+      "qaCount": 48,
       "featured": false
     },
     {
@@ -86,8 +86,8 @@
       "color": "--infra",
       "sub": "IaC, Grafana, Kibana, NiFi, ML - 6 days",
       "desc": "Infrastructure-as-code and observability tools complete the production data engineering stack. Terraform makes infrastructure repeatable. Grafana/Kibana make pipelines visible. NiFi automates data movement.",
-      "dayCount": 6,
-      "qaCount": 13,
+      "dayCount": 8,
+      "qaCount": 17,
       "featured": false
     },
     {
@@ -96,8 +96,8 @@
       "color": "--domain",
       "sub": "Financial data, architecture, behavioral - 5 days",
       "desc": "S&P Global domain knowledge plus Lead I behavioral questions. Final round interviews test judgment and ownership, not just code.",
-      "dayCount": 5,
-      "qaCount": 12,
+      "dayCount": 7,
+      "qaCount": 16,
       "featured": false
     },
     {
@@ -106,8 +106,8 @@
       "color": "--azure",
       "sub": "Map AWS to Azure - 14 days",
       "desc": "A parallel-track crash course mapping everything you already know from AWS onto Azure -- same concepts (object storage, IAM, managed Spark), new vocabulary and a few genuine structural differences.",
-      "dayCount": 14,
-      "qaCount": 30,
+      "dayCount": 16,
+      "qaCount": 34,
       "featured": false
     },
     {
@@ -116,8 +116,8 @@
       "color": "--gcp",
       "sub": "Map AWS to GCP - 14 days",
       "desc": "Google Cloud's take on the same pipeline stack -- Cloud Storage, Dataproc (managed Spark), Cloud Monitoring, and Grafana on GCP. Google's IAM model and BigQuery are the two areas with the most genuine conceptual difference from AWS.",
-      "dayCount": 14,
-      "qaCount": 30,
+      "dayCount": 16,
+      "qaCount": 34,
       "featured": false
     }
   ]
