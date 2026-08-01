@@ -750,8 +750,35 @@ strong {
 }
 
 .flash-card.open {
+  grid-column: 1 / -1;
   background: var(--sf);
   border-color: var(--accent);
+  padding: 20px 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.flash-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.flash-close-btn {
+  font-size: 0.75rem;
+  color: var(--ft);
+  font-weight: 600;
+  background: var(--sf2);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--br-soft);
+}
+
+.flash-q-open {
+  font-size: 1.05rem;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--br-soft);
 }
 
 .flash-kicker {
@@ -769,6 +796,7 @@ strong {
 
 .flash-kicker.a {
   color: var(--ok);
+  margin-top: 12px;
 }
 
 .flash-q {
@@ -778,7 +806,8 @@ strong {
 }
 
 .flash-a {
-  font-size: 0.84rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
   color: var(--dm);
 }
 

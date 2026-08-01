@@ -29,7 +29,12 @@ function Flashcard({ qa }: { qa: QA }) {
     >
       {open ? (
         <>
-          <div className="flash-kicker a">Answer</div>
+          <div className="flash-card-header">
+            <span className="flash-kicker q">Question</span>
+            <span className="flash-close-btn">Collapse ✕</span>
+          </div>
+          <div className="flash-q flash-q-open">{qa.q}</div>
+          <div className="flash-kicker a">Detailed Answer</div>
           <div className="flash-a">{formatInline(qa.a)}</div>
         </>
       ) : (
