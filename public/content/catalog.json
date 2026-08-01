@@ -1,16 +1,6 @@
 {
   "paths": [
     {
-      "id": "dotnet4yoe",
-      "name": ".NET · 4 YOE Path",
-      "color": "--dotnet",
-      "sub": "Mid–senior interview path · 17 days",
-      "desc": "Built from the deep-research reports and 4 YOE handbook: trade-offs, ASP.NET, EF/SQL, security, messaging, memory diagnostics, CQRS, SCIM, and system-design drills interviewers actually ask around 4 years experience.",
-      "dayCount": 17,
-      "qaCount": 33,
-      "featured": true
-    },
-    {
       "id": "sql",
       "name": "SQL",
       "color": "--sql",
@@ -24,11 +14,11 @@
       "id": "dotnet",
       "name": ".NET / C#",
       "color": "--dotnet",
-      "sub": "Incl. .NET 10 & C# 14 - 15 days",
-      "desc": "OOP depth, async mastery, C# 14 new features, ASP.NET Core, EF Core — tied to your SCIM and compliance platform work.",
-      "dayCount": 18,
-      "qaCount": 60,
-      "featured": false
+      "sub": "Master .NET & C# Path · 22 days",
+      "desc": "Complete mid-senior interview mastery: OOP depth, async state machines, C# 14, ASP.NET Core 10, EF Core 10, Memory/GC diagnostics, CQRS, RabbitMQ/Kafka, SCIM 2.0, and System Design.",
+      "dayCount": 22,
+      "qaCount": 68,
+      "featured": true
     },
     {
       "id": "angular",

@@ -99,6 +99,32 @@ export default function DayContent({ trackId, dayN }: Props) {
         </section>
       )}
 
+      {day.interviewPlaybook && (
+        <section className="content-section interview-playbook-section">
+          <h2 className="section-label">Interview Playbook</h2>
+          <div className="playbook-box p-4 rounded-lg bg-card border border-border space-y-4">
+            <div>
+              <h3 className="font-semibold text-primary mb-1">🎙️ 30-Second Opening Script</h3>
+              <p className="text-sm text-foreground/90 italic">"{day.interviewPlaybook.openingScript}"</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-primary mb-1">🔥 Real Production Incident (STAR Story)</h3>
+              <p className="text-sm text-foreground/90">{formatInline(day.interviewPlaybook.incidentStory)}</p>
+            </div>
+            {(day.interviewPlaybook.whiteboardSteps?.length ?? 0) > 0 && (
+              <div>
+                <h3 className="font-semibold text-primary mb-1">📐 Whiteboard Execution Flow</h3>
+                <ol className="list-decimal list-inside text-sm space-y-1 text-foreground/90">
+                  {day.interviewPlaybook.whiteboardSteps.map((step, idx) => (
+                    <li key={idx}>{formatInline(step)}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {(day.qa?.length ?? 0) > 0 && (
         <section className="content-section">
           <h2 className="section-label">Interview flashcards</h2>

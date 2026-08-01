@@ -45,11 +45,21 @@
   "qa": [
     {
       "q": "What are the advantages of using System.Threading.Lock over locking on object in .NET 9+?",
-      "a": "**Elevator Pitch:** System.Threading.Lock provides a dedicated, lightweight OS synchronization primitive designed specifically for thread locking, avoiding the memory footprint of a full System.Object header and reducing lock contention overhead.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** System.Threading.Lock provides a dedicated, lightweight OS synchronization primitive designed specifically for thread locking, avoiding the memory footprint of a full System.Object header and reducing lock contention overhead.\n\n**Under the Hood & Mechanics:** C# compiler synthesizes an IAsyncStateMachine struct. Awaiting incomplete tasks yields control to the caller; thread pool threads resume via TaskScheduler/SynchronizationContext.\n\n**Production Failure Mode & Gotcha:** Blocking async code with .Result or .Wait() on single-threaded synchronization contexts leads to deadlocks and thread pool starvation.\n\n**Senior Trade-Off Signal:** Async preserves thread pool scalability for I/O operations, but introduces state machine allocations and complex exception bubbling."
     },
     {
       "q": "How do collection expressions and the spread operator improve both syntax and allocation efficiency?",
-      "a": "**Elevator Pitch:** Collection expressions [...] provide a unified syntax for arrays, Span<T>, List<T>, and ImmutableCollections. The compiler optimizes allocation by pre-calculating capacity when combining arrays via spread [..a, ..b].\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** Collection expressions [...] provide a unified syntax for arrays, Span<T>, List<T>, and ImmutableCollections. The compiler optimizes allocation by pre-calculating capacity when combining arrays via spread [..a, ..b].\n\n**Under the Hood & Mechanics:** T-SQL engine parses, compiles into execution plans, caches them in the plan cache, and executes via the storage engine (buffer pool & latching).\n\n**Production Failure Mode & Gotcha:** Parameter sniffing and missing stats cause sub-optimal plan compilation, resulting in full table scans and high CPU.\n\n**Senior Trade-Off Signal:** Parameterization improves plan reuse, but recompile hints (OPTION RECOMPILE) may be needed for skewed data distributions."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In .NET production applications, I treat Modern C# 12, 13 & 14 Deep-Dive as an architectural constraint where memory allocations and thread safety dictate latency SLA and process stability.",
+    "incidentStory": "In our core SaaS backend, misconfigured Modern C# 12, 13 & 14 Deep-Dive triggered thread-pool starvation and high Gen 2 GC pauses during peak traffic. I attached dotnet-dump and dotMemory, diagnosed the allocation root-cause, refactored to zero-allocation primitives, and improved p99 API response times by 80%.",
+    "whiteboardSteps": [
+      "1. HTTP Controller / Minimal API Endpoint → Request Pipeline",
+      "2. Service Scope & DI Resolution → Execution of Modern C# 12, 13 & 14 Deep-Dive",
+      "3. Thread Pool Worker / Async State Machine Continuation → Memory Allocation",
+      "4. EF Core / Database / External Service Execution → Garbage Collection / Resource Release"
+    ]
+  }
 }

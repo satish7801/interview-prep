@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "How does Zoneless Angular alter change detection execution?",
-      "a": "**Elevator Pitch:** In Zoneless mode, Angular no longer listens to Zone.js async events. Change detection triggers strictly when a Signal value changes, when ChangeDetectorRef.markForCheck() is called, or when an async pipe emits, boosting performance dramatically.\n\n**Under the Hood & Mechanics:** Angular Signals maintain an internal reactive dependency graph (ReactiveNode). When a signal value updates, it marks dependent computed nodes as stale without running change detection immediately. Evaluation happens lazily when read, updating only impacted DOM bindings.\n\n**Production Failure Mode & Gotcha:** Writing to signals inside an effect() can trigger infinite reactive loops or untracked state dependencies. Fix: use computed() or linkedSignal() for derived state sync, keeping effect() strictly for un-tracked side effects like logging or localStorage.\n\n**Senior Trade-Off Signal:** Signals provide fine-grained, synchronous reactivity without Zone.js overhead, but require learning new primitives (input(), output(), model()) compared to classic RxJS BehaviorSubjects."
+      "a": "**Elevator Pitch:** In Zoneless mode, Angular no longer listens to Zone.js async events. Change detection triggers strictly when a Signal value changes, when ChangeDetectorRef.markForCheck() is called, or when an async pipe emits, boosting performance dramatically.\n\n**Under the Hood & Mechanics:** Signals build a fine-grained reactive dependency graph. When a signal value changes, only dependent view nodes are scheduled for DOM updating.\n\n**Production Failure Mode & Gotcha:** Mutating signal values inside effects without untracked() causes infinite change detection loops and browser freeze.\n\n**Senior Trade-Off Signal:** Signals provide predictable synchronous reactivity without Zone.js overhead, but require adapting existing RxJS-heavy codebases."
     },
     {
       "q": "What caution must you take when using toSignal() with an RxJS Observable?",
-      "a": "**Elevator Pitch:** toSignal() subscribes immediately upon invocation and unsubscribes when the injection context is destroyed. If the Observable emits an error or completes before initialization, you must handle initialValue or requireSync options carefully.\n\n**Under the Hood & Mechanics:** Angular Signals maintain an internal reactive dependency graph (ReactiveNode). When a signal value updates, it marks dependent computed nodes as stale without running change detection immediately. Evaluation happens lazily when read, updating only impacted DOM bindings.\n\n**Production Failure Mode & Gotcha:** Writing to signals inside an effect() can trigger infinite reactive loops or untracked state dependencies. Fix: use computed() or linkedSignal() for derived state sync, keeping effect() strictly for un-tracked side effects like logging or localStorage.\n\n**Senior Trade-Off Signal:** Signals provide fine-grained, synchronous reactivity without Zone.js overhead, but require learning new primitives (input(), output(), model()) compared to classic RxJS BehaviorSubjects."
+      "a": "**Elevator Pitch:** toSignal() subscribes immediately upon invocation and unsubscribes when the injection context is destroyed. If the Observable emits an error or completes before initialization, you must handle initialValue or requireSync options carefully.\n\n**Under the Hood & Mechanics:** Signals build a fine-grained reactive dependency graph. When a signal value changes, only dependent view nodes are scheduled for DOM updating.\n\n**Production Failure Mode & Gotcha:** Mutating signal values inside effects without untracked() causes infinite change detection loops and browser freeze.\n\n**Senior Trade-Off Signal:** Signals provide predictable synchronous reactivity without Zone.js overhead, but require adapting existing RxJS-heavy codebases."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When building Angular client applications at scale, I design Zoneless Angular & Change Detection around predictable state propagation and minimal DOM change detection overhead.",
+    "incidentStory": "Our analytics dashboard experienced noticeable UI frame drops (jank) during live data streaming due to unoptimized Zoneless Angular & Change Detection. I refactored the component architecture to fine-grained reactivity, eliminated unnecessary change detection cycles, and restored solid 60 FPS rendering.",
+    "whiteboardSteps": [
+      "1. User Action / WebSocket Push Event → Reactive Store / Signal State Source",
+      "2. Signal Dependency Graph / RxJS Operator Chain Transformation",
+      "3. Fine-Grained Change Detection Notification → View Node Marking",
+      "4. Ivy Template DOM Update → Browser Paint Phase"
+    ]
+  }
 }

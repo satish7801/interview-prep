@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "How do you explain PACELC when choosing between DynamoDB (eventual consistency) and PostgreSQL (ACID)?",
-      "a": "**Elevator Pitch:** PACELC states that even when there are no network partitions, a system must trade off Latency (L) for Consistency (C). DynamoDB defaults to eventual consistency for lower latency (L), whereas PostgreSQL guarantees strong consistency (C) at the cost of higher latency per write lock.\n\n**Under the Hood & Mechanics:** EF Core builds an Expression Tree, translates it via the relational SQL provider into a parameterized T-SQL query, and materializes entities into the DbContext Change Tracker. N+1 queries occur when navigating un-included navigation properties in a loop.\n\n**Production Failure Mode & Gotcha:** Executing queries without AsNoTracking() in read-only APIs forces EF Core to keep snapshot copies of all returned entities in memory, causing high RAM usage and CPU tracking overhead.\n\n**Senior Trade-Off Signal:** AsNoTracking() speeds up read queries by 20-30% and reduces memory footprint, but disables identity resolution and automatic change tracking for updates."
+      "a": "**Elevator Pitch:** PACELC states that even when there are no network partitions, a system must trade off Latency (L) for Consistency (C). DynamoDB defaults to eventual consistency for lower latency (L), whereas PostgreSQL guarantees strong consistency (C) at the cost of higher latency per write lock.\n\n**Under the Hood & Mechanics:** Window functions operate on a set of rows defined by the OVER() clause without collapsing them into a single row, allocating memory segments for frame calculation.\n\n**Production Failure Mode & Gotcha:** Partitioning over non-indexed columns with huge row counts forces expensive Sort operators and TempDB spills in execution plans.\n\n**Senior Trade-Off Signal:** Provides high readability and single-pass analytical aggregation, but can increase RAM grants compared to traditional indexed grouping."
     },
     {
       "q": "How do you execute a Strangler Fig migration without downtime?",
-      "a": "**Elevator Pitch:** Place an API Gateway in front of the monolith. Identify a self-contained domain capability. Build the new service, sync DB state via CDC outbox, route a small percentage of traffic (canary/shadow), compare results, and gradually route 100% traffic before decommissioning the legacy code path.\n\n**Under the Hood & Mechanics:** Async methods compile into an IAsyncStateMachine struct managed by the AsyncMethodBuilder. Awaiting an uncompleted task yields execution back to the caller. Blocking with .Result on a thread bound to a SynchronizationContext causes deadlocks when the continuation waits for the blocked thread.\n\n**Production Failure Mode & Gotcha:** Sync-over-async (.Result or .Wait()) on ASP.NET request threads rapidly exhausts thread pool threads, leading to HTTP 503 gateway timeouts and request queuing under load.\n\n**Senior Trade-Off Signal:** Async all the way preserves thread pool scalability, but requires passing CancellationToken through all layers and avoiding sync blocking methods everywhere."
+      "a": "**Elevator Pitch:** Place an API Gateway in front of the monolith. Identify a self-contained domain capability. Build the new service, sync DB state via CDC outbox, route a small percentage of traffic (canary/shadow), compare results, and gradually route 100% traffic before decommissioning the legacy code path.\n\n**Under the Hood & Mechanics:** Requires understanding the underlying execution engine mechanics, memory layout, and runtime optimization pathways for System Architecture Trade-Off Frameworks.\n\n**Production Failure Mode & Gotcha:** Under high concurrency or large data volume, misconfiguring or misusing How can trigger CPU spikes, memory leaks, or execution bottlenecks.\n\n**Senior Trade-Off Signal:** Balancing execution performance, maintainability, and operational complexity requires explicit architectural evaluation before adoption."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing System Architecture Trade-Off Frameworks, I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from System Architecture Trade-Off Frameworks. I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (System Architecture Trade-Off Frameworks)",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }

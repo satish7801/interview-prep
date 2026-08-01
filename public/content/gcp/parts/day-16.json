@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "How does Cloud Pub/Sub guarantee message ordering for specific keys?",
-      "a": "**Elevator Pitch:** By attaching an Ordering Key to messages, Cloud Pub/Sub ensures that messages with the same ordering key are delivered to subscribers in the exact order they were published.\n\n**Under the Hood & Mechanics:** Cloud infrastructure APIs use declarative control planes. Terraform tracks infrastructure in a state DAG, resolving dependency ordering before making cloud provider REST API calls. IAM policies evaluate explicit DENYs before ALLOWs.\n\n**Production Failure Mode & Gotcha:** Hardcoding credentials or missing remote state locks (S3 + DynamoDB) in team pipelines can lead to state corruption and credential leaks in source code.\n\n**Senior Trade-Off Signal:** Infrastructure-as-Code enforces repeatable, audited infrastructure deployments, but requires strict state lock management and PR plan validation to prevent accidental resource deletion."
+      "a": "**Elevator Pitch:** By attaching an Ordering Key to messages, Cloud Pub/Sub ensures that messages with the same ordering key are delivered to subscribers in the exact order they were published.\n\n**Under the Hood & Mechanics:** Cloud control plane APIs orchestrate virtualized hardware, networking (VPC/VNets), IAM policies, and auto-scaling groups.\n\n**Production Failure Mode & Gotcha:** Overly permissive IAM roles (wildcard actions) or unmonitored resource limits lead to security breaches and unexpected cloud cost spikes.\n\n**Senior Trade-Off Signal:** Serverless/managed services eliminate infrastructure maintenance but introduce cold starts and vendor lock-in."
     },
     {
       "q": "What makes Cloud Spanner unique compared to traditional relational databases like PostgreSQL?",
-      "a": "**Elevator Pitch:** Cloud Spanner provides global scale-out horizontal partitioning while maintaining strict external consistency and ACID transactions worldwide, powered by Google's TrueTime hardware GPS/atomic clock infrastructure.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** Cloud Spanner provides global scale-out horizontal partitioning while maintaining strict external consistency and ACID transactions worldwide, powered by Google's TrueTime hardware GPS/atomic clock infrastructure.\n\n**Under the Hood & Mechanics:** Window functions operate on a set of rows defined by the OVER() clause without collapsing them into a single row, allocating memory segments for frame calculation.\n\n**Production Failure Mode & Gotcha:** Partitioning over non-indexed columns with huge row counts forces expensive Sort operators and TempDB spills in execution plans.\n\n**Senior Trade-Off Signal:** Provides high readability and single-pass analytical aggregation, but can increase RAM grants compared to traditional indexed grouping."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In .NET production applications, I treat GCP Cloud Native Architecture — Cloud Run v2 & Pub/Sub as an architectural constraint where memory allocations and thread safety dictate latency SLA and process stability.",
+    "incidentStory": "In our core SaaS backend, misconfigured GCP Cloud Native Architecture — Cloud Run v2 & Pub/Sub triggered thread-pool starvation and high Gen 2 GC pauses during peak traffic. I attached dotnet-dump and dotMemory, diagnosed the allocation root-cause, refactored to zero-allocation primitives, and improved p99 API response times by 80%.",
+    "whiteboardSteps": [
+      "1. HTTP Controller / Minimal API Endpoint → Request Pipeline",
+      "2. Service Scope & DI Resolution → Execution of GCP Cloud Native Architecture — Cloud Run v2 & Pub/Sub",
+      "3. Thread Pool Worker / Async State Machine Continuation → Memory Allocation",
+      "4. EF Core / Database / External Service Execution → Garbage Collection / Resource Release"
+    ]
+  }
 }

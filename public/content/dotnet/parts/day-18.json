@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "What problem does .NET 9 HybridCache solve compared to using IMemoryCache + IDistributedCache manually?",
-      "a": "**Elevator Pitch:** HybridCache combines local in-process memory (L1) with distributed Redis (L2) in a single API, handling serialization, multi-node cache invalidation, and built-in cache stampede (thundering herd) protection automatically.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** HybridCache combines local in-process memory (L1) with distributed Redis (L2) in a single API, handling serialization, multi-node cache invalidation, and built-in cache stampede (thundering herd) protection automatically.\n\n**Under the Hood & Mechanics:** Garbage Collector uses generational collection (Gen 0, 1, 2, LOH, POH) with mark-sweep-compact phases. Span<T> provides stack-allocated contiguous representation.\n\n**Production Failure Mode & Gotcha:** Excessive allocations of large objects (>85KB) trigger frequent Gen 2 / LOH collections, causing GC pause spikes and high CPU.\n\n**Senior Trade-Off Signal:** Span<T> and Memory<T> eliminate heap allocations and copy costs, but ref structs cannot be boxed or captured in async state machines."
     },
     {
       "q": "Why choose Channel<T> over BlockingCollection<T> or ConcurrentQueue<T> in async code?",
-      "a": "**Elevator Pitch:** Channel<T> is fully asynchronous (WriteAsync, ReadAsync, ReadAllAsync), avoiding thread-blocking synchronization. It natively supports async backpressure, cancellation tokens, and bounded capacity.\n\n**Under the Hood & Mechanics:** Async methods compile into an IAsyncStateMachine struct managed by the AsyncMethodBuilder. Awaiting an uncompleted task yields execution back to the caller. Blocking with .Result on a thread bound to a SynchronizationContext causes deadlocks when the continuation waits for the blocked thread.\n\n**Production Failure Mode & Gotcha:** Sync-over-async (.Result or .Wait()) on ASP.NET request threads rapidly exhausts thread pool threads, leading to HTTP 503 gateway timeouts and request queuing under load.\n\n**Senior Trade-Off Signal:** Async all the way preserves thread pool scalability, but requires passing CancellationToken through all layers and avoiding sync blocking methods everywhere."
+      "a": "**Elevator Pitch:** Channel<T> is fully asynchronous (WriteAsync, ReadAsync, ReadAllAsync), avoiding thread-blocking synchronization. It natively supports async backpressure, cancellation tokens, and bounded capacity.\n\n**Under the Hood & Mechanics:** C# compiler synthesizes an IAsyncStateMachine struct. Awaiting incomplete tasks yields control to the caller; thread pool threads resume via TaskScheduler/SynchronizationContext.\n\n**Production Failure Mode & Gotcha:** Blocking async code with .Result or .Wait() on single-threaded synchronization contexts leads to deadlocks and thread pool starvation.\n\n**Senior Trade-Off Signal:** Async preserves thread pool scalability for I/O operations, but introduces state machine allocations and complex exception bubbling."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In .NET production applications, I treat High-Throughput .NET Pipelines — Pipelines, Channels & Hybrid Cache as an architectural constraint where memory allocations and thread safety dictate latency SLA and process stability.",
+    "incidentStory": "In our core SaaS backend, misconfigured High-Throughput .NET Pipelines — Pipelines, Channels & Hybrid Cache triggered thread-pool starvation and high Gen 2 GC pauses during peak traffic. I attached dotnet-dump and dotMemory, diagnosed the allocation root-cause, refactored to zero-allocation primitives, and improved p99 API response times by 80%.",
+    "whiteboardSteps": [
+      "1. HTTP Controller / Minimal API Endpoint → Request Pipeline",
+      "2. Service Scope & DI Resolution → Execution of High-Throughput .NET Pipelines — Pipelines, Channels & Hybrid Cache",
+      "3. Thread Pool Worker / Async State Machine Continuation → Memory Allocation",
+      "4. EF Core / Database / External Service Execution → Garbage Collection / Resource Release"
+    ]
+  }
 }

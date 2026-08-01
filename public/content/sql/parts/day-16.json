@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "What is the key performance difference between ROWS and RANGE in SQL window functions?",
-      "a": "**Elevator Pitch:** ROWS operates on physical row offsets and is fast/memory-efficient. RANGE operates on logical values, requiring SQL Server to sort and aggregate duplicate values together, which often causes costly tempdb spills for large datasets.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** ROWS operates on physical row offsets and is fast/memory-efficient. RANGE operates on logical values, requiring SQL Server to sort and aggregate duplicate values together, which often causes costly tempdb spills for large datasets.\n\n**Under the Hood & Mechanics:** Window functions operate on a set of rows defined by the OVER() clause without collapsing them into a single row, allocating memory segments for frame calculation.\n\n**Production Failure Mode & Gotcha:** Partitioning over non-indexed columns with huge row counts forces expensive Sort operators and TempDB spills in execution plans.\n\n**Senior Trade-Off Signal:** Provides high readability and single-pass analytical aggregation, but can increase RAM grants compared to traditional indexed grouping."
     },
     {
       "q": "How do you compute the 95th percentile latency per API endpoint in T-SQL?",
-      "a": "**Elevator Pitch:** Use PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) OVER (PARTITION BY endpoint_path).\n\n**Under the Hood & Mechanics:** Operating How do you compute the 95th percentile latency per API endpoint in T-SQL? at scale requires understanding the runtime lifecycle, memory allocations, and underlying execution constraints. The underlying framework or storage engine optimizes execution when contracts are explicitly preserved.\n\n**Production Failure Mode & Gotcha:** Un-handled edge cases in How do you compute the 95th percentile latency per API endpoint in T-SQL? under high concurrent traffic can lead to performance degradation, unhandled exceptions, or unexpected memory growth. Always enforce defensive validation and error handling.\n\n**Senior Trade-Off Signal:** Choosing this implementation approach balances developer velocity and system performance. Senior engineers evaluate latency, operational overhead, and maintenance costs before committing."
+      "a": "**Elevator Pitch:** Use PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms) OVER (PARTITION BY endpoint_path).\n\n**Under the Hood & Mechanics:** Window functions operate on a set of rows defined by the OVER() clause without collapsing them into a single row, allocating memory segments for frame calculation.\n\n**Production Failure Mode & Gotcha:** Partitioning over non-indexed columns with huge row counts forces expensive Sort operators and TempDB spills in execution plans.\n\n**Senior Trade-Off Signal:** Provides high readability and single-pass analytical aggregation, but can increase RAM grants compared to traditional indexed grouping."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When approaching Advanced Window Functions & Analytical SQL in production, my core strategy is balancing storage execution mechanics with query plan predictability to eliminate bottlenecks before they hit database CPU.",
+    "incidentStory": "During a high-concurrency surge, a critical query relying on Advanced Window Functions & Analytical SQL caused TempDB disk spills and latch contention. I analyzed the execution plan, identified missing stats/indexes, refactored the logic, and reduced query latency from 4.2s to 45ms while dropping DB CPU utilization by 65%.",
+    "whiteboardSteps": [
+      "1. Client Request → API Gateway → Relational Database Engine (Buffer Pool)",
+      "2. Query Parser & Optimizer → Cardinality Estimation based on Statistics",
+      "3. Execution Plan Operator Selection → Physical Execution (Advanced Window Functions & Analytical SQL logic)",
+      "4. Index / TempDB I/O Execution → Result Set Materialization & Caching"
+    ]
+  }
 }

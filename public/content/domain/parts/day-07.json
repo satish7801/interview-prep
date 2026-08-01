@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "How do you handle an architectural stalemate between two senior engineers on your team?",
-      "a": "**Elevator Pitch:** Focus the discussion on business requirements, measurable trade-offs (latency, cost, complexity), and operational maintenance. Have each engineer author a brief RFC with pros/cons/risks, prototype if needed, and make a decision aligned with team standards, documenting it in an ADR.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Focus the discussion on business requirements, measurable trade-offs (latency, cost, complexity), and operational maintenance. Have each engineer author a brief RFC with pros/cons/risks, prototype if needed, and make a decision aligned with team standards, documenting it in an ADR.\n\n**Under the Hood & Mechanics:** Requires understanding the underlying execution engine mechanics, memory layout, and runtime optimization pathways for Technical Leadership & Strategic Execution (Lead I).\n\n**Production Failure Mode & Gotcha:** Under high concurrency or large data volume, misconfiguring or misusing How can trigger CPU spikes, memory leaks, or execution bottlenecks.\n\n**Senior Trade-Off Signal:** Balancing execution performance, maintainability, and operational complexity requires explicit architectural evaluation before adoption."
     },
     {
       "q": "What makes a post-mortem review truly blameless and effective?",
-      "a": "**Elevator Pitch:** A blameless post-mortem focuses on systemic process/tooling failures rather than individual human error. It uses 5 Whys to identify root causes and produces concrete, assigned action items to prevent recurrence.\n\n**Under the Hood & Mechanics:** Angular Signals maintain an internal reactive dependency graph (ReactiveNode). When a signal value updates, it marks dependent computed nodes as stale without running change detection immediately. Evaluation happens lazily when read, updating only impacted DOM bindings.\n\n**Production Failure Mode & Gotcha:** Writing to signals inside an effect() can trigger infinite reactive loops or untracked state dependencies. Fix: use computed() or linkedSignal() for derived state sync, keeping effect() strictly for un-tracked side effects like logging or localStorage.\n\n**Senior Trade-Off Signal:** Signals provide fine-grained, synchronous reactivity without Zone.js overhead, but require learning new primitives (input(), output(), model()) compared to classic RxJS BehaviorSubjects."
+      "a": "**Elevator Pitch:** A blameless post-mortem focuses on systemic process/tooling failures rather than individual human error. It uses 5 Whys to identify root causes and produces concrete, assigned action items to prevent recurrence.\n\n**Under the Hood & Mechanics:** Requires understanding the underlying execution engine mechanics, memory layout, and runtime optimization pathways for Technical Leadership & Strategic Execution (Lead I).\n\n**Production Failure Mode & Gotcha:** Under high concurrency or large data volume, misconfiguring or misusing What can trigger CPU spikes, memory leaks, or execution bottlenecks.\n\n**Senior Trade-Off Signal:** Balancing execution performance, maintainability, and operational complexity requires explicit architectural evaluation before adoption."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing Technical Leadership & Strategic Execution (Lead I), I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from Technical Leadership & Strategic Execution (Lead I). I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (Technical Leadership & Strategic Execution (Lead I))",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }

@@ -21,11 +21,21 @@
   "qa": [
     {
       "q": "What is an S3 lifecycle rule and when is it essential?",
-      "a": "**Elevator Pitch:** A lifecycle rule auto-transitions objects to cheaper storage or deletes after N days. Without it, data accumulates in S3 Standard indefinitely. Standard-IA is 45% cheaper for infrequent access, Glacier Deep Archive 95% cheaper for archives. Lifecycle rules are the primary S3 cost control mechanism.\n\n**Under the Hood & Mechanics:** EF Core builds an Expression Tree, translates it via the relational SQL provider into a parameterized T-SQL query, and materializes entities into the DbContext Change Tracker. N+1 queries occur when navigating un-included navigation properties in a loop.\n\n**Production Failure Mode & Gotcha:** Executing queries without AsNoTracking() in read-only APIs forces EF Core to keep snapshot copies of all returned entities in memory, causing high RAM usage and CPU tracking overhead.\n\n**Senior Trade-Off Signal:** AsNoTracking() speeds up read queries by 20-30% and reduces memory footprint, but disables identity resolution and automatic change tracking for updates."
+      "a": "**Elevator Pitch:** A lifecycle rule auto-transitions objects to cheaper storage or deletes after N days. Without it, data accumulates in S3 Standard indefinitely. Standard-IA is 45% cheaper for infrequent access, Glacier Deep Archive 95% cheaper for archives. Lifecycle rules are the primary S3 cost control mechanism.\n\n**Under the Hood & Mechanics:** Message brokers persist events to partitioned append-only logs or in-memory queues, enabling distributed pub/sub with consumer groups.\n\n**Production Failure Mode & Gotcha:** Poison pill messages without dead-letter queues (DLQ) block partition processing and trigger infinite retry loops.\n\n**Senior Trade-Off Signal:** Partitioned event streaming (Kafka) guarantees order per key at scale, but partition rebalancing incurs consumer pause latency."
     },
     {
       "q": "What is a presigned URL?",
-      "a": "**Elevator Pitch:** A URL encoding AWS credentials and a signature, granting temporary access to a private object without AWS credentials. After ExpiresIn seconds it returns 403. Use to share reports with external partners without making the bucket public.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** A URL encoding AWS credentials and a signature, granting temporary access to a private object without AWS credentials. After ExpiresIn seconds it returns 403. Use to share reports with external partners without making the bucket public.\n\n**Under the Hood & Mechanics:** Message brokers persist events to partitioned append-only logs or in-memory queues, enabling distributed pub/sub with consumer groups.\n\n**Production Failure Mode & Gotcha:** Poison pill messages without dead-letter queues (DLQ) block partition processing and trigger infinite retry loops.\n\n**Senior Trade-Off Signal:** Partitioned event streaming (Kafka) guarantees order per key at scale, but partition rebalancing incurs consumer pause latency."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, S3 -- lifecycle, versioning, presigned URLs, events must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around S3 -- lifecycle, versioning, presigned URLs, events. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of S3 -- lifecycle, versioning, presigned URLs, events",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

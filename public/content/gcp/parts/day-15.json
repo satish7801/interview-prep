@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "How do Partitioning and Clustering combine to reduce BigQuery query costs?",
-      "a": "**Elevator Pitch:** Partitioning splits tables into daily/monthly directories, allowing BigQuery to prune entire time blocks. Clustering sorts data within each partition by specific columns, allowing Capacitor storage to skip unreferenced file blocks within partitions.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Partitioning splits tables into daily/monthly directories, allowing BigQuery to prune entire time blocks. Clustering sorts data within each partition by specific columns, allowing Capacitor storage to skip unreferenced file blocks within partitions.\n\n**Under the Hood & Mechanics:** Window functions operate on a set of rows defined by the OVER() clause without collapsing them into a single row, allocating memory segments for frame calculation.\n\n**Production Failure Mode & Gotcha:** Partitioning over non-indexed columns with huge row counts forces expensive Sort operators and TempDB spills in execution plans.\n\n**Senior Trade-Off Signal:** Provides high readability and single-pass analytical aggregation, but can increase RAM grants compared to traditional indexed grouping."
     },
     {
       "q": "What is the difference between On-Demand and Reservations (Slots) pricing in BigQuery?",
-      "a": "**Elevator Pitch:** On-demand charges per TB of data scanned ($6.25/TB). Slot reservations allocate dedicated query processing slots per hour (BigQuery Editions), providing predictable costs for enterprise workloads.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** On-demand charges per TB of data scanned ($6.25/TB). Slot reservations allocate dedicated query processing slots per hour (BigQuery Editions), providing predictable costs for enterprise workloads.\n\n**Under the Hood & Mechanics:** T-SQL engine parses, compiles into execution plans, caches them in the plan cache, and executes via the storage engine (buffer pool & latching).\n\n**Production Failure Mode & Gotcha:** Parameter sniffing and missing stats cause sub-optimal plan compilation, resulting in full table scans and high CPU.\n\n**Senior Trade-Off Signal:** Parameterization improves plan reuse, but recompile hints (OPTION RECOMPILE) may be needed for skewed data distributions."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When approaching BigQuery Architecture & Performance Optimization in production, my core strategy is balancing storage execution mechanics with query plan predictability to eliminate bottlenecks before they hit database CPU.",
+    "incidentStory": "During a high-concurrency surge, a critical query relying on BigQuery Architecture & Performance Optimization caused TempDB disk spills and latch contention. I analyzed the execution plan, identified missing stats/indexes, refactored the logic, and reduced query latency from 4.2s to 45ms while dropping DB CPU utilization by 65%.",
+    "whiteboardSteps": [
+      "1. Client Request → API Gateway → Relational Database Engine (Buffer Pool)",
+      "2. Query Parser & Optimizer → Cardinality Estimation based on Statistics",
+      "3. Execution Plan Operator Selection → Physical Execution (BigQuery Architecture & Performance Optimization logic)",
+      "4. Index / TempDB I/O Execution → Result Set Materialization & Caching"
+    ]
+  }
 }

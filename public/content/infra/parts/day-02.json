@@ -20,11 +20,21 @@
   "qa": [
     {
       "q": "Why S3 + DynamoDB for remote state?",
-      "a": "**Elevator Pitch:** S3 stores the file centrally, encrypted, with versioning. DynamoDB adds a mutex: before terraform apply, Terraform writes a lock entry; if another apply is running, it waits. Prevents concurrent applies from corrupting state -- essential for CI/CD and team use.\n\n**Under the Hood & Mechanics:** EF Core builds an Expression Tree, translates it via the relational SQL provider into a parameterized T-SQL query, and materializes entities into the DbContext Change Tracker. N+1 queries occur when navigating un-included navigation properties in a loop.\n\n**Production Failure Mode & Gotcha:** Executing queries without AsNoTracking() in read-only APIs forces EF Core to keep snapshot copies of all returned entities in memory, causing high RAM usage and CPU tracking overhead.\n\n**Senior Trade-Off Signal:** AsNoTracking() speeds up read queries by 20-30% and reduces memory footprint, but disables identity resolution and automatic change tracking for updates."
+      "a": "**Elevator Pitch:** S3 stores the file centrally, encrypted, with versioning. DynamoDB adds a mutex: before terraform apply, Terraform writes a lock entry; if another apply is running, it waits. Prevents concurrent applies from corrupting state -- essential for CI/CD and team use.\n\n**Under the Hood & Mechanics:** Terraform parses HCL into an execution graph, reconciling state file (.tfstate) against remote cloud provider APIs via provider plugins.\n\n**Production Failure Mode & Gotcha:** Unlocked concurrent state modifications or drift between cloud resources and local state cause resource deletion or corrupt state.\n\n**Senior Trade-Off Signal:** Remote state locking (DynamoDB/S3) ensures safe team collaboration but requires strict CI/CD discipline."
     },
     {
       "q": "What is a Terraform module?",
-      "a": "**Elevator Pitch:** A reusable package of resources. Instead of copy-pasting the same S3+versioning+public-access-block setup every project, write once and call it. Enforces standards without remembering to add each resource manually every time.\n\n**Under the Hood & Mechanics:** SQL Server compiles T-SQL into an execution plan based on statistics histogram estimates. Parameter sniffing occurs when a plan compiled for a specific parameter (e.g. 1 row) is reused for a parameter matching 1,000,000 rows, leading to index scan or memory grant spills.\n\n**Production Failure Mode & Gotcha:** Implicit datatype conversion (e.g. passing NVARCHAR parameter to VARCHAR indexed column) forces SQL Server to run CONVERT() on every row, turning index seeks into full index scans.\n\n**Senior Trade-Off Signal:** READ COMMITTED SNAPSHOT (RCSI) eliminates reader-writer blocking using tempdb row versioning, but increases tempdb I/O and version store management overhead."
+      "a": "**Elevator Pitch:** A reusable package of resources. Instead of copy-pasting the same S3+versioning+public-access-block setup every project, write once and call it. Enforces standards without remembering to add each resource manually every time.\n\n**Under the Hood & Mechanics:** Terraform parses HCL into an execution graph, reconciling state file (.tfstate) against remote cloud provider APIs via provider plugins.\n\n**Production Failure Mode & Gotcha:** Unlocked concurrent state modifications or drift between cloud resources and local state cause resource deletion or corrupt state.\n\n**Senior Trade-Off Signal:** Remote state locking (DynamoDB/S3) ensures safe team collaboration but requires strict CI/CD discipline."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, Remote state, modules, capstone infrastructure must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around Remote state, modules, capstone infrastructure. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of Remote state, modules, capstone infrastructure",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

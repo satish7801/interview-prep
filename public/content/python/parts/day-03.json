@@ -48,11 +48,21 @@
   "qa": [
     {
       "q": "How does pandas boolean indexing compare to SQL WHERE?",
-      "a": "**Elevator Pitch:** df[df['amount'] > 1000] is equivalent to WHERE amount > 1000. The expression produces a boolean Series (True/False per row). Combine with & (AND) and | (OR) -- not Python's and/or. Always wrap conditions in parentheses: df[(df['a'] > 1) & (df['b'] == 'active')].\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** df[df['amount'] > 1000] is equivalent to WHERE amount > 1000. The expression produces a boolean Series (True/False per row). Combine with & (AND) and | (OR) -- not Python's and/or. Always wrap conditions in parentheses: df[(df['a'] > 1) & (df['b'] == 'active')].\n\n**Under the Hood & Mechanics:** Indexes store data in B-Tree structures. Clustered indexes dictate physical row storage on disk leaf pages; non-clustered indexes point to clustered keys or RIDs.\n\n**Production Failure Mode & Gotcha:** Over-indexing degrades write performance on INSERT/UPDATE/DELETE operations and leads to index fragmentation and page splits.\n\n**Senior Trade-Off Signal:** Covering indexes eliminate costly Key Lookups for read-heavy workloads but increase storage footprint and write transaction overhead."
     },
     {
       "q": "When use pandas vs PySpark?",
-      "a": "**Elevator Pitch:** Pandas for data that fits in memory (up to a few hundred MB). Use PySpark when data does not fit on one machine, you need distributed processing, or you are in an EMR/Databricks environment.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** Pandas for data that fits in memory (up to a few hundred MB). Use PySpark when data does not fit on one machine, you need distributed processing, or you are in an EMR/Databricks environment.\n\n**Under the Hood & Mechanics:** Spark Driver compiles DataFrame operations into a Catalyst logical plan, optimizes it into a Physical plan, and distributes tasks across Executor JVMs.\n\n**Production Failure Mode & Gotcha:** Data skew on join/group keys forces single executors to spill to disk or fail with OutOfMemory (OOM) errors.\n\n**Senior Trade-Off Signal:** Broadcasting small tables eliminates expensive network shuffles, but broadcasting large tables exhausts Driver memory."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing Pandas -- DataFrames, groupby, merge, pivot, I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from Pandas -- DataFrames, groupby, merge, pivot. I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (Pandas -- DataFrames, groupby, merge, pivot)",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }

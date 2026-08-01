@@ -45,11 +45,21 @@
   "qa": [
     {
       "q": "Why are ExecuteUpdateAsync and ExecuteDeleteAsync game-changers for EF Core?",
-      "a": "**Elevator Pitch:** They execute directly on the database in a single SQL UPDATE/DELETE statement without pulling thousands of rows into client memory, initializing entity tracking, or firing individual UPDATE commands.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** They execute directly on the database in a single SQL UPDATE/DELETE statement without pulling thousands of rows into client memory, initializing entity tracking, or firing individual UPDATE commands.\n\n**Under the Hood & Mechanics:** T-SQL engine parses, compiles into execution plans, caches them in the plan cache, and executes via the storage engine (buffer pool & latching).\n\n**Production Failure Mode & Gotcha:** Parameter sniffing and missing stats cause sub-optimal plan compilation, resulting in full table scans and high CPU.\n\n**Senior Trade-Off Signal:** Parameterization improves plan reuse, but recompile hints (OPTION RECOMPILE) may be needed for skewed data distributions."
     },
     {
       "q": "How does EF Core map primitive collections (e.g., List<string> Tags) to SQL Server?",
-      "a": "**Elevator Pitch:** EF Core converts the collection to a JSON string stored in an nvarchar column and queries it using SQL Server's native OPENJSON / JSON_VALUE functions under the hood.\n\n**Under the Hood & Mechanics:** EF Core builds an Expression Tree, translates it via the relational SQL provider into a parameterized T-SQL query, and materializes entities into the DbContext Change Tracker. N+1 queries occur when navigating un-included navigation properties in a loop.\n\n**Production Failure Mode & Gotcha:** Executing queries without AsNoTracking() in read-only APIs forces EF Core to keep snapshot copies of all returned entities in memory, causing high RAM usage and CPU tracking overhead.\n\n**Senior Trade-Off Signal:** AsNoTracking() speeds up read queries by 20-30% and reduces memory footprint, but disables identity resolution and automatic change tracking for updates."
+      "a": "**Elevator Pitch:** EF Core converts the collection to a JSON string stored in an nvarchar column and queries it using SQL Server's native OPENJSON / JSON_VALUE functions under the hood.\n\n**Under the Hood & Mechanics:** T-SQL engine parses, compiles into execution plans, caches them in the plan cache, and executes via the storage engine (buffer pool & latching).\n\n**Production Failure Mode & Gotcha:** Parameter sniffing and missing stats cause sub-optimal plan compilation, resulting in full table scans and high CPU.\n\n**Senior Trade-Off Signal:** Parameterization improves plan reuse, but recompile hints (OPTION RECOMPILE) may be needed for skewed data distributions."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In .NET production applications, I treat High-Performance EF Core 8/9/10 as an architectural constraint where memory allocations and thread safety dictate latency SLA and process stability.",
+    "incidentStory": "In our core SaaS backend, misconfigured High-Performance EF Core 8/9/10 triggered thread-pool starvation and high Gen 2 GC pauses during peak traffic. I attached dotnet-dump and dotMemory, diagnosed the allocation root-cause, refactored to zero-allocation primitives, and improved p99 API response times by 80%.",
+    "whiteboardSteps": [
+      "1. HTTP Controller / Minimal API Endpoint → Request Pipeline",
+      "2. Service Scope & DI Resolution → Execution of High-Performance EF Core 8/9/10",
+      "3. Thread Pool Worker / Async State Machine Continuation → Memory Allocation",
+      "4. EF Core / Database / External Service Execution → Garbage Collection / Resource Release"
+    ]
+  }
 }

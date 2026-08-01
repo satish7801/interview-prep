@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "Why is the `track` expression mandatory in `@for` loops?",
-      "a": "**Elevator Pitch:** Mandatory track forces developers to provide a unique key for DOM node identity, ensuring Angular reuses existing DOM elements on array mutation rather than destroying and recreating the entire DOM sub-tree.\n\n**Under the Hood & Mechanics:** Operating Why is the `track` expression mandatory in `@for` loops? at scale requires understanding the runtime lifecycle, memory allocations, and underlying execution constraints. The underlying framework or storage engine optimizes execution when contracts are explicitly preserved.\n\n**Production Failure Mode & Gotcha:** Un-handled edge cases in Why is the `track` expression mandatory in `@for` loops? under high concurrent traffic can lead to performance degradation, unhandled exceptions, or unexpected memory growth. Always enforce defensive validation and error handling.\n\n**Senior Trade-Off Signal:** Choosing this implementation approach balances developer velocity and system performance. Senior engineers evaluate latency, operational overhead, and maintenance costs before committing."
+      "a": "**Elevator Pitch:** Mandatory track forces developers to provide a unique key for DOM node identity, ensuring Angular reuses existing DOM elements on array mutation rather than destroying and recreating the entire DOM sub-tree.\n\n**Under the Hood & Mechanics:** Angular compiler generates Ivy instructions, linking component templates to DOM nodes with change detection dirty checking.\n\n**Production Failure Mode & Gotcha:** Executing heavy computations inside template expressions runs on every change detection cycle, causing UI lag.\n\n**Senior Trade-Off Signal:** OnPush change detection skips subtrees unless inputs change, drastically improving performance at the cost of strict immutability."
     },
     {
       "q": "Explain how `@defer (on viewport)` improves Initial Page Load (Core Web Vitals).",
-      "a": "**Elevator Pitch:** Components inside @defer are code-split into separate bundle chunks and not downloaded or compiled until the deferred DOM container scrolls into the browser viewport, lowering initial JavaScript bundle execution time.\n\n**Under the Hood & Mechanics:** EF Core builds an Expression Tree, translates it via the relational SQL provider into a parameterized T-SQL query, and materializes entities into the DbContext Change Tracker. N+1 queries occur when navigating un-included navigation properties in a loop.\n\n**Production Failure Mode & Gotcha:** Executing queries without AsNoTracking() in read-only APIs forces EF Core to keep snapshot copies of all returned entities in memory, causing high RAM usage and CPU tracking overhead.\n\n**Senior Trade-Off Signal:** AsNoTracking() speeds up read queries by 20-30% and reduces memory footprint, but disables identity resolution and automatic change tracking for updates."
+      "a": "**Elevator Pitch:** Components inside @defer are code-split into separate bundle chunks and not downloaded or compiled until the deferred DOM container scrolls into the browser viewport, lowering initial JavaScript bundle execution time.\n\n**Under the Hood & Mechanics:** Angular compiler generates Ivy instructions, linking component templates to DOM nodes with change detection dirty checking.\n\n**Production Failure Mode & Gotcha:** Executing heavy computations inside template expressions runs on every change detection cycle, causing UI lag.\n\n**Senior Trade-Off Signal:** OnPush change detection skips subtrees unless inputs change, drastically improving performance at the cost of strict immutability."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When building Angular client applications at scale, I design Modern Control Flow & Deferrable Views around predictable state propagation and minimal DOM change detection overhead.",
+    "incidentStory": "Our analytics dashboard experienced noticeable UI frame drops (jank) during live data streaming due to unoptimized Modern Control Flow & Deferrable Views. I refactored the component architecture to fine-grained reactivity, eliminated unnecessary change detection cycles, and restored solid 60 FPS rendering.",
+    "whiteboardSteps": [
+      "1. User Action / WebSocket Push Event → Reactive Store / Signal State Source",
+      "2. Signal Dependency Graph / RxJS Operator Chain Transformation",
+      "3. Fine-Grained Change Detection Notification → View Node Marking",
+      "4. Ivy Template DOM Update → Browser Paint Phase"
+    ]
+  }
 }

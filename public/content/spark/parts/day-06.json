@@ -47,11 +47,21 @@
   "qa": [
     {
       "q": "What is the difference between val and var in Scala?",
-      "a": "**Elevator Pitch:** val declares an immutable reference -- once assigned, cannot be reassigned (like C# readonly field). var is mutable. Scala style strongly prefers val for predictability and thread safety.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** val declares an immutable reference -- once assigned, cannot be reassigned (like C# readonly field). var is mutable. Scala style strongly prefers val for predictability and thread safety.\n\n**Under the Hood & Mechanics:** T-SQL engine parses, compiles into execution plans, caches them in the plan cache, and executes via the storage engine (buffer pool & latching).\n\n**Production Failure Mode & Gotcha:** Parameter sniffing and missing stats cause sub-optimal plan compilation, resulting in full table scans and high CPU.\n\n**Senior Trade-Off Signal:** Parameterization improves plan reuse, but recompile hints (OPTION RECOMPILE) may be needed for skewed data distributions."
     },
     {
       "q": "How does the Spark DataFrame API differ between PySpark and Scala?",
-      "a": "**Elevator Pitch:** The method names are nearly identical: .filter(), .groupBy(), .agg(), .join(), .write.parquet() are the same. Main differences: column reference uses col() or $'colName' in Scala; reader options use .option() chains; sum does not need to be renamed (no conflict with Python built-in). Reading Scala Spark code requires mostly just adjusting for different syntax, not different concepts.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** The method names are nearly identical: .filter(), .groupBy(), .agg(), .join(), .write.parquet() are the same. Main differences: column reference uses col() or $'colName' in Scala; reader options use .option() chains; sum does not need to be renamed (no conflict with Python built-in). Reading Scala Spark code requires mostly just adjusting for different syntax, not different concepts.\n\n**Under the Hood & Mechanics:** Spark Driver compiles DataFrame operations into a Catalyst logical plan, optimizes it into a Physical plan, and distributes tasks across Executor JVMs.\n\n**Production Failure Mode & Gotcha:** Data skew on join/group keys forces single executors to spill to disk or fail with OutOfMemory (OOM) errors.\n\n**Senior Trade-Off Signal:** Broadcasting small tables eliminates expensive network shuffles, but broadcasting large tables exhausts Driver memory."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing Scala basics for PySpark developers, I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from Scala basics for PySpark developers. I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (Scala basics for PySpark developers)",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }

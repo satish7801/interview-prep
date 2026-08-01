@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "When should you choose Azure Container Apps (ACA) over Azure Kubernetes Service (AKS)?",
-      "a": "**Elevator Pitch:** Choose ACA when running microservices or background workers needing container isolation and KEDA event-driven autoscaling (down to 0) without managing Kubernetes control planes, ingress controllers, or node pools.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Choose ACA when running microservices or background workers needing container isolation and KEDA event-driven autoscaling (down to 0) without managing Kubernetes control planes, ingress controllers, or node pools.\n\n**Under the Hood & Mechanics:** Message brokers persist events to partitioned append-only logs or in-memory queues, enabling distributed pub/sub with consumer groups.\n\n**Production Failure Mode & Gotcha:** Poison pill messages without dead-letter queues (DLQ) block partition processing and trigger infinite retry loops.\n\n**Senior Trade-Off Signal:** Partitioned event streaming (Kafka) guarantees order per key at scale, but partition rebalancing incurs consumer pause latency."
     },
     {
       "q": "How does KEDA autoscale Azure Container Apps based on queue depth?",
-      "a": "**Elevator Pitch:** KEDA monitors Azure Service Bus queue lengths. When unconsumed message count exceeds threshold, KEDA signals ACA to spin up additional container instances dynamically, scaling back to zero when idle.\n\n**Under the Hood & Mechanics:** Angular Signals maintain an internal reactive dependency graph (ReactiveNode). When a signal value updates, it marks dependent computed nodes as stale without running change detection immediately. Evaluation happens lazily when read, updating only impacted DOM bindings.\n\n**Production Failure Mode & Gotcha:** Writing to signals inside an effect() can trigger infinite reactive loops or untracked state dependencies. Fix: use computed() or linkedSignal() for derived state sync, keeping effect() strictly for un-tracked side effects like logging or localStorage.\n\n**Senior Trade-Off Signal:** Signals provide fine-grained, synchronous reactivity without Zone.js overhead, but require learning new primitives (input(), output(), model()) compared to classic RxJS BehaviorSubjects."
+      "a": "**Elevator Pitch:** KEDA monitors Azure Service Bus queue lengths. When unconsumed message count exceeds threshold, KEDA signals ACA to spin up additional container instances dynamically, scaling back to zero when idle.\n\n**Under the Hood & Mechanics:** Signals build a fine-grained reactive dependency graph. When a signal value changes, only dependent view nodes are scheduled for DOM updating.\n\n**Production Failure Mode & Gotcha:** Mutating signal values inside effects without untracked() causes infinite change detection loops and browser freeze.\n\n**Senior Trade-Off Signal:** Signals provide predictable synchronous reactivity without Zone.js overhead, but require adapting existing RxJS-heavy codebases."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, Azure DevOps, Bicep & Container Apps must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around Azure DevOps, Bicep & Container Apps. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of Azure DevOps, Bicep & Container Apps",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

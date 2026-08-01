@@ -29,11 +29,21 @@
   "qa": [
     {
       "q": "What does terraform plan show and why always read it first?",
-      "a": "**Elevator Pitch:** Shows the diff: + created, - destroyed, ~ modified, -/+ destroy+recreate. A common mistake: renaming an S3 bucket shows -/+ which would delete all data. The plan reveals this before it happens. Equivalent to reviewing a database migration before running it.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Shows the diff: + created, - destroyed, ~ modified, -/+ destroy+recreate. A common mistake: renaming an S3 bucket shows -/+ which would delete all data. The plan reveals this before it happens. Equivalent to reviewing a database migration before running it.\n\n**Under the Hood & Mechanics:** Terraform parses HCL into an execution graph, reconciling state file (.tfstate) against remote cloud provider APIs via provider plugins.\n\n**Production Failure Mode & Gotcha:** Unlocked concurrent state modifications or drift between cloud resources and local state cause resource deletion or corrupt state.\n\n**Senior Trade-Off Signal:** Remote state locking (DynamoDB/S3) ensures safe team collaboration but requires strict CI/CD discipline."
     },
     {
       "q": "What is Terraform state and why never commit it?",
-      "a": "**Elevator Pitch:** terraform.tfstate maps your .tf resource blocks to real AWS resource IDs and often contains sensitive values (passwords, keys). Committing exposes these in Git history. For teams, local state means concurrent applies can corrupt it -- solution: remote state in S3 + DynamoDB locking.\n\n**Under the Hood & Mechanics:** SQL Server compiles T-SQL into an execution plan based on statistics histogram estimates. Parameter sniffing occurs when a plan compiled for a specific parameter (e.g. 1 row) is reused for a parameter matching 1,000,000 rows, leading to index scan or memory grant spills.\n\n**Production Failure Mode & Gotcha:** Implicit datatype conversion (e.g. passing NVARCHAR parameter to VARCHAR indexed column) forces SQL Server to run CONVERT() on every row, turning index seeks into full index scans.\n\n**Senior Trade-Off Signal:** READ COMMITTED SNAPSHOT (RCSI) eliminates reader-writer blocking using tempdb row versioning, but increases tempdb I/O and version store management overhead."
+      "a": "**Elevator Pitch:** terraform.tfstate maps your .tf resource blocks to real AWS resource IDs and often contains sensitive values (passwords, keys). Committing exposes these in Git history. For teams, local state means concurrent applies can corrupt it -- solution: remote state in S3 + DynamoDB locking.\n\n**Under the Hood & Mechanics:** Terraform parses HCL into an execution graph, reconciling state file (.tfstate) against remote cloud provider APIs via provider plugins.\n\n**Production Failure Mode & Gotcha:** Unlocked concurrent state modifications or drift between cloud resources and local state cause resource deletion or corrupt state.\n\n**Senior Trade-Off Signal:** Remote state locking (DynamoDB/S3) ensures safe team collaboration but requires strict CI/CD discipline."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, Terraform -- IaC, plan/apply/destroy, variables, state must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around Terraform -- IaC, plan/apply/destroy, variables, state. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of Terraform -- IaC, plan/apply/destroy, variables, state",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

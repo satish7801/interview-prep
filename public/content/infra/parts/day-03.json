@@ -20,11 +20,21 @@
   "qa": [
     {
       "q": "What should a data pipeline Grafana dashboard include?",
-      "a": "**Elevator Pitch:** Records ingested per run/source, job duration trend, error rate, EMR cluster cost/idle time, last successful run time per source. A Stat panel showing last run: 2 hours ago for an hourly job immediately surfaces a missed run.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Records ingested per run/source, job duration trend, error rate, EMR cluster cost/idle time, last successful run time per source. A Stat panel showing last run: 2 hours ago for an hourly job immediately surfaces a missed run.\n\n**Under the Hood & Mechanics:** Cloud control plane APIs orchestrate virtualized hardware, networking (VPC/VNets), IAM policies, and auto-scaling groups.\n\n**Production Failure Mode & Gotcha:** Overly permissive IAM roles (wildcard actions) or unmonitored resource limits lead to security breaches and unexpected cloud cost spikes.\n\n**Senior Trade-Off Signal:** Serverless/managed services eliminate infrastructure maintenance but introduce cold starts and vendor lock-in."
     },
     {
       "q": "What are Grafana dashboard variables?",
-      "a": "**Elevator Pitch:** Dropdown filters at the top that filter all panels simultaneously. $source with values [Bloomberg, ICE] -- selecting one filters every panel. Avoids creating 50 identical dashboards. Interpolated into queries: rate(records{source='$source'}[5m]).\n\n**Under the Hood & Mechanics:** Operating What are Grafana dashboard variables? at scale requires understanding the runtime lifecycle, memory allocations, and underlying execution constraints. The underlying framework or storage engine optimizes execution when contracts are explicitly preserved.\n\n**Production Failure Mode & Gotcha:** Un-handled edge cases in What are Grafana dashboard variables? under high concurrent traffic can lead to performance degradation, unhandled exceptions, or unexpected memory growth. Always enforce defensive validation and error handling.\n\n**Senior Trade-Off Signal:** Choosing this implementation approach balances developer velocity and system performance. Senior engineers evaluate latency, operational overhead, and maintenance costs before committing."
+      "a": "**Elevator Pitch:** Dropdown filters at the top that filter all panels simultaneously. $source with values [Bloomberg, ICE] -- selecting one filters every panel. Avoids creating 50 identical dashboards. Interpolated into queries: rate(records{source='$source'}[5m]).\n\n**Under the Hood & Mechanics:** Cloud control plane APIs orchestrate virtualized hardware, networking (VPC/VNets), IAM policies, and auto-scaling groups.\n\n**Production Failure Mode & Gotcha:** Overly permissive IAM roles (wildcard actions) or unmonitored resource limits lead to security breaches and unexpected cloud cost spikes.\n\n**Senior Trade-Off Signal:** Serverless/managed services eliminate infrastructure maintenance but introduce cold starts and vendor lock-in."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, Grafana -- dashboards, panels, alerting must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around Grafana -- dashboards, panels, alerting. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of Grafana -- dashboards, panels, alerting",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

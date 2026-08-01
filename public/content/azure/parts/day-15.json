@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "What are the 5 consistency levels in Azure Cosmos DB and which is default?",
-      "a": "**Elevator Pitch:** Strong, Bounded Staleness, Session (default), Consistent Prefix, and Eventual. Session consistency provides monotonic reads and writes within a client session at low latency and standard RU cost.\n\n**Under the Hood & Mechanics:** EF Core builds an Expression Tree, translates it via the relational SQL provider into a parameterized T-SQL query, and materializes entities into the DbContext Change Tracker. N+1 queries occur when navigating un-included navigation properties in a loop.\n\n**Production Failure Mode & Gotcha:** Executing queries without AsNoTracking() in read-only APIs forces EF Core to keep snapshot copies of all returned entities in memory, causing high RAM usage and CPU tracking overhead.\n\n**Senior Trade-Off Signal:** AsNoTracking() speeds up read queries by 20-30% and reduces memory footprint, but disables identity resolution and automatic change tracking for updates."
+      "a": "**Elevator Pitch:** Strong, Bounded Staleness, Session (default), Consistent Prefix, and Eventual. Session consistency provides monotonic reads and writes within a client session at low latency and standard RU cost.\n\n**Under the Hood & Mechanics:** Message brokers persist events to partitioned append-only logs or in-memory queues, enabling distributed pub/sub with consumer groups.\n\n**Production Failure Mode & Gotcha:** Poison pill messages without dead-letter queues (DLQ) block partition processing and trigger infinite retry loops.\n\n**Senior Trade-Off Signal:** Partitioned event streaming (Kafka) guarantees order per key at scale, but partition rebalancing incurs consumer pause latency."
     },
     {
       "q": "Why is Managed Identity superior to storing Azure Service Principal secrets in App Settings?",
-      "a": "**Elevator Pitch:** Managed Identity eliminates credential management entirely: Azure automatically creates and rotates secrets under the hood, binding identity to the Azure resource lifespan.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** Managed Identity eliminates credential management entirely: Azure automatically creates and rotates secrets under the hood, binding identity to the Azure resource lifespan.\n\n**Under the Hood & Mechanics:** Cloud control plane APIs orchestrate virtualized hardware, networking (VPC/VNets), IAM policies, and auto-scaling groups.\n\n**Production Failure Mode & Gotcha:** Overly permissive IAM roles (wildcard actions) or unmonitored resource limits lead to security breaches and unexpected cloud cost spikes.\n\n**Senior Trade-Off Signal:** Serverless/managed services eliminate infrastructure maintenance but introduce cold starts and vendor lock-in."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, Azure Native Security, Identity & Cosmos DB at Scale must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around Azure Native Security, Identity & Cosmos DB at Scale. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of Azure Native Security, Identity & Cosmos DB at Scale",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

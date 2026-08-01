@@ -21,7 +21,17 @@
   "qa": [
     {
       "q": "When should you cache a Spark DataFrame?",
-      "a": "**Elevator Pitch:** Cache when the same DataFrame is used in MORE than one action in the same job AND upstream transformations are expensive (multiple joins, UDFs). Do not cache when used only once, too large for executor memory, or when the source is fast to read.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** Cache when the same DataFrame is used in MORE than one action in the same job AND upstream transformations are expensive (multiple joins, UDFs). Do not cache when used only once, too large for executor memory, or when the source is fast to read.\n\n**Under the Hood & Mechanics:** Spark Driver compiles DataFrame operations into a Catalyst logical plan, optimizes it into a Physical plan, and distributes tasks across Executor JVMs.\n\n**Production Failure Mode & Gotcha:** Data skew on join/group keys forces single executors to spill to disk or fail with OutOfMemory (OOM) errors.\n\n**Senior Trade-Off Signal:** Broadcasting small tables eliminates expensive network shuffles, but broadcasting large tables exhausts Driver memory."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing Window functions, caching, persistence, I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from Window functions, caching, persistence. I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (Window functions, caching, persistence)",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }

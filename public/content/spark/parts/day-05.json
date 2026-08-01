@@ -22,11 +22,21 @@
   "qa": [
     {
       "q": "What is data skew and how do you detect it?",
-      "a": "**Elevator Pitch:** Data skew is when one key in a groupBy or join has far more rows than others -- one task becomes the bottleneck. Detect in Spark UI: Tasks tab of the slow stage, look for one task with duration or input size 100x larger than the median.\n\n**Under the Hood & Mechanics:** Async methods compile into an IAsyncStateMachine struct managed by the AsyncMethodBuilder. Awaiting an uncompleted task yields execution back to the caller. Blocking with .Result on a thread bound to a SynchronizationContext causes deadlocks when the continuation waits for the blocked thread.\n\n**Production Failure Mode & Gotcha:** Sync-over-async (.Result or .Wait()) on ASP.NET request threads rapidly exhausts thread pool threads, leading to HTTP 503 gateway timeouts and request queuing under load.\n\n**Senior Trade-Off Signal:** Async all the way preserves thread pool scalability, but requires passing CancellationToken through all layers and avoiding sync blocking methods everywhere."
+      "a": "**Elevator Pitch:** Data skew is when one key in a groupBy or join has far more rows than others -- one task becomes the bottleneck. Detect in Spark UI: Tasks tab of the slow stage, look for one task with duration or input size 100x larger than the median.\n\n**Under the Hood & Mechanics:** Spark Driver compiles DataFrame operations into a Catalyst logical plan, optimizes it into a Physical plan, and distributes tasks across Executor JVMs.\n\n**Production Failure Mode & Gotcha:** Data skew on join/group keys forces single executors to spill to disk or fail with OutOfMemory (OOM) errors.\n\n**Senior Trade-Off Signal:** Broadcasting small tables eliminates expensive network shuffles, but broadcasting large tables exhausts Driver memory."
     },
     {
       "q": "What does Adaptive Query Execution do?",
-      "a": "**Elevator Pitch:** AQE allows Spark to modify the execution plan mid-query based on runtime statistics. After filtering, Spark may discover a table is now small enough to broadcast and switches join strategy mid-execution. Also auto-coalesces shuffle partitions. Default in Spark 3.2+.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** AQE allows Spark to modify the execution plan mid-query based on runtime statistics. After filtering, Spark may discover a table is now small enough to broadcast and switches join strategy mid-execution. Also auto-coalesces shuffle partitions. Default in Spark 3.2+.\n\n**Under the Hood & Mechanics:** SQL Server query processor constructs a logical tree, estimates cardinality using statistics, and selects physical operators (Nested Loops, Hash Join, or Merge Join) based on cost and sorted indexes.\n\n**Production Failure Mode & Gotcha:** Cartesian products or missing join predicates can cause exponential disk tempdb spilling, memory grant exhaustion, and query timeouts under concurrent load.\n\n**Senior Trade-Off Signal:** Nested loops excel for indexed small lookups; Hash joins handle large unsorted sets at the cost of higher tempdb and memory grant usage."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing Performance -- skew, salting, partitioning, AQE, I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from Performance -- skew, salting, partitioning, AQE. I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (Performance -- skew, salting, partitioning, AQE)",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }

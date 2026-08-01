@@ -56,6 +56,12 @@ export type PathManifest = {
   parts: PartSummary[];
 };
 
+export type InterviewPlaybook = {
+  openingScript: string;
+  incidentStory: string;
+  whiteboardSteps: string[];
+};
+
 export type PartContent = {
   id: string;
   n: number;
@@ -66,6 +72,7 @@ export type PartContent = {
   pr?: string[];
   viz?: Viz[];
   qa?: QA[];
+  interviewPlaybook?: InterviewPlaybook | null;
 };
 
 export type QuizFileItem = {

@@ -2,8 +2,8 @@
   "id": "dotnet",
   "name": ".NET / C#",
   "color": "--dotnet",
-  "sub": "Incl. .NET 10 & C# 14 - 15 days",
-  "desc": "OOP depth, async mastery, C# 14 new features, ASP.NET Core, EF Core — tied to your SCIM and compliance platform work.",
+  "sub": "Master .NET & C# Path · 22 days",
+  "desc": "Complete mid-senior interview mastery: OOP depth, async state machines, C# 14, ASP.NET Core 10, EF Core 10, Memory/GC diagnostics, CQRS, RabbitMQ/Kafka, SCIM 2.0, and System Design.",
   "tip": "When designing something live, narrate your decisions — \"I'd make this Scoped because it needs a fresh DbContext per request.\" At 4 YOE, reasoning is what's graded.",
   "setup": "",
   "qr": {
@@ -146,6 +146,30 @@
       "n": 18,
       "title": "High-Throughput .NET Pipelines — Pipelines, Channels & Hybrid Cache",
       "summary": "Architecting low-latency .NET applications requires System.IO.Pipelines, System.Threading.Channels, and Hybrid Cache."
+    },
+    {
+      "id": "day-19",
+      "n": 19,
+      "title": "Messaging — RabbitMQ vs Kafka, outbox, saga",
+      "summary": "Know when to pick a broker, what partitions mean, and how to avoid dual-write bugs."
+    },
+    {
+      "id": "day-20",
+      "n": 20,
+      "title": "Advanced Memory Diagnostics, GC Internals & Profiling",
+      "summary": "Production debugging at 4 YOE requires explaining Server vs Workstation GC, Gen 0/1/2, LOH/POH, memory leak diagnosis using dotnet-dump, dotnet-gcdump, and memo…"
+    },
+    {
+      "id": "day-21",
+      "n": 21,
+      "title": "CQRS, MediatR & Integration Event Patterns",
+      "summary": "Mid-senior roles test your understanding of separating reads from writes, pipeline behaviors, and reliable inter-service event communication."
+    },
+    {
+      "id": "day-22",
+      "n": 22,
+      "title": "Enterprise Auth — OAuth2, SCIM 2.0, Rate Limiting & Token Security",
+      "summary": "Senior interviews for enterprise SaaS expect deep knowledge of identity provisioning (SCIM), OAuth2/OIDC token security, and API rate limiting."
     }
   ]
 }

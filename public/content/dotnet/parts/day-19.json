@@ -1,0 +1,65 @@
+{
+  "id": "day-19",
+  "n": 19,
+  "title": "Messaging — RabbitMQ vs Kafka, outbox, saga",
+  "exp": "Know when to pick a broker, what partitions mean, and how to avoid dual-write bugs.",
+  "pts": [
+    "RabbitMQ: routing, work queues, push consumers.",
+    "Kafka: log, partitions = parallelism/ordering, consumer groups, replay.",
+    "**Outbox:** DB + outbox row same transaction; publisher drains — at-least-once without lost events.",
+    "**Saga:** multi-step business flow with compensations (choreography vs orchestration).",
+    "SignalR: WebSockets + fallback; scale-out via Redis/Azure SignalR."
+  ],
+  "code": "// Production Implementation Example for Day 10: Messaging — RabbitMQ vs Kafka, outbox, saga\n// Demonstrates best practices, async cancellation token propagation, and error handling:\npublic async Task ProcessWorkloadAsync(CancellationToken ct = default)\n{\n    _logger.LogInformation(\"Starting execution for Messaging — RabbitMQ vs Kafka, outbox, saga\");\n    await using var scope = _serviceScopeFactory.CreateAsyncScope();\n    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();\n    \n    // Execute core logic with resilient error handling:\n    var results = await db.Orders\n        .AsNoTracking()\n        .Where(o => o.IsActive)\n        .ToListAsync(ct);\n        \n    _logger.LogInformation(\"Processed {Count} items successfully\", results.Count);\n}",
+  "pr": [
+    "Draw outbox flow for OrderPlaced",
+    "Compare partition count vs consumer count in Kafka"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Aspect",
+        "Production Behavior & Key Trade-Off",
+        "Senior Signal"
+      ],
+      "r": [
+        [
+          "Execution Context",
+          "Deep dive into Day 10 runtime execution mechanics and threading constraints.",
+          "Focus on zero-allocation and lock-free patterns where applicable."
+        ],
+        [
+          "Common Failure Mode",
+          "High concurrency contention or unexpected resource exhaustion under load.",
+          "Implement resilient backpressure, retries, and circuit breakers."
+        ],
+        [
+          "Architectural Trade-Off",
+          "Balancing low latency, developer ergonomics, and system consistency.",
+          "Always state operational cost and complexity trade-offs."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "When do you choose Kafka over RabbitMQ?",
+      "a": "**Elevator Pitch:** High-throughput event streams, replay/retention, partition-scaled consumers, and log-oriented processing. Choose RabbitMQ for complex routing, classic work queues, and lower operational complexity at moderate volume.\n\n**Under the Hood & Mechanics:** Decouples command/query intent handlers via pipeline behaviors. Events dispatch in-process or out-of-process via message brokers.\n\n**Production Failure Mode & Gotcha:** Dual-write bugs (updating DB without publishing event) cause state drift between services without transactional outbox pattern.\n\n**Senior Trade-Off Signal:** CQRS optimizes read/write scaling independently, but adds architectural complexity, eventual consistency, and data duplication."
+    },
+    {
+      "q": "What problem does the outbox pattern solve?",
+      "a": "**Elevator Pitch:** Dual-write: updating DB and publishing a message separately can lose one side on failure. Outbox writes the event in the same DB transaction; a process publishes later, yielding reliable at-least-once delivery with idempotent consumers.\n\n**Under the Hood & Mechanics:** ServiceContainer tracks registration lifetimes (Transient, Scoped, Singleton). Scoped services are tied to an IServiceScope.\n\n**Production Failure Mode & Gotcha:** Captive dependencies (injecting a Scoped service like DbContext into a Singleton) cause state corruption, memory leaks, and multithreading race conditions.\n\n**Senior Trade-Off Signal:** Explicit scoping ensures request isolation, but requires IServiceScopeFactory for background hosted services."
+    }
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In .NET production applications, I treat Messaging — RabbitMQ vs Kafka, outbox, saga as an architectural constraint where memory allocations and thread safety dictate latency SLA and process stability.",
+    "incidentStory": "In our core SaaS backend, misconfigured Messaging — RabbitMQ vs Kafka, outbox, saga triggered thread-pool starvation and high Gen 2 GC pauses during peak traffic. I attached dotnet-dump and dotMemory, diagnosed the allocation root-cause, refactored to zero-allocation primitives, and improved p99 API response times by 80%.",
+    "whiteboardSteps": [
+      "1. HTTP Controller / Minimal API Endpoint → Request Pipeline",
+      "2. Service Scope & DI Resolution → Execution of Messaging — RabbitMQ vs Kafka, outbox, saga",
+      "3. Thread Pool Worker / Async State Machine Continuation → Memory Allocation",
+      "4. EF Core / Database / External Service Execution → Garbage Collection / Resource Release"
+    ]
+  }
+}

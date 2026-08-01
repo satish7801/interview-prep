@@ -1,0 +1,65 @@
+{
+  "id": "day-22",
+  "n": 22,
+  "title": "Enterprise Auth — OAuth2, SCIM 2.0, Rate Limiting & Token Security",
+  "exp": "Senior interviews for enterprise SaaS expect deep knowledge of identity provisioning (SCIM), OAuth2/OIDC token security, and API rate limiting.",
+  "pts": [
+    "**SCIM 2.0** (System for Cross-domain Identity Management): standardized REST API (`/Users`, `/Groups`) for automated user provisioning/deprovisioning from Okta/Entra ID.",
+    "**Token Security**: JWT verification (issuer, audience, signature key rollover, expiry, `nbf`), token revocation strategies (Redis blacklist / token version counter in DB).",
+    "**ASP.NET Core Rate Limiting** (built-in in .NET 7/8/9+): Fixed Window, Sliding Window, Token Bucket, Concurrency Limiter.",
+    "**Security Headers & API Defense**: CORS origin policies, CSP, HSTS, rate-limiting HTTP headers (`X-RateLimit-Limit`, `Retry-After`).",
+    "**SCIM Security**: Bearer tokens, tenant isolation, handling patch updates (`PATCH /Users/{id}`)."
+  ],
+  "code": "builder.Services.AddRateLimiter(options => {\n  options.AddSlidingWindowLimiter(\"api\", opt => {\n    opt.Window = TimeSpan.FromMinutes(1);\n    opt.PermitLimit = 100;\n    opt.QueueLimit = 10;\n  });\n});",
+  "pr": [
+    "Configure ASP.NET Core sliding window rate limiter",
+    "Write a JWT claim validation policy test"
+  ],
+  "viz": [
+    {
+      "t": "table",
+      "h": [
+        "Aspect",
+        "Production Behavior & Key Trade-Off",
+        "Senior Signal"
+      ],
+      "r": [
+        [
+          "Execution Context",
+          "Deep dive into Day 17 runtime execution mechanics and threading constraints.",
+          "Focus on zero-allocation and lock-free patterns where applicable."
+        ],
+        [
+          "Common Failure Mode",
+          "High concurrency contention or unexpected resource exhaustion under load.",
+          "Implement resilient backpressure, retries, and circuit breakers."
+        ],
+        [
+          "Architectural Trade-Off",
+          "Balancing low latency, developer ergonomics, and system consistency.",
+          "Always state operational cost and complexity trade-offs."
+        ]
+      ]
+    }
+  ],
+  "qa": [
+    {
+      "q": "How does SCIM 2.0 simplify enterprise identity integration?",
+      "a": "**Elevator Pitch:** Instead of custom sync scripts, SCIM 2.0 provides standard JSON REST schemas for IdPs (Azure AD/Entra ID, Okta) to automatically push user creations, attribute updates, and soft/hard deprovisioning directly into the SaaS platform.\n\n**Under the Hood & Mechanics:** ServiceContainer tracks registration lifetimes (Transient, Scoped, Singleton). Scoped services are tied to an IServiceScope.\n\n**Production Failure Mode & Gotcha:** Captive dependencies (injecting a Scoped service like DbContext into a Singleton) cause state corruption, memory leaks, and multithreading race conditions.\n\n**Senior Trade-Off Signal:** Explicit scoping ensures request isolation, but requires IServiceScopeFactory for background hosted services."
+    },
+    {
+      "q": "What are the trade-offs between Token Bucket and Sliding Window rate limiting algorithms?",
+      "a": "**Elevator Pitch:** Token Bucket allows bursts up to bucket capacity while maintaining a steady refill rate, ideal for APIs where occasional traffic spikes are acceptable. Sliding Window provides smooth rate enforcement across overlapping time windows, preventing window-boundary request flooding, but requires slightly more memory/tracking.\n\n**Under the Hood & Mechanics:** Window functions operate on a set of rows defined by the OVER() clause without collapsing them into a single row, allocating memory segments for frame calculation.\n\n**Production Failure Mode & Gotcha:** Partitioning over non-indexed columns with huge row counts forces expensive Sort operators and TempDB spills in execution plans.\n\n**Senior Trade-Off Signal:** Provides high readability and single-pass analytical aggregation, but can increase RAM grants compared to traditional indexed grouping."
+    }
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In .NET production applications, I treat Enterprise Auth — OAuth2, SCIM 2.0, Rate Limiting & Token Security as an architectural constraint where memory allocations and thread safety dictate latency SLA and process stability.",
+    "incidentStory": "In our core SaaS backend, misconfigured Enterprise Auth — OAuth2, SCIM 2.0, Rate Limiting & Token Security triggered thread-pool starvation and high Gen 2 GC pauses during peak traffic. I attached dotnet-dump and dotMemory, diagnosed the allocation root-cause, refactored to zero-allocation primitives, and improved p99 API response times by 80%.",
+    "whiteboardSteps": [
+      "1. HTTP Controller / Minimal API Endpoint → Request Pipeline",
+      "2. Service Scope & DI Resolution → Execution of Enterprise Auth — OAuth2, SCIM 2.0, Rate Limiting & Token Security",
+      "3. Thread Pool Worker / Async State Machine Continuation → Memory Allocation",
+      "4. EF Core / Database / External Service Execution → Garbage Collection / Resource Release"
+    ]
+  }
+}

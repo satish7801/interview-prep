@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "Why is state locking with DynamoDB critical when using S3 remote backend in team environments?",
-      "a": "**Elevator Pitch:** State locking prevents concurrent terraform apply executions from corrupting the remote state file or creating conflicting cloud resources.\n\n**Under the Hood & Mechanics:** SQL Server compiles T-SQL into an execution plan based on statistics histogram estimates. Parameter sniffing occurs when a plan compiled for a specific parameter (e.g. 1 row) is reused for a parameter matching 1,000,000 rows, leading to index scan or memory grant spills.\n\n**Production Failure Mode & Gotcha:** Implicit datatype conversion (e.g. passing NVARCHAR parameter to VARCHAR indexed column) forces SQL Server to run CONVERT() on every row, turning index seeks into full index scans.\n\n**Senior Trade-Off Signal:** READ COMMITTED SNAPSHOT (RCSI) eliminates reader-writer blocking using tempdb row versioning, but increases tempdb I/O and version store management overhead."
+      "a": "**Elevator Pitch:** State locking prevents concurrent terraform apply executions from corrupting the remote state file or creating conflicting cloud resources.\n\n**Under the Hood & Mechanics:** Terraform parses HCL into an execution graph, reconciling state file (.tfstate) against remote cloud provider APIs via provider plugins.\n\n**Production Failure Mode & Gotcha:** Unlocked concurrent state modifications or drift between cloud resources and local state cause resource deletion or corrupt state.\n\n**Senior Trade-Off Signal:** Remote state locking (DynamoDB/S3) ensures safe team collaboration but requires strict CI/CD discipline."
     },
     {
       "q": "What is the advantage of declarative import blocks over legacy terraform import CLI command?",
-      "a": "**Elevator Pitch:** Declarative import blocks can be version-controlled in .tf files and reviewed in CI/CD pipelines, allowing terraform plan to validate the imported state before modifying remote infrastructure.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Declarative import blocks can be version-controlled in .tf files and reviewed in CI/CD pipelines, allowing terraform plan to validate the imported state before modifying remote infrastructure.\n\n**Under the Hood & Mechanics:** Terraform parses HCL into an execution graph, reconciling state file (.tfstate) against remote cloud provider APIs via provider plugins.\n\n**Production Failure Mode & Gotcha:** Unlocked concurrent state modifications or drift between cloud resources and local state cause resource deletion or corrupt state.\n\n**Senior Trade-Off Signal:** Remote state locking (DynamoDB/S3) ensures safe team collaboration but requires strict CI/CD discipline."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, Enterprise Terraform Patterns & State Management must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around Enterprise Terraform Patterns & State Management. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of Enterprise Terraform Patterns & State Management",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

@@ -22,7 +22,17 @@
   "qa": [
     {
       "q": "What is a broadcast join and when should you use it?",
-      "a": "**Elevator Pitch:** A broadcast join copies the smaller table to every executor -- the large table never moves. Eliminates the shuffle on the large table, typically 5-20x speedup. Use broadcast() explicitly for tables Spark does not auto-broadcast (above 10MB but below ~100MB). Check explain() to confirm BroadcastHashJoin appears in the plan.\n\n**Under the Hood & Mechanics:** SQL Server compiles T-SQL into an execution plan based on statistics histogram estimates. Parameter sniffing occurs when a plan compiled for a specific parameter (e.g. 1 row) is reused for a parameter matching 1,000,000 rows, leading to index scan or memory grant spills.\n\n**Production Failure Mode & Gotcha:** Implicit datatype conversion (e.g. passing NVARCHAR parameter to VARCHAR indexed column) forces SQL Server to run CONVERT() on every row, turning index seeks into full index scans.\n\n**Senior Trade-Off Signal:** READ COMMITTED SNAPSHOT (RCSI) eliminates reader-writer blocking using tempdb row versioning, but increases tempdb I/O and version store management overhead."
+      "a": "**Elevator Pitch:** A broadcast join copies the smaller table to every executor -- the large table never moves. Eliminates the shuffle on the large table, typically 5-20x speedup. Use broadcast() explicitly for tables Spark does not auto-broadcast (above 10MB but below ~100MB). Check explain() to confirm BroadcastHashJoin appears in the plan.\n\n**Under the Hood & Mechanics:** SQL Server query processor constructs a logical tree, estimates cardinality using statistics, and selects physical operators (Nested Loops, Hash Join, or Merge Join) based on cost and sorted indexes.\n\n**Production Failure Mode & Gotcha:** Cartesian products or missing join predicates can cause exponential disk tempdb spilling, memory grant exhaustion, and query timeouts under concurrent load.\n\n**Senior Trade-Off Signal:** Nested loops excel for indexed small lookups; Hash joins handle large unsorted sets at the cost of higher tempdb and memory grant usage."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When approaching Joins, aggregations, broadcast -- performance fundamentals in production, my core strategy is balancing storage execution mechanics with query plan predictability to eliminate bottlenecks before they hit database CPU.",
+    "incidentStory": "During a high-concurrency surge, a critical query relying on Joins, aggregations, broadcast -- performance fundamentals caused TempDB disk spills and latch contention. I analyzed the execution plan, identified missing stats/indexes, refactored the logic, and reduced query latency from 4.2s to 45ms while dropping DB CPU utilization by 65%.",
+    "whiteboardSteps": [
+      "1. Client Request → API Gateway → Relational Database Engine (Buffer Pool)",
+      "2. Query Parser & Optimizer → Cardinality Estimation based on Statistics",
+      "3. Execution Plan Operator Selection → Physical Execution (Joins, aggregations, broadcast -- performance fundamentals logic)",
+      "4. Index / TempDB I/O Execution → Result Set Materialization & Caching"
+    ]
+  }
 }

@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "What is the difference between VPC Gateway Endpoints and Interface Endpoints (PrivateLink)?",
-      "a": "**Elevator Pitch:** Gateway Endpoints are free VPC route table entries used strictly for S3 and DynamoDB. Interface Endpoints use Elastic Network Interfaces (ENIs) with private IP addresses powered by PrivateLink to securely connect to other AWS services or custom SaaS applications, billed per hour + data processed.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Gateway Endpoints are free VPC route table entries used strictly for S3 and DynamoDB. Interface Endpoints use Elastic Network Interfaces (ENIs) with private IP addresses powered by PrivateLink to securely connect to other AWS services or custom SaaS applications, billed per hour + data processed.\n\n**Under the Hood & Mechanics:** Window functions operate on a set of rows defined by the OVER() clause without collapsing them into a single row, allocating memory segments for frame calculation.\n\n**Production Failure Mode & Gotcha:** Partitioning over non-indexed columns with huge row counts forces expensive Sort operators and TempDB spills in execution plans.\n\n**Senior Trade-Off Signal:** Provides high readability and single-pass analytical aggregation, but can increase RAM grants compared to traditional indexed grouping."
     },
     {
       "q": "Explain how Envelope Encryption works in AWS KMS.",
-      "a": "**Elevator Pitch:** KMS generates a plaintext Data Encryption Key (DEK) and an encrypted DEK. The application encrypts payload data locally using the plaintext DEK, discards the plaintext DEK from memory, and stores the encrypted DEK alongside the payload.\n\n**Under the Hood & Mechanics:** Boxing allocates a System.Object header (16 bytes on x64) on the managed heap and copies the value type bytes into it. Span<T> is a ref struct allocated strictly on the execution stack, providing contiguous memory access without heap allocation or array copying.\n\n**Production Failure Mode & Gotcha:** Boxing inside a high-throughput loop generates thousands of ephemeral Gen 0 objects, triggering frequent GC pauses and thread pool delays. Fix: use generic collection interfaces (IList<T>) and Span<T>/Memory<T> for byte slicing.\n\n**Senior Trade-Off Signal:** Span<T> provides zero-allocation performance, but ref struct rules forbid storing it on the heap, as class fields, or across async await points (where Memory<T> must be used)."
+      "a": "**Elevator Pitch:** KMS generates a plaintext Data Encryption Key (DEK) and an encrypted DEK. The application encrypts payload data locally using the plaintext DEK, discards the plaintext DEK from memory, and stores the encrypted DEK alongside the payload.\n\n**Under the Hood & Mechanics:** Cloud control plane APIs orchestrate virtualized hardware, networking (VPC/VNets), IAM policies, and auto-scaling groups.\n\n**Production Failure Mode & Gotcha:** Overly permissive IAM roles (wildcard actions) or unmonitored resource limits lead to security breaches and unexpected cloud cost spikes.\n\n**Senior Trade-Off Signal:** Serverless/managed services eliminate infrastructure maintenance but introduce cold starts and vendor lock-in."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, AWS Security, Networking & Cost Governance must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around AWS Security, Networking & Cost Governance. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of AWS Security, Networking & Cost Governance",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

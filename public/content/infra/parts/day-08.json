@@ -44,11 +44,21 @@
   "qa": [
     {
       "q": "Why is OpenTelemetry Collector preferred over agent-specific metrics exporters?",
-      "a": "**Elevator Pitch:** The OTel Collector provides a vendor-neutral proxy that decouples application code from monitoring backends, allowing you to route, filter, batch, and re-export metrics/logs/traces to Prometheus, Datadog, or Jaeger without changing application code.\n\n**Under the Hood & Mechanics:** EF Core builds an Expression Tree, translates it via the relational SQL provider into a parameterized T-SQL query, and materializes entities into the DbContext Change Tracker. N+1 queries occur when navigating un-included navigation properties in a loop.\n\n**Production Failure Mode & Gotcha:** Executing queries without AsNoTracking() in read-only APIs forces EF Core to keep snapshot copies of all returned entities in memory, causing high RAM usage and CPU tracking overhead.\n\n**Senior Trade-Off Signal:** AsNoTracking() speeds up read queries by 20-30% and reduces memory footprint, but disables identity resolution and automatic change tracking for updates."
+      "a": "**Elevator Pitch:** The OTel Collector provides a vendor-neutral proxy that decouples application code from monitoring backends, allowing you to route, filter, batch, and re-export metrics/logs/traces to Prometheus, Datadog, or Jaeger without changing application code.\n\n**Under the Hood & Mechanics:** Cloud control plane APIs orchestrate virtualized hardware, networking (VPC/VNets), IAM policies, and auto-scaling groups.\n\n**Production Failure Mode & Gotcha:** Overly permissive IAM roles (wildcard actions) or unmonitored resource limits lead to security breaches and unexpected cloud cost spikes.\n\n**Senior Trade-Off Signal:** Serverless/managed services eliminate infrastructure maintenance but introduce cold starts and vendor lock-in."
     },
     {
       "q": "How does Grafana Loki achieve massive cost savings compared to Elasticsearch/Kibana for logs?",
-      "a": "**Elevator Pitch:** Loki does not index log line full text; it only indexes log metadata labels (e.g., service, env), storing compressed log chunks directly in object storage (S3/GCS), dramatically reducing storage and CPU costs.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** Loki does not index log line full text; it only indexes log metadata labels (e.g., service, env), storing compressed log chunks directly in object storage (S3/GCS), dramatically reducing storage and CPU costs.\n\n**Under the Hood & Mechanics:** Indexes store data in B-Tree structures. Clustered indexes dictate physical row storage on disk leaf pages; non-clustered indexes point to clustered keys or RIDs.\n\n**Production Failure Mode & Gotcha:** Over-indexing degrades write performance on INSERT/UPDATE/DELETE operations and leads to index fragmentation and page splits.\n\n**Senior Trade-Off Signal:** Covering indexes eliminate costly Key Lookups for read-heavy workloads but increase storage footprint and write transaction overhead."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, Production Observability Stack — OTel Collector, Prometheus & Loki must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around Production Observability Stack — OTel Collector, Prometheus & Loki. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of Production Observability Stack — OTel Collector, Prometheus & Loki",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

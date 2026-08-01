@@ -1,18 +1,32 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import type { Catalog, PartContent, PathManifest, QuizFileItem } from "../src/data/types";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
 const dataDir = path.join(root, "src", "data");
 const archiveDir = path.join(dataDir, "_archive");
 const outRoot = path.join(root, "public", "content");
 
-function padDay(n) {
+interface TrackSourceData {
+  id: string;
+  name: string;
+  color: string;
+  sub: string;
+  desc: string;
+  tip?: string;
+  setup?: string;
+  qr?: { h: string[]; r: string[][] } | null;
+  days?: PartContent[];
+}
+
+function padDay(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-function resolveSource(name) {
+function resolveSource(name: string): string | null {
   const primary = path.join(dataDir, name);
   const archived = path.join(archiveDir, name);
   if (fs.existsSync(primary)) return primary;
@@ -20,26 +34,17 @@ function resolveSource(name) {
   return null;
 }
 
-function loadTracks() {
+function loadTracks(): TrackSourceData[] {
   const basePath = resolveSource("tracks.json");
   if (!basePath) throw new Error("tracks.json not found in src/data or _archive");
-  const base = JSON.parse(fs.readFileSync(basePath, "utf8"));
-  const fourYoePath = resolveSource("dotnet-4yoe-track.json");
-  const tracks = [];
-  if (fourYoePath) {
-    tracks.push(JSON.parse(fs.readFileSync(fourYoePath, "utf8")));
-  }
-  for (const t of base) {
-    if (!tracks.some((x) => x.id === t.id)) tracks.push(t);
-  }
-  return tracks;
+  return JSON.parse(fs.readFileSync(basePath, "utf8")) as TrackSourceData[];
 }
 
-function ensureDir(dir) {
+function ensureDir(dir: string): void {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function writeJson(filePath, data) {
+function writeJson(filePath: string, data: unknown): void {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 }
@@ -47,8 +52,8 @@ function writeJson(filePath, data) {
 const tracks = loadTracks();
 ensureDir(outRoot);
 
-const catalog = {
-  paths: tracks.map((t, i) => ({
+const catalog: Catalog = {
+  paths: tracks.map((t) => ({
     id: t.id,
     name: t.name,
     color: t.color,
@@ -56,7 +61,7 @@ const catalog = {
     desc: t.desc,
     dayCount: t.days?.length ?? 0,
     qaCount: (t.days ?? []).reduce((n, d) => n + (d.qa?.length ?? 0), 0),
-    featured: t.id === "dotnet4yoe" || i === 0,
+    featured: t.id === "dotnet",
   })),
 };
 
@@ -70,8 +75,8 @@ for (const track of tracks) {
   const partsDir = path.join(trackDir, "parts");
   ensureDir(partsDir);
 
-  const parts = [];
-  const quizItems = [];
+  const parts: PathManifest["parts"] = [];
+  const quizItems: QuizFileItem[] = [];
 
   for (const day of track.days ?? []) {
     const id = `day-${padDay(day.n)}`;
@@ -87,7 +92,7 @@ for (const track of tracks) {
       summary,
     });
 
-    const part = {
+    const part: PartContent = {
       id,
       n: day.n,
       title: day.title,
@@ -97,6 +102,7 @@ for (const track of tracks) {
       pr: day.pr ?? [],
       viz: day.viz ?? [],
       qa: day.qa ?? [],
+      interviewPlaybook: day.interviewPlaybook ?? null,
     };
     writeJson(path.join(partsDir, `${id}.json`), part);
     partCount++;
@@ -112,7 +118,7 @@ for (const track of tracks) {
     });
   }
 
-  writeJson(path.join(trackDir, "manifest.json"), {
+  const manifest: PathManifest = {
     id: track.id,
     name: track.name,
     color: track.color,
@@ -122,7 +128,9 @@ for (const track of tracks) {
     setup: track.setup ?? "",
     qr: track.qr ?? null,
     parts,
-  });
+  };
+
+  writeJson(path.join(trackDir, "manifest.json"), manifest);
 
   writeJson(path.join(trackDir, "quiz.json"), {
     trackId: track.id,

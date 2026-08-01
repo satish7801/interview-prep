@@ -45,11 +45,21 @@
   "qa": [
     {
       "q": "What is the key reactivity difference between RxJS Observables and Angular Signals?",
-      "a": "**Elevator Pitch:** RxJS Observables represent push-based asynchronous streams of events over time. Signals represent pull-based synchronous reactive values that automatically track dependency graphs and memoize state changes without requiring explicit subscription management.\n\n**Under the Hood & Mechanics:** Angular Signals maintain an internal reactive dependency graph (ReactiveNode). When a signal value updates, it marks dependent computed nodes as stale without running change detection immediately. Evaluation happens lazily when read, updating only impacted DOM bindings.\n\n**Production Failure Mode & Gotcha:** Writing to signals inside an effect() can trigger infinite reactive loops or untracked state dependencies. Fix: use computed() or linkedSignal() for derived state sync, keeping effect() strictly for un-tracked side effects like logging or localStorage.\n\n**Senior Trade-Off Signal:** Signals provide fine-grained, synchronous reactivity without Zone.js overhead, but require learning new primitives (input(), output(), model()) compared to classic RxJS BehaviorSubjects."
+      "a": "**Elevator Pitch:** RxJS Observables represent push-based asynchronous streams of events over time. Signals represent pull-based synchronous reactive values that automatically track dependency graphs and memoize state changes without requiring explicit subscription management.\n\n**Under the Hood & Mechanics:** Signals build a fine-grained reactive dependency graph. When a signal value changes, only dependent view nodes are scheduled for DOM updating.\n\n**Production Failure Mode & Gotcha:** Mutating signal values inside effects without untracked() causes infinite change detection loops and browser freeze.\n\n**Senior Trade-Off Signal:** Signals provide predictable synchronous reactivity without Zone.js overhead, but require adapting existing RxJS-heavy codebases."
     },
     {
       "q": "Why should effects not be used for state synchronization in Angular Signals?",
-      "a": "**Elevator Pitch:** Using effects to update other signals causes cascading re-evaluations and potential cyclic dependencies. Use computed() or linkedSignal() for derived state synchronization.\n\n**Under the Hood & Mechanics:** Angular Signals maintain an internal reactive dependency graph (ReactiveNode). When a signal value updates, it marks dependent computed nodes as stale without running change detection immediately. Evaluation happens lazily when read, updating only impacted DOM bindings.\n\n**Production Failure Mode & Gotcha:** Writing to signals inside an effect() can trigger infinite reactive loops or untracked state dependencies. Fix: use computed() or linkedSignal() for derived state sync, keeping effect() strictly for un-tracked side effects like logging or localStorage.\n\n**Senior Trade-Off Signal:** Signals provide fine-grained, synchronous reactivity without Zone.js overhead, but require learning new primitives (input(), output(), model()) compared to classic RxJS BehaviorSubjects."
+      "a": "**Elevator Pitch:** Using effects to update other signals causes cascading re-evaluations and potential cyclic dependencies. Use computed() or linkedSignal() for derived state synchronization.\n\n**Under the Hood & Mechanics:** Signals build a fine-grained reactive dependency graph. When a signal value changes, only dependent view nodes are scheduled for DOM updating.\n\n**Production Failure Mode & Gotcha:** Mutating signal values inside effects without untracked() causes infinite change detection loops and browser freeze.\n\n**Senior Trade-Off Signal:** Signals provide predictable synchronous reactivity without Zone.js overhead, but require adapting existing RxJS-heavy codebases."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When building Angular client applications at scale, I design Modern Angular Signals Architecture around predictable state propagation and minimal DOM change detection overhead.",
+    "incidentStory": "Our analytics dashboard experienced noticeable UI frame drops (jank) during live data streaming due to unoptimized Modern Angular Signals Architecture. I refactored the component architecture to fine-grained reactivity, eliminated unnecessary change detection cycles, and restored solid 60 FPS rendering.",
+    "whiteboardSteps": [
+      "1. User Action / WebSocket Push Event → Reactive Store / Signal State Source",
+      "2. Signal Dependency Graph / RxJS Operator Chain Transformation",
+      "3. Fine-Grained Change Detection Notification → View Node Marking",
+      "4. Ivy Template DOM Update → Browser Paint Phase"
+    ]
+  }
 }

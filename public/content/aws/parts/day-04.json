@@ -20,7 +20,17 @@
   "qa": [
     {
       "q": "How should a .NET app on EC2 access S3 without hardcoded credentials?",
-      "a": "**Elevator Pitch:** Attach an IAM Role (instance profile) to the EC2 instance. The AWS SDK automatically reads temporary credentials from the EC2 metadata service -- no access keys in code. Credentials auto-rotate every hour. Same pattern applies to Lambda (execution role), ECS (task role), and EMR (cluster role).\n\n**Under the Hood & Mechanics:** Async methods compile into an IAsyncStateMachine struct managed by the AsyncMethodBuilder. Awaiting an uncompleted task yields execution back to the caller. Blocking with .Result on a thread bound to a SynchronizationContext causes deadlocks when the continuation waits for the blocked thread.\n\n**Production Failure Mode & Gotcha:** Sync-over-async (.Result or .Wait()) on ASP.NET request threads rapidly exhausts thread pool threads, leading to HTTP 503 gateway timeouts and request queuing under load.\n\n**Senior Trade-Off Signal:** Async all the way preserves thread pool scalability, but requires passing CancellationToken through all layers and avoiding sync blocking methods everywhere."
+      "a": "**Elevator Pitch:** Attach an IAM Role (instance profile) to the EC2 instance. The AWS SDK automatically reads temporary credentials from the EC2 metadata service -- no access keys in code. Credentials auto-rotate every hour. Same pattern applies to Lambda (execution role), ECS (task role), and EMR (cluster role).\n\n**Under the Hood & Mechanics:** C# compiler synthesizes an IAsyncStateMachine struct. Awaiting incomplete tasks yields control to the caller; thread pool threads resume via TaskScheduler/SynchronizationContext.\n\n**Production Failure Mode & Gotcha:** Blocking async code with .Result or .Wait() on single-threaded synchronization contexts leads to deadlocks and thread pool starvation.\n\n**Senior Trade-Off Signal:** Async preserves thread pool scalability for I/O operations, but introduces state machine allocations and complex exception bubbling."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "In enterprise cloud environments, AWS SDK for .NET, CI/CD, shared responsibility must be designed with fault tolerance, zero-downtime deployment pipelines, and explicit security boundaries.",
+    "incidentStory": "A regional outage threatened pipeline ingestion availability when a dependency failed around AWS SDK for .NET, CI/CD, shared responsibility. Using infrastructure-as-code and automated failover, I implemented circuit breaking and fallback routing, keeping client payload ingestion at 99.99% availability.",
+    "whiteboardSteps": [
+      "1. Ingress Cloud Load Balancer / API Gateway → IAM Authentication",
+      "2. Managed Compute (Container / Function) → Orchestration of AWS SDK for .NET, CI/CD, shared responsibility",
+      "3. Persistent Storage / Event Bus (Kafka/S3/DB) → Partitioning & Replication",
+      "4. CloudWatch / OTel Observability Agent → Metrics & Auto-scaling Trigger"
+    ]
+  }
 }

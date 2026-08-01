@@ -21,11 +21,21 @@
   "qa": [
     {
       "q": "What is a pytest fixture?",
-      "a": "**Elevator Pitch:** A fixture is a function decorated with @pytest.fixture providing reusable test setup. Pytest injects fixtures by matching function parameter names to fixture names. Shared fixtures go in conftest.py -- discovered automatically without importing.\n\n**Under the Hood & Mechanics:** Transient creates a new instance on every request; Scoped creates one instance per HTTP request container; Singleton lives for the app domain lifespan. Capturing a Scoped service inside a Singleton captures the DbContext across requests, causing concurrency bugs.\n\n**Production Failure Mode & Gotcha:** Instantiating new HttpClient() instances manually causes socket exhaustion in OS TIME_WAIT state under high concurrency. Fix: register typed clients with IHttpClientFactory to manage handler lifetimes and DNS refresh.\n\n**Senior Trade-Off Signal:** IHttpClientFactory prevents socket leaks and manages DNS rotation, but requires explicit Polly retry and circuit breaker policies to prevent cascade failures during downstream outages."
+      "a": "**Elevator Pitch:** A fixture is a function decorated with @pytest.fixture providing reusable test setup. Pytest injects fixtures by matching function parameter names to fixture names. Shared fixtures go in conftest.py -- discovered automatically without importing.\n\n**Under the Hood & Mechanics:** Python interpreter executes bytecode under the CPython Global Interpreter Lock (GIL), managing objects via reference counting and cycle GC.\n\n**Production Failure Mode & Gotcha:** Attempting CPU-bound parallelism with Python threading fails due to GIL serialization; memory leaks occur from circular references.\n\n**Senior Trade-Off Signal:** Multiprocessing bypasses the GIL for CPU tasks at the cost of inter-process communication (IPC) serialization overhead."
     },
     {
       "q": "What should you prioritize testing in a data pipeline?",
-      "a": "**Elevator Pitch:** Transformation logic: given this input DataFrame, produce this exact output. These are pure functions, fast to test, highest-consequence if wrong. Second priority: edge cases -- empty DataFrames, nulls in key columns, duplicate rows. Avoid testing framework code (pandas, SQLAlchemy) -- only test YOUR logic.\n\n**Under the Hood & Mechanics:** Operating What should you prioritize testing in a data pipeline? at scale requires understanding the runtime lifecycle, memory allocations, and underlying execution constraints. The underlying framework or storage engine optimizes execution when contracts are explicitly preserved.\n\n**Production Failure Mode & Gotcha:** Un-handled edge cases in What should you prioritize testing in a data pipeline? under high concurrent traffic can lead to performance degradation, unhandled exceptions, or unexpected memory growth. Always enforce defensive validation and error handling.\n\n**Senior Trade-Off Signal:** Choosing this implementation approach balances developer velocity and system performance. Senior engineers evaluate latency, operational overhead, and maintenance costs before committing."
+      "a": "**Elevator Pitch:** Transformation logic: given this input DataFrame, produce this exact output. These are pure functions, fast to test, highest-consequence if wrong. Second priority: edge cases -- empty DataFrames, nulls in key columns, duplicate rows. Avoid testing framework code (pandas, SQLAlchemy) -- only test YOUR logic.\n\n**Under the Hood & Mechanics:** T-SQL engine parses, compiles into execution plans, caches them in the plan cache, and executes via the storage engine (buffer pool & latching).\n\n**Production Failure Mode & Gotcha:** Parameter sniffing and missing stats cause sub-optimal plan compilation, resulting in full table scans and high CPU.\n\n**Senior Trade-Off Signal:** Parameterization improves plan reuse, but recompile hints (OPTION RECOMPILE) may be needed for skewed data distributions."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing pytest -- unit testing, fixtures, parametrize, mocking, I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from pytest -- unit testing, fixtures, parametrize, mocking. I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (pytest -- unit testing, fixtures, parametrize, mocking)",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }

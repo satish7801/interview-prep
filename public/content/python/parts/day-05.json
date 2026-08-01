@@ -20,11 +20,21 @@
   "qa": [
     {
       "q": "What is SQL injection and how does ? placeholder prevent it?",
-      "a": "**Elevator Pitch:** SQL injection is when user input is concatenated into SQL and executed as code. The ? placeholder passes the value separately as pure data -- the driver never interprets it as executable SQL regardless of content. This is the #1 database security question in every senior interview.\n\n**Under the Hood & Mechanics:** Operating What is SQL injection and how does ? placeholder prevent it? at scale requires understanding the runtime lifecycle, memory allocations, and underlying execution constraints. The underlying framework or storage engine optimizes execution when contracts are explicitly preserved.\n\n**Production Failure Mode & Gotcha:** Un-handled edge cases in What is SQL injection and how does ? placeholder prevent it? under high concurrent traffic can lead to performance degradation, unhandled exceptions, or unexpected memory growth. Always enforce defensive validation and error handling.\n\n**Senior Trade-Off Signal:** Choosing this implementation approach balances developer velocity and system performance. Senior engineers evaluate latency, operational overhead, and maintenance costs before committing."
+      "a": "**Elevator Pitch:** SQL injection is when user input is concatenated into SQL and executed as code. The ? placeholder passes the value separately as pure data -- the driver never interprets it as executable SQL regardless of content. This is the #1 database security question in every senior interview.\n\n**Under the Hood & Mechanics:** T-SQL engine parses, compiles into execution plans, caches them in the plan cache, and executes via the storage engine (buffer pool & latching).\n\n**Production Failure Mode & Gotcha:** Parameter sniffing and missing stats cause sub-optimal plan compilation, resulting in full table scans and high CPU.\n\n**Senior Trade-Off Signal:** Parameterization improves plan reuse, but recompile hints (OPTION RECOMPILE) may be needed for skewed data distributions."
     },
     {
       "q": "When use pyodbc vs SQLAlchemy?",
-      "a": "**Elevator Pitch:** pyodbc for fine-grained control: transactions, stored procedure OUTPUT parameters. SQLAlchemy for pandas integration (pd.read_sql, df.to_sql) and ORM features. For data analysis, SQLAlchemy + pandas is the standard.\n\n**Under the Hood & Mechanics:** Operating When use pyodbc vs SQLAlchemy? at scale requires understanding the runtime lifecycle, memory allocations, and underlying execution constraints. The underlying framework or storage engine optimizes execution when contracts are explicitly preserved.\n\n**Production Failure Mode & Gotcha:** Un-handled edge cases in When use pyodbc vs SQLAlchemy? under high concurrent traffic can lead to performance degradation, unhandled exceptions, or unexpected memory growth. Always enforce defensive validation and error handling.\n\n**Senior Trade-Off Signal:** Choosing this implementation approach balances developer velocity and system performance. Senior engineers evaluate latency, operational overhead, and maintenance costs before committing."
+      "a": "**Elevator Pitch:** pyodbc for fine-grained control: transactions, stored procedure OUTPUT parameters. SQLAlchemy for pandas integration (pd.read_sql, df.to_sql) and ORM features. For data analysis, SQLAlchemy + pandas is the standard.\n\n**Under the Hood & Mechanics:** Transaction log (WAL) guarantees ACID. Isolation levels control locking (Shared/Exclusive) vs versioning (RCSI/Snapshot) in tempdb.\n\n**Production Failure Mode & Gotcha:** Long-running transactions hold locks, causing cascading blocking chains, deadlocks, and transaction log bloat.\n\n**Senior Trade-Off Signal:** RCSI eliminates reader-writer blocking but increases tempdb I/O and row-version overhead."
     }
-  ]
+  ],
+  "interviewPlaybook": {
+    "openingScript": "When discussing Python + SQL Server -- pyodbc, SQLAlchemy, parameterized queries, I evaluate both theoretical correctness and real-world operational trade-offs to deliver maintainable, high-throughput systems.",
+    "incidentStory": "We faced performance degradation under heavy user load originating from Python + SQL Server -- pyodbc, SQLAlchemy, parameterized queries. I led an audit of the architecture, optimized execution logic, added comprehensive telemetry, and achieved a 4x throughput increase.",
+    "whiteboardSteps": [
+      "1. Input Data / Event Trigger → System Boundary",
+      "2. Core Business Logic Engine → Processing (Python + SQL Server -- pyodbc, SQLAlchemy, parameterized queries)",
+      "3. State Persistence & Caching Layer → Data Consistency Verification",
+      "4. Output Delivery & Telemetry Logging → SLA Monitoring"
+    ]
+  }
 }
