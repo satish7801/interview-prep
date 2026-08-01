@@ -170,6 +170,9 @@ export default function DayContent({ trackId, dayN }: Props) {
           <Link
             className="btn btn-primary"
             href={`/paths/${trackId}/days/${nextDay}`}
+            onClick={() => {
+              if (!done) toggleDayDone(trackId, day.n);
+            }}
           >
             Day {nextDay} →
           </Link>
