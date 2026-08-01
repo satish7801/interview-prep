@@ -9,6 +9,7 @@ import CodeBlock from "./CodeBlock";
 import ContentStatus from "./ContentStatus";
 import FlashcardGrid from "./FlashcardGrid";
 import VizBlock from "./VizBlock";
+import AudioExplainer from "./AudioExplainer";
 
 type Props = {
   trackId: string;
@@ -69,6 +70,8 @@ export default function DayContent({ trackId, dayN }: Props) {
         <h1>{day.title}</h1>
         {day.exp && <p className="lede">{formatInline(day.exp)}</p>}
       </header>
+
+      <AudioExplainer day={day} trackName={manifest.name} />
 
       {(day.pts?.length ?? 0) > 0 && (
         <section className="content-section">
