@@ -26,6 +26,106 @@ const isLikelyFemale = (name: string): boolean => {
   return femaleKeywords.some(keyword => lowercaseName.includes(keyword)) || lowercaseName.includes("female");
 };
 
+interface CodeSection {
+  title: string;
+  code: string;
+}
+
+function parseCodeBlocks(codeText: string): CodeSection[] {
+  if (!codeText) return [];
+  const lines = codeText.split("\n");
+  const sections: CodeSection[] = [];
+  let currentTitle = "";
+  let currentCodeLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const isComment = trimmed.startsWith("--") || trimmed.startsWith("//") || (trimmed.startsWith("#") && !trimmed.startsWith("#!"));
+    
+    if (isComment && (trimmed.includes(":") || trimmed.toLowerCase().includes("trap") || trimmed.toLowerCase().includes("fix") || trimmed.toLowerCase().includes("basics") || trimmed.toLowerCase().includes("alternative") || trimmed.toLowerCase().includes("vs") || trimmed.toLowerCase().includes("example") || trimmed.toLowerCase().includes("safe") || trimmed.length > 10)) {
+      if (currentCodeLines.length > 0 || currentTitle) {
+        sections.push({
+          title: currentTitle || "Example",
+          code: currentCodeLines.join("\n").trim()
+        });
+        currentCodeLines = [];
+      }
+      currentTitle = trimmed.replace(/^(--|\/\/|#)\s*/, "").trim();
+    } else {
+      currentCodeLines.push(line);
+    }
+  }
+
+  if (currentCodeLines.length > 0 || currentTitle) {
+    sections.push({
+      title: currentTitle || "Example",
+      code: currentCodeLines.join("\n").trim()
+    });
+  }
+
+  return sections;
+}
+
+function findMatchingCodeSection(pt: string, sections: CodeSection[]): CodeSection[] {
+  const cleanPt = pt.toLowerCase();
+  const backticks = [...pt.matchAll(/`([^`]+)`/g)].map(m => m[1].toLowerCase());
+  const boldTerms = [...pt.matchAll(/\*\*([^*]+)\*\*/g)].map(m => m[1].toLowerCase());
+  
+  return sections.filter(sec => {
+    const cleanTitle = sec.title.toLowerCase();
+    
+    if (backticks.some(bt => cleanTitle.includes(bt) || bt.includes(cleanTitle))) return true;
+    if (boldTerms.some(bt => cleanTitle.includes(bt) || bt.includes(cleanTitle))) return true;
+    
+    const keywords = ["join", "apply", "exists", "isnull", "coalesce", "nullif", "try_convert", "try_cast", "rollup", "cube", "grouping", "string_agg", "having", "group by", "where", "window", "rank", "partition", "cte", "lead", "lag", "index", "statistics", "tempdb", "lock", "transaction", "isolation"];
+    
+    for (const kw of keywords) {
+      if (cleanPt.includes(kw) && cleanTitle.includes(kw)) {
+        return true;
+      }
+    }
+    
+    const words = cleanTitle.split(/\s+/).filter(w => w.length > 3);
+    const matches = words.filter(w => cleanPt.includes(w));
+    return matches.length >= 2;
+  });
+}
+
+function makeSqlNarrationReady(codeText: string): string {
+  let cleanCode = codeText.replace(/--.*$/gm, "").trim();
+  
+  cleanCode = cleanCode
+    .replace(/SELECT\s+/gi, "Select ")
+    .replace(/FROM\s+/gi, " from ")
+    .replace(/LEFT\s+JOIN\s+/gi, " left join ")
+    .replace(/INNER\s+JOIN\s+/gi, " inner join ")
+    .replace(/RIGHT\s+JOIN\s+/gi, " right join ")
+    .replace(/FULL\s+OUTER\s+JOIN\s+/gi, " full outer join ")
+    .replace(/CROSS\s+JOIN\s+/gi, " cross join ")
+    .replace(/CROSS\s+APPLY\s+/gi, " cross apply ")
+    .replace(/OUTER\s+APPLY\s+/gi, " outer apply ")
+    .replace(/ON\s+/gi, " on ")
+    .replace(/WHERE\s+/gi, " where ")
+    .replace(/AND\s+/gi, " and ")
+    .replace(/OR\s+/gi, " or ")
+    .replace(/GROUP\s+BY\s+/gi, " group by ")
+    .replace(/ORDER\s+BY\s+/gi, " order by ")
+    .replace(/HAVING\s+/gi, " having ")
+    .replace(/AS\s+/gi, " as ")
+    .replace(/NULL/g, " null ")
+    .replace(/!=/g, " is not equal to ")
+    .replace(/=/g, " equals ")
+    .replace(/\*/g, " all columns ")
+    .replace(/o\./g, "orders dot ")
+    .replace(/c\./g, "customers dot ")
+    .replace(/e\./g, "employees dot ")
+    .replace(/m\./g, "manager dot ")
+    .replace(/d\./g, "department dot ")
+    .replace(/\n/g, ". ");
+    
+  return cleanCode;
+}
+
 export default function AudioExplainer({ day, trackName }: AudioExplainerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -44,139 +144,79 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
   const rateRef = useRef(1);
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
-  // Sync refs
-  useEffect(() => {
-    rateRef.current = rate;
-  }, [rate]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      setTimeout(() => setSupported(false), 0);
-      return;
-    }
-
-    const updateVoices = () => {
-      const synth = window.speechSynthesis;
-      if (!synth) return;
-      const allVoices = synth.getVoices();
-      let filtered = allVoices.filter(v => v.lang.toLowerCase().includes("en"));
-      if (filtered.length === 0) {
-        filtered = allVoices;
-      }
-      
-      // Sort: female voices first, then others
-      filtered = [...filtered].sort((a, b) => {
-        const aFemale = isLikelyFemale(a.name);
-        const bFemale = isLikelyFemale(b.name);
-        if (aFemale && !bFemale) return -1;
-        if (!aFemale && bFemale) return 1;
-        return a.name.localeCompare(b.name);
-      });
-
-      setVoices(filtered);
-      
-      if (filtered.length > 0) {
-        const active = selectedVoiceRef.current;
-        const stillExists = active ? filtered.some(v => v.name === active.name) : false;
-        if (!stillExists) {
-          const firstFemale = filtered.find(v => isLikelyFemale(v.name));
-          const defaultVoice = firstFemale || filtered[0];
-          setSelectedVoiceName(defaultVoice.name);
-          selectedVoiceRef.current = defaultVoice;
-        }
-      }
-    };
-
-    updateVoices();
-    window.speechSynthesis.onvoiceschanged = updateVoices;
-
-    return () => {
-      if (window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = null;
-      }
-      stopSpeech();
-    };
-  }, []);
 
   // Build narration script with smart complexity pauses
   function buildSegments(): SpeechSegment[] {
     const list: SpeechSegment[] = [];
 
-    // Title
+    // 1. Intro
     list.push({
       id: "intro",
       label: "Intro & Overview",
-      text: `Welcome to Day ${day.n} of ${trackName}. Today's topic is: ${day.title}.`,
-      pauseAfterMs: 1200,
+      text: `Hello, I'm Sophia, your AI instructor. Welcome to Day ${day.n} of ${trackName}. Today's topic is: ${day.title}. Let's write some examples on the blackboard and analyze them together.`,
+      pauseAfterMs: 1600,
     });
 
-    // Explanation
+    // 2. Core Explanation
     if (day.exp) {
       list.push({
         id: "explanation",
         label: "Core Explanation",
-        text: day.exp,
-        pauseAfterMs: 1800,
+        text: `First, let's cover the main context: ${day.exp}`,
+        pauseAfterMs: 2000,
       });
     }
 
-    // Key concepts (higher complexity -> 1.5s pause per point)
+    // 3. Key Concepts with detailed explanations and SQL query breakdown
     if (day.pts && day.pts.length > 0) {
+      const codeSections = day.code ? parseCodeBlocks(day.code) : [];
       day.pts.forEach((pt, i) => {
+        const matchedSecs = day.code ? findMatchingCodeSection(pt, codeSections) : [];
+        let conceptText = `Point ${i + 1}: ${pt}. `;
+        
+        if (matchedSecs.length > 0) {
+          conceptText += `Let's write the query example on the blackboard. `;
+          matchedSecs.forEach(sec => {
+            conceptText += `For ${sec.title}, the SQL syntax is: ${makeSqlNarrationReady(sec.code)}. `;
+          });
+        }
+        
         list.push({
           id: `concept-${i}`,
-          label: `Key Concept ${i + 1}`,
-          text: `Point ${i + 1}: ${pt}`,
-          pauseAfterMs: 1600,
+          label: `Concept ${i + 1}`,
+          text: conceptText,
+          pauseAfterMs: 2600, // longer pause for blackboard writing/reading
         });
       });
     }
 
-    // Code example (highest complexity -> 2.5s pause)
-    if (day.code) {
-      list.push({
-        id: "code",
-        label: "Code Example",
-        text: "Here is the key code snippet to remember. Pay attention to the logic.",
-        pauseAfterMs: 1200,
-      });
-      // Break code into logical chunks for better reading
-      const codeLines = day.code.trim().split("\n").filter((l) => l.trim().length > 0);
-      const codeText = codeLines.slice(0, 8).join(". ");
-      list.push({
-        id: "code-body",
-        label: "Code Breakdown",
-        text: codeText,
-        pauseAfterMs: 2500,
-      });
-    }
-
-    // Interview Playbook STAR story & opening script
+    // 4. Playbook Scripts
     if (day.interviewPlaybook) {
       if (day.interviewPlaybook.openingScript) {
         list.push({
           id: "opening-script",
-          label: "30-Sec Pitch",
-          text: `Here is your 30-second interview opening script: ${day.interviewPlaybook.openingScript}`,
-          pauseAfterMs: 2000,
+          label: "Interview Pitch",
+          text: `If this question comes up in an interview, here is a 30-second opening script you can use: ${day.interviewPlaybook.openingScript}`,
+          pauseAfterMs: 2200,
         });
       }
       if (day.interviewPlaybook.incidentStory) {
         list.push({
           id: "incident-story",
-          label: "Production Incident Story",
-          text: `Real world scenario: ${day.interviewPlaybook.incidentStory}`,
-          pauseAfterMs: 2000,
+          label: "Incident STAR Story",
+          text: `Here is a real production incident scenario: ${day.interviewPlaybook.incidentStory}`,
+          pauseAfterMs: 2200,
         });
       }
     }
 
-    // Outro
+    // 5. Outro
     list.push({
       id: "outro",
-      label: "Lesson Complete",
-      text: `That completes Day ${day.n}. Review your flashcards and take notes when you're ready!`,
-      pauseAfterMs: 1000,
+      label: "Lesson Wrap-Up",
+      text: `That completes our detailed blackboard session for Day ${day.n}. Make sure to review your flashcards and jot down notes. I'll see you in the next lesson!`,
+      pauseAfterMs: 1500,
     });
 
     return list;
@@ -293,85 +333,184 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     }
   };
 
+  // Sync refs
+  useEffect(() => {
+    rateRef.current = rate;
+  }, [rate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      setTimeout(() => setSupported(false), 0);
+      return;
+    }
+
+    const updateVoices = () => {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      const allVoices = synth.getVoices();
+      let filtered = allVoices.filter(v => v.lang.toLowerCase().includes("en"));
+      if (filtered.length === 0) {
+        filtered = allVoices;
+      }
+      
+      // Sort: female voices first, then others
+      filtered = [...filtered].sort((a, b) => {
+        const aFemale = isLikelyFemale(a.name);
+        const bFemale = isLikelyFemale(b.name);
+        if (aFemale && !bFemale) return -1;
+        if (!aFemale && bFemale) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      setVoices(filtered);
+      
+      if (filtered.length > 0) {
+        const active = selectedVoiceRef.current;
+        const stillExists = active ? filtered.some(v => v.name === active.name) : false;
+        if (!stillExists) {
+          const firstFemale = filtered.find(v => isLikelyFemale(v.name));
+          const defaultVoice = firstFemale || filtered[0];
+          setSelectedVoiceName(defaultVoice.name);
+          selectedVoiceRef.current = defaultVoice;
+        }
+      }
+    };
+
+    updateVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", updateVoices);
+
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.removeEventListener("voiceschanged", updateVoices);
+      }
+      stopSpeech();
+    };
+  }, []);
+
   if (!supported) return null;
+
+  let coachStatus = "Sophia is idle";
+  let isWriting = false;
+  if (isPlaying) {
+    if (currentSegLabel.toLowerCase().includes("concept") || currentSegLabel.toLowerCase().includes("pitch") || currentSegLabel.toLowerCase().includes("story")) {
+      coachStatus = "Sophia is writing on the blackboard...";
+      isWriting = true;
+    } else {
+      coachStatus = "Sophia is explaining...";
+    }
+  } else if (isPaused) {
+    coachStatus = "Sophia is paused";
+  }
 
   return (
     <div className="audio-explainer-card">
-      <div className="audio-explainer-header">
-        <div className="audio-explainer-title">
-          <span className="audio-icon">🎙️</span>
-          <div>
-            <h3>Lazy Mode: Daily Video-Style Explainer</h3>
-            <p className="audio-subtitle">
-              Sit back and listen. Includes smart pauses for code & complex concepts.
-            </p>
+      <div className="audio-explainer-layout">
+        
+        {/* AI Character Panel */}
+        <div className="ai-coach-panel">
+          <div className={`avatar-container ${isPlaying ? "speaking" : ""} ${isWriting ? "writing" : ""}`}>
+            <img src="/ai-avatar.png" alt="Sophia - AI Coach" className="ai-avatar-img" />
+            <div className="mouth-overlay"></div>
+            <div className="pulse-ring"></div>
+            {isPlaying && (
+              <div className="voice-waves">
+                <span className="wave-bar"></span>
+                <span className="wave-bar"></span>
+                <span className="wave-bar"></span>
+                <span className="wave-bar"></span>
+                <span className="wave-bar"></span>
+              </div>
+            )}
+          </div>
+          <div className="ai-coach-info">
+            <h4 className="coach-name">Sophia</h4>
+            <span className="coach-title">AI SQL Instructor</span>
+            <div className="coach-status">
+              <span className={`status-dot ${isPlaying ? "active" : isPaused ? "paused" : ""}`}></span>
+              <span className="status-lbl">{coachStatus}</span>
+            </div>
           </div>
         </div>
 
-        <div className="audio-controls">
-          {!isPlaying && !isPaused ? (
-            <button type="button" className="audio-btn btn-primary" onClick={handlePlay}>
-              ▶ Play Explainer
-            </button>
-          ) : isPlaying ? (
-            <button type="button" className="audio-btn btn-pause" onClick={handlePause}>
-              ⏸ Pause
-            </button>
-          ) : (
-            <button type="button" className="audio-btn btn-primary" onClick={handlePlay}>
-              ▶ Resume
-            </button>
-          )}
+        {/* Controls & Speech Content */}
+        <div className="audio-explainer-content">
+          <div className="audio-explainer-header">
+            <div>
+              <h3>Daily Video-Style Explainer</h3>
+              <p className="audio-subtitle">
+                Listen to Sophia explain concepts and walk through query examples.
+              </p>
+            </div>
 
-          {(isPlaying || isPaused) && (
-            <button type="button" className="audio-btn btn-stop" onClick={stopSpeech}>
-              ⏹ Stop
-            </button>
-          )}
+            <div className="audio-controls">
+              {!isPlaying && !isPaused ? (
+                <button type="button" className="audio-btn btn-primary" onClick={handlePlay}>
+                  ▶ Play Explainer
+                </button>
+              ) : isPlaying ? (
+                <button type="button" className="audio-btn btn-pause" onClick={handlePause}>
+                  ⏸ Pause
+                </button>
+              ) : (
+                <button type="button" className="audio-btn btn-primary" onClick={handlePlay}>
+                  ▶ Resume
+                </button>
+              )}
 
-          <div className="speed-selector">
-            <span className="speed-label">Speed:</span>
-            {[0.8, 1, 1.25, 1.5].map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={`speed-btn ${rate === s ? "active" : ""}`}
-                onClick={() => handleSpeedChange(s)}
-              >
-                {s}x
-              </button>
-            ))}
+              {(isPlaying || isPaused) && (
+                <button type="button" className="audio-btn btn-stop" onClick={stopSpeech}>
+                  ⏹ Stop
+                </button>
+              )}
+
+              <div className="speed-selector">
+                <span className="speed-label">Speed:</span>
+                {[0.8, 1, 1.25, 1.5].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`speed-btn ${rate === s ? "active" : ""}`}
+                    onClick={() => handleSpeedChange(s)}
+                  >
+                    {s}x
+                  </button>
+                ))}
+              </div>
+
+              {voices.length > 0 && (
+                <div className="voice-selector">
+                  <span className="voice-label">Voice:</span>
+                  <select
+                    value={selectedVoiceName}
+                    onChange={(e) => handleVoiceChange(e.target.value)}
+                    className="voice-select"
+                  >
+                    {voices.map((v) => {
+                      const isFemale = isLikelyFemale(v.name);
+                      return (
+                        <option key={v.name} value={v.name}>
+                          {isFemale ? "👩 " : "👨 "} {v.name}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+            </div>
           </div>
 
-          {voices.length > 0 && (
-            <div className="voice-selector">
-              <span className="voice-label">Voice:</span>
-              <select
-                value={selectedVoiceName}
-                onChange={(e) => handleVoiceChange(e.target.value)}
-                className="voice-select"
-              >
-                {voices.map((v) => {
-                  const isFemale = isLikelyFemale(v.name);
-                  return (
-                    <option key={v.name} value={v.name}>
-                      {isFemale ? "👩 " : "👨 "} {v.name}
-                    </option>
-                  );
-                })}
-              </select>
+          {currentSegmentIdx >= 0 && (isPlaying || isPaused) && (
+            <div className="blackboard-box">
+              <div className="blackboard-header">
+                <span className="blackboard-chalk-icon">📝</span>
+                <span className="blackboard-title">Blackboard — Narrating ({currentSegLabel})</span>
+              </div>
+              <p className="blackboard-text">{currentSegText}</p>
             </div>
           )}
         </div>
-      </div>
 
-      {currentSegmentIdx >= 0 && (isPlaying || isPaused) && (
-        <div className="audio-status">
-          <span className="pulse-dot"></span>
-          <span className="status-label">Narrating ({currentSegLabel}):</span>
-          <span className="status-text">{currentSegText}</span>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

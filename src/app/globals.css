@@ -1338,5 +1338,232 @@ strong {
   text-transform: uppercase;
 }
 
+/* AI Coach Audio Explainer Layout */
+.audio-explainer-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .audio-explainer-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+  .ai-coach-panel {
+    border-right: none !important;
+    border-bottom: 1px solid var(--br-soft);
+    padding-right: 0 !important;
+    padding-bottom: 16px;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.ai-coach-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-right: 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 180px;
+}
+
+.avatar-container {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid var(--br);
+  padding: 3px;
+  transition: all 0.3s ease;
+}
+
+.avatar-container.speaking {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(45, 212, 191, 0.3);
+}
+
+.avatar-container.writing {
+  border-color: #a78bfa;
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.3);
+}
+
+.ai-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--sf2);
+}
+
+/* Talking Mouth Overlay Animation */
+.mouth-overlay {
+  position: absolute;
+  top: 57.5%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 3px;
+  background: rgba(45, 212, 191, 0.85);
+  box-shadow: 0 0 6px var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.avatar-container.speaking .mouth-overlay {
+  opacity: 1;
+  animation: talk-mouth 0.4s infinite alternate ease-in-out;
+}
+
+@keyframes talk-mouth {
+  0% {
+    height: 1px;
+    width: 10px;
+  }
+  100% {
+    height: 6px;
+    width: 14px;
+  }
+}
+
+/* Voice Wave Animation */
+.voice-waves {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  background: var(--sf3);
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--br);
+  align-items: flex-end;
+  height: 20px;
+}
+
+.wave-bar {
+  width: 3px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 99px;
+  animation: bounce 0.8s ease-in-out infinite alternate;
+}
+
+.wave-bar:nth-child(2) { animation-delay: 0.15s; height: 6px; }
+.wave-bar:nth-child(3) { animation-delay: 0.3s; height: 10px; }
+.wave-bar:nth-child(4) { animation-delay: 0.45s; height: 7px; }
+.wave-bar:nth-child(5) { animation-delay: 0.6s; height: 5px; }
+
+@keyframes bounce {
+  0% { height: 3px; }
+  100% { height: 15px; }
+}
+
+.ai-coach-info {
+  text-align: center;
+}
+
+.coach-name {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.coach-title {
+  font-size: 11px;
+  color: var(--ft);
+  display: block;
+  margin-top: 1px;
+}
+
+.coach-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 99px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ft);
+}
+
+.status-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  animation: pulse 1.5s infinite;
+}
+
+.status-dot.paused {
+  background: #fbbf24;
+}
+
+.status-lbl {
+  font-size: 10px;
+  color: var(--dm);
+  font-weight: 500;
+}
+
+.audio-explainer-content {
+  flex: 1;
+  width: 100%;
+}
+
+/* Blackboard Slate */
+.blackboard-box {
+  margin-top: 16px;
+  background: linear-gradient(135deg, #1b2620, #141c18);
+  border: 6px solid #4e342e; /* wood look */
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 8px 16px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.blackboard-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+  padding-bottom: 6px;
+}
+
+.blackboard-chalk-icon {
+  font-size: 14px;
+}
+
+.blackboard-title {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.blackboard-text {
+  margin: 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #f4fbf7;
+  text-shadow: 0 0 1px rgba(255,255,255,0.3);
+  font-weight: 500;
+}
+
+
 
 
