@@ -12,6 +12,7 @@ type SpeechSegment = {
   id: string;
   label: string;
   text: string;
+  displayText?: string;
   pauseAfterMs: number; // pause length reflecting complexity
 };
 
@@ -165,8 +166,15 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
   const isPlayingRef = useRef(false);
   const rateRef = useRef(1);
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  const blackboardRef = useRef<HTMLDivElement | null>(null);
 
   const coachName = getCoachName(selectedVoiceName);
+
+  useEffect(() => {
+    if (blackboardRef.current) {
+      blackboardRef.current.scrollTop = blackboardRef.current.scrollHeight;
+    }
+  }, [displayedText]);
 
 
 
@@ -197,19 +205,25 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
       const codeSections = day.code ? parseCodeBlocks(day.code) : [];
       day.pts.forEach((pt, i) => {
         const matchedSecs = day.code ? findMatchingCodeSection(pt, codeSections) : [];
-        let conceptText = `Point ${i + 1}: ${pt}. `;
+        
+        let spokenText = `Point ${i + 1}: ${pt}. `;
+        let visualText = `Point ${i + 1}:\n${pt}\n`;
         
         if (matchedSecs.length > 0) {
-          conceptText += `Let's write the query example on the blackboard. `;
+          spokenText += `Let's write the query example on the blackboard. `;
+          visualText += `\nLet's write the query example on the blackboard:\n`;
+          
           matchedSecs.forEach(sec => {
-            conceptText += `For ${sec.title}, the SQL syntax is: ${makeSqlNarrationReady(sec.code)}. `;
+            spokenText += `For ${sec.title}, the SQL syntax is: ${makeSqlNarrationReady(sec.code)}. `;
+            visualText += `\n-- ${sec.title}\n${sec.code}\n`;
           });
         }
         
         list.push({
           id: `concept-${i}`,
           label: `Concept ${i + 1}`,
-          text: conceptText,
+          text: spokenText,
+          displayText: visualText,
           pauseAfterMs: 2600, // longer pause for blackboard writing/reading
         });
       });
@@ -269,7 +283,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     setCurrentSegmentIdx(index);
     const seg = segments[index];
     setCurrentSegLabel(seg.label);
-    setCurrentSegText(seg.text);
+    setCurrentSegText(seg.displayText || seg.text);
     setDisplayedText(""); // Start with empty blackboard for writing effect
 
     const synth = window.speechSynthesis;
@@ -292,14 +306,20 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     utterance.onboundary = (event) => {
       if (event.name === "word") {
         const charIndex = event.charIndex;
-        const nextSpace = seg.text.indexOf(" ", charIndex);
-        const currentProgress = nextSpace !== -1 ? seg.text.substring(0, nextSpace) : seg.text;
+        const totalLength = seg.text.length || 1;
+        const ratio = Math.min(charIndex / totalLength, 1);
+        
+        const displaySource = seg.displayText || seg.text;
+        const targetLen = Math.min(Math.floor(ratio * displaySource.length), displaySource.length);
+        
+        const nextSpace = displaySource.indexOf(" ", targetLen);
+        const currentProgress = nextSpace !== -1 ? displaySource.substring(0, nextSpace) : displaySource;
         setDisplayedText(currentProgress);
       }
     };
 
     utterance.onend = () => {
-      setDisplayedText(seg.text); // ensure full text is written at the end
+      setDisplayedText(seg.displayText || seg.text); // ensure full text is written at the end
       if (!isPlayingRef.current) return;
       // Pause based on segment complexity before next item
       const delay = Math.round(seg.pauseAfterMs / rateRef.current);
@@ -310,7 +330,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
 
     utterance.onerror = (e) => {
       console.error("Speech error:", e);
-      setDisplayedText(seg.text);
+      setDisplayedText(seg.displayText || seg.text);
       if (isPlayingRef.current && index + 1 < segments.length) {
         speakSegment(index + 1, segments);
       } else {
@@ -386,7 +406,17 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
       const synth = window.speechSynthesis;
       if (!synth) return;
       const allVoices = synth.getVoices();
-      let filtered = allVoices.filter(v => v.lang.toLowerCase().includes("en"));
+      
+      // Filter for Indian English voices specifically
+      let filtered = allVoices.filter(v => {
+        const lang = v.lang.toLowerCase();
+        const name = v.name.toLowerCase();
+        return lang.includes("en-in") || name.includes("india") || name.includes("indian");
+      });
+      
+      if (filtered.length === 0) {
+        filtered = allVoices.filter(v => v.lang.toLowerCase().includes("en"));
+      }
       if (filtered.length === 0) {
         filtered = allVoices;
       }
@@ -473,7 +503,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
           </div>
           <div className="ai-coach-info">
             <h4 className="coach-name">{coachName}</h4>
-            <span className="coach-title">AI SQL Instructor</span>
+            <span className="coach-title">AI {trackName} Instructor</span>
             <div className="coach-status">
               <span className={`status-dot ${isPlaying ? "active" : isPaused ? "paused" : ""}`}></span>
               <span className="status-lbl">{coachStatus}</span>
@@ -549,7 +579,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
           </div>
 
           {currentSegmentIdx >= 0 && (isPlaying || isPaused) && (
-            <div className="blackboard-box">
+            <div className="blackboard-box" ref={blackboardRef}>
               <div className="blackboard-header">
                 <span className="blackboard-chalk-icon">📝</span>
                 <span className="blackboard-title">Blackboard — Narrating ({currentSegLabel})</span>
