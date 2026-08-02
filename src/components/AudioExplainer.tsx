@@ -15,18 +15,34 @@ type SpeechSegment = {
   pauseAfterMs: number; // pause length reflecting complexity
 };
 
+const isLikelyFemale = (name: string): boolean => {
+  const lowercaseName = name.toLowerCase();
+  const femaleKeywords = [
+    "samantha", "zira", "google us english", "microsoft zira", "victoria", 
+    "hazel", "susan", "karen", "moira", "tessa", "veena", "fiona", 
+    "serena", "amelia", "stephanie", "zoe", "natasha", "luciana", 
+    "kyoko", "tingting", "sin-ji", "mei-jia", "yuki", "siri"
+  ];
+  return femaleKeywords.some(keyword => lowercaseName.includes(keyword)) || lowercaseName.includes("female");
+};
+
 export default function AudioExplainer({ day, trackName }: AudioExplainerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentSegmentIdx, setCurrentSegmentIdx] = useState<number>(-1);
   const [rate, setRate] = useState<number>(1);
   const [supported, setSupported] = useState<boolean>(true);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState<string>("");
+  const [currentSegLabel, setCurrentSegLabel] = useState<string>("");
+  const [currentSegText, setCurrentSegText] = useState<string>("");
 
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const segmentsRef = useRef<SpeechSegment[]>([]);
   const isPlayingRef = useRef(false);
   const rateRef = useRef(1);
+  const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   // Sync refs
   useEffect(() => {
@@ -35,15 +51,55 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
 
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      setSupported(false);
+      setTimeout(() => setSupported(false), 0);
+      return;
     }
+
+    const updateVoices = () => {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      const allVoices = synth.getVoices();
+      let filtered = allVoices.filter(v => v.lang.toLowerCase().includes("en"));
+      if (filtered.length === 0) {
+        filtered = allVoices;
+      }
+      
+      // Sort: female voices first, then others
+      filtered = [...filtered].sort((a, b) => {
+        const aFemale = isLikelyFemale(a.name);
+        const bFemale = isLikelyFemale(b.name);
+        if (aFemale && !bFemale) return -1;
+        if (!aFemale && bFemale) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      setVoices(filtered);
+      
+      if (filtered.length > 0) {
+        const active = selectedVoiceRef.current;
+        const stillExists = active ? filtered.some(v => v.name === active.name) : false;
+        if (!stillExists) {
+          const firstFemale = filtered.find(v => isLikelyFemale(v.name));
+          const defaultVoice = firstFemale || filtered[0];
+          setSelectedVoiceName(defaultVoice.name);
+          selectedVoiceRef.current = defaultVoice;
+        }
+      }
+    };
+
+    updateVoices();
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+
     return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
       stopSpeech();
     };
   }, []);
 
   // Build narration script with smart complexity pauses
-  const buildSegments = (): SpeechSegment[] => {
+  function buildSegments(): SpeechSegment[] {
     const list: SpeechSegment[] = [];
 
     // Title
@@ -124,9 +180,9 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     });
 
     return list;
-  };
+  }
 
-  const stopSpeech = () => {
+  function stopSpeech() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -135,9 +191,11 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     setIsPlaying(false);
     setIsPaused(false);
     setCurrentSegmentIdx(-1);
-  };
+    setCurrentSegLabel("");
+    setCurrentSegText("");
+  }
 
-  const speakSegment = (index: number, segments: SpeechSegment[]) => {
+  function speakSegment(index: number, segments: SpeechSegment[]) {
     if (!isPlayingRef.current || index >= segments.length) {
       stopSpeech();
       return;
@@ -145,6 +203,8 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
 
     setCurrentSegmentIdx(index);
     const seg = segments[index];
+    setCurrentSegLabel(seg.label);
+    setCurrentSegText(seg.text);
 
     const synth = window.speechSynthesis;
     synth.cancel(); // ensure clean queue
@@ -153,10 +213,14 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     utterance.rate = rateRef.current;
     utterance.pitch = 1.0;
 
-    // Pick an English voice if available
-    const voices = synth.getVoices();
-    const enVoice = voices.find((v) => v.lang.startsWith("en") && v.localService) || voices.find((v) => v.lang.startsWith("en"));
-    if (enVoice) utterance.voice = enVoice;
+    // Pick selected voice or fallback to default English voice
+    if (selectedVoiceRef.current) {
+      utterance.voice = selectedVoiceRef.current;
+    } else {
+      const allVoices = synth.getVoices();
+      const enVoice = allVoices.find((v) => v.lang.startsWith("en") && v.localService) || allVoices.find((v) => v.lang.startsWith("en"));
+      if (enVoice) utterance.voice = enVoice;
+    }
 
     utterance.onend = () => {
       if (!isPlayingRef.current) return;
@@ -178,7 +242,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
 
     activeUtteranceRef.current = utterance;
     synth.speak(utterance);
-  };
+  }
 
   const handlePlay = () => {
     if (isPaused) {
@@ -218,9 +282,18 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     }
   };
 
-  if (!supported) return null;
+  const handleVoiceChange = (voiceName: string) => {
+    setSelectedVoiceName(voiceName);
+    const voice = voices.find((v) => v.name === voiceName) || null;
+    selectedVoiceRef.current = voice;
+    // If currently playing, restart segment at new voice
+    if (isPlaying && currentSegmentIdx >= 0 && segmentsRef.current.length > 0) {
+      window.speechSynthesis.cancel();
+      speakSegment(currentSegmentIdx, segmentsRef.current);
+    }
+  };
 
-  const currentSeg = currentSegmentIdx >= 0 ? segmentsRef.current[currentSegmentIdx] : null;
+  if (!supported) return null;
 
   return (
     <div className="audio-explainer-card">
@@ -269,14 +342,34 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
               </button>
             ))}
           </div>
+
+          {voices.length > 0 && (
+            <div className="voice-selector">
+              <span className="voice-label">Voice:</span>
+              <select
+                value={selectedVoiceName}
+                onChange={(e) => handleVoiceChange(e.target.value)}
+                className="voice-select"
+              >
+                {voices.map((v) => {
+                  const isFemale = isLikelyFemale(v.name);
+                  return (
+                    <option key={v.name} value={v.name}>
+                      {isFemale ? "👩 " : "👨 "} {v.name}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
-      {currentSeg && (isPlaying || isPaused) && (
+      {currentSegmentIdx >= 0 && (isPlaying || isPaused) && (
         <div className="audio-status">
           <span className="pulse-dot"></span>
-          <span className="status-label">Narrating ({currentSeg.label}):</span>
-          <span className="status-text">{currentSeg.text}</span>
+          <span className="status-label">Narrating ({currentSegLabel}):</span>
+          <span className="status-text">{currentSegText}</span>
         </div>
       )}
     </div>

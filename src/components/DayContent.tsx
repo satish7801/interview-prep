@@ -11,6 +11,71 @@ import FlashcardGrid from "./FlashcardGrid";
 import VizBlock from "./VizBlock";
 import AudioExplainer from "./AudioExplainer";
 
+interface CodeSection {
+  title: string;
+  code: string;
+}
+
+function parseCodeBlocks(codeText: string): CodeSection[] {
+  if (!codeText) return [];
+  const lines = codeText.split("\n");
+  const sections: CodeSection[] = [];
+  let currentTitle = "";
+  let currentCodeLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const isComment = trimmed.startsWith("--") || trimmed.startsWith("//") || (trimmed.startsWith("#") && !trimmed.startsWith("#!"));
+    
+    if (isComment && (trimmed.includes(":") || trimmed.toLowerCase().includes("trap") || trimmed.toLowerCase().includes("fix") || trimmed.toLowerCase().includes("basics") || trimmed.toLowerCase().includes("alternative") || trimmed.toLowerCase().includes("vs") || trimmed.toLowerCase().includes("example") || trimmed.toLowerCase().includes("safe") || trimmed.length > 10)) {
+      if (currentCodeLines.length > 0 || currentTitle) {
+        sections.push({
+          title: currentTitle || "Example",
+          code: currentCodeLines.join("\n").trim()
+        });
+        currentCodeLines = [];
+      }
+      currentTitle = trimmed.replace(/^(--|\/\/|#)\s*/, "").trim();
+    } else {
+      currentCodeLines.push(line);
+    }
+  }
+
+  if (currentCodeLines.length > 0 || currentTitle) {
+    sections.push({
+      title: currentTitle || "Example",
+      code: currentCodeLines.join("\n").trim()
+    });
+  }
+
+  return sections;
+}
+
+function findMatchingCodeSection(pt: string, sections: CodeSection[]): CodeSection[] {
+  const cleanPt = pt.toLowerCase();
+  const backticks = [...pt.matchAll(/`([^`]+)`/g)].map(m => m[1].toLowerCase());
+  const boldTerms = [...pt.matchAll(/\*\*([^*]+)\*\*/g)].map(m => m[1].toLowerCase());
+  
+  return sections.filter(sec => {
+    const cleanTitle = sec.title.toLowerCase();
+    
+    if (backticks.some(bt => cleanTitle.includes(bt) || bt.includes(cleanTitle))) return true;
+    if (boldTerms.some(bt => cleanTitle.includes(bt) || bt.includes(cleanTitle))) return true;
+    
+    const keywords = ["join", "apply", "exists", "isnull", "coalesce", "nullif", "try_convert", "try_cast", "rollup", "cube", "grouping", "string_agg", "having", "group by", "where", "window", "rank", "partition", "cte", "lead", "lag", "index", "statistics", "tempdb", "lock", "transaction", "isolation"];
+    
+    for (const kw of keywords) {
+      if (cleanPt.includes(kw) && cleanTitle.includes(kw)) {
+        return true;
+      }
+    }
+    
+    const words = cleanTitle.split(/\s+/).filter(w => w.length > 3);
+    const matches = words.filter(w => cleanPt.includes(w));
+    return matches.length >= 2;
+  });
+}
+
 type Props = {
   trackId: string;
   dayN: number;
@@ -75,18 +140,36 @@ export default function DayContent({ trackId, dayN }: Props) {
 
       {(day.pts?.length ?? 0) > 0 && (
         <section className="content-section">
-          <h2 className="section-label">Key concepts</h2>
-          <ul className="concept-list">
-            {day.pts!.map((pt, i) => (
-              <li key={i}>{formatInline(pt)}</li>
-            ))}
-          </ul>
+          <h2 className="section-label">Key concepts & SQL examples</h2>
+          <div className="concept-detail-list">
+            {day.pts!.map((pt, i) => {
+              const matchedSecs = day.code ? findMatchingCodeSection(pt, parseCodeBlocks(day.code)) : [];
+              return (
+                <div key={i} className="concept-detail-card">
+                  <div className="concept-detail-header">
+                    <span className="concept-number">0{i + 1}</span>
+                    <p className="concept-text">{formatInline(pt)}</p>
+                  </div>
+                  {matchedSecs.length > 0 && (
+                    <div className="concept-examples">
+                      {matchedSecs.map((sec, sidx) => (
+                        <div key={sidx} className="concept-example-item">
+                          <span className="example-title">💡 Example: {sec.title}</span>
+                          <CodeBlock code={sec.code} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
 
       {day.code && (
         <section className="content-section">
-          <h2 className="section-label">Code example</h2>
+          <h2 className="section-label">Complete Practice Script</h2>
           <CodeBlock code={day.code} />
         </section>
       )}
@@ -108,7 +191,7 @@ export default function DayContent({ trackId, dayN }: Props) {
           <div className="playbook-box p-4 rounded-lg bg-card border border-border space-y-4">
             <div>
               <h3 className="font-semibold text-primary mb-1">🎙️ 30-Second Opening Script</h3>
-              <p className="text-sm text-foreground/90 italic">"{day.interviewPlaybook.openingScript}"</p>
+              <p className="text-sm text-foreground/90 italic">&ldquo;{day.interviewPlaybook.openingScript}&rdquo;</p>
             </div>
             <div>
               <h3 className="font-semibold text-primary mb-1">🔥 Real Production Incident (STAR Story)</h3>
