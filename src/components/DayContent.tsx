@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getTrackColor } from "@/data/tracks";
 import { useManifest, usePart } from "@/hooks/useContent";
@@ -10,6 +11,46 @@ import ContentStatus from "./ContentStatus";
 import FlashcardGrid from "./FlashcardGrid";
 import VizBlock from "./VizBlock";
 import AudioExplainer from "./AudioExplainer";
+
+interface CodeSection {
+  title: string;
+  code: string;
+}
+
+function renderGeminiResponse(text: string) {
+  if (!text) return null;
+  const sections = text.split("\n\n").filter(s => s.trim().length > 0);
+  
+  return sections.map((sec, idx) => {
+    const trimmed = sec.trim();
+    if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
+      const lines = trimmed.split("\n");
+      const code = lines.slice(1, -1).join("\n");
+      return (
+        <div key={idx} style={{ margin: "12px 0" }}>
+          <CodeBlock code={code} />
+        </div>
+      );
+    }
+    
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      const items = trimmed.split("\n").map(line => line.replace(/^[-*]\s+/, ""));
+      return (
+        <ul key={idx} className="gemini-list" style={{ paddingLeft: "20px", margin: "8px 0", listStyleType: "disc" }}>
+          {items.map((item, i) => (
+            <li key={i} style={{ marginBottom: "4px", fontSize: "13.5px", color: "#f4fbf7" }}>{formatInline(item)}</li>
+          ))}
+        </ul>
+      );
+    }
+    
+    return (
+      <p key={idx} className="gemini-para" style={{ fontSize: "13.5px", lineHeight: "1.6", margin: "8px 0", color: "#f4fbf7", fontFamily: "Courier New, monospace" }}>
+        {formatInline(trimmed)}
+      </p>
+    );
+  });
+}
 
 interface CodeSection {
   title: string;
@@ -93,6 +134,203 @@ export default function DayContent({ trackId, dayN }: Props) {
   );
   const { isDayDone, toggleDayDone, getNote, setNote, hydrated } = useProgress();
 
+  const [apiKey, setApiKey] = useState<string>("");
+  const [inputIdx, setInputIdx] = useState<number | null>(null);
+  const [loadingMap, setLoadingMap] = useState<Record<number, boolean>>({});
+  const [geminiReplies, setGeminiReplies] = useState<Record<number, string>>({});
+  const [isSpeakingGemini, setIsSpeakingGemini] = useState<Record<number, boolean>>({});
+
+  const [overallReply, setOverallReply] = useState<string>("");
+  const [overallLoading, setOverallLoading] = useState<boolean>(false);
+  const [isSpeakingOverall, setIsSpeakingOverall] = useState<boolean>(false);
+  const [showOverallInput, setShowOverallInput] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setApiKey(process.env.NEXT_PUBLIC_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || "");
+    }
+  }, []);
+
+  const handleSaveLocalKey = (key: string) => {
+    localStorage.setItem("gemini_api_key", key);
+    setApiKey(key);
+    setInputIdx(null);
+    setShowOverallInput(false);
+  };
+
+  const handleAskGemini = async (index: number, conceptText: string, mode: "explain" | "example") => {
+    const activeKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || apiKey;
+    if (!activeKey) {
+      setInputIdx(index);
+      return;
+    }
+
+    setLoadingMap(prev => ({ ...prev, [index]: true }));
+    try {
+      let promptText = "";
+      if (mode === "explain") {
+        promptText = `You are a friendly and expert SQL coach. Please explain the SQL concept: "${conceptText}" in simple terms so it is fully understandable for beginners. Explain it conceptually like you are drawing diagrams on a blackboard. Do not write queries here. Output in clean Markdown.`;
+      } else {
+        promptText = `You are a friendly and expert SQL coach. Please provide a clear, beginner-friendly SQL query example illustrating the concept: "${conceptText}". Use simple tables. Explain step-by-step how the query works. Output in clean Markdown.`;
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: promptText
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from Gemini.";
+      setGeminiReplies(prev => ({ ...prev, [index]: reply }));
+    } catch (err) {
+      console.error(err);
+      setGeminiReplies(prev => ({ ...prev, [index]: `Failed to get explanation: ${err instanceof Error ? err.message : 'Unknown error'}` }));
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const handleAskGeminiOverall = async (mode: "explain" | "example") => {
+    if (!day) return;
+    const activeKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || apiKey;
+    if (!activeKey) {
+      setShowOverallInput(true);
+      return;
+    }
+
+    setOverallLoading(true);
+    try {
+      let promptText = "";
+      if (mode === "explain") {
+        promptText = `You are a friendly and expert SQL coach. Please give me a detailed, simplified overview of today's lesson: "${day.title}". The context is: "${day.exp || ''}". Explain the concepts conceptually like you are teaching a classroom using a blackboard. Output in clean Markdown.`;
+      } else {
+        promptText = `You are a friendly and expert SQL coach. Please provide a comprehensive SQL script example representing the core of today's lesson: "${day.title}". Include comments and explain the queries clearly. Output in clean Markdown.`;
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: promptText
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from Gemini.";
+      setOverallReply(reply);
+    } catch (err) {
+      console.error(err);
+      setOverallReply(`Failed to get explanation: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setOverallLoading(false);
+    }
+  };
+
+  const speakGeminiReply = (index: number, text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    
+    const synth = window.speechSynthesis;
+    
+    if (isSpeakingGemini[index]) {
+      synth.cancel();
+      setIsSpeakingGemini(prev => ({ ...prev, [index]: false }));
+      return;
+    }
+    
+    synth.cancel();
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, "Code example shown on blackboard.")
+      .replace(/[*#`_-]/g, "");
+    
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const voices = synth.getVoices();
+    const defaultVoice = voices.find(v => v.lang.toLowerCase().includes("en-in")) 
+      || voices.find(v => v.lang.toLowerCase().includes("en"));
+    if (defaultVoice) utterance.voice = defaultVoice;
+    
+    utterance.onend = () => {
+      setIsSpeakingGemini(prev => ({ ...prev, [index]: false }));
+    };
+    
+    utterance.onerror = () => {
+      setIsSpeakingGemini(prev => ({ ...prev, [index]: false }));
+    };
+    
+    setIsSpeakingGemini(prev => ({ ...prev, [index]: true }));
+    synth.speak(utterance);
+  };
+
+  const speakOverallReply = (text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    
+    const synth = window.speechSynthesis;
+    
+    if (isSpeakingOverall) {
+      synth.cancel();
+      setIsSpeakingOverall(false);
+      return;
+    }
+    
+    synth.cancel();
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, "Code example shown on blackboard.")
+      .replace(/[*#`_-]/g, "");
+    
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const voices = synth.getVoices();
+    const defaultVoice = voices.find(v => v.lang.toLowerCase().includes("en-in")) 
+      || voices.find(v => v.lang.toLowerCase().includes("en"));
+    if (defaultVoice) utterance.voice = defaultVoice;
+    
+    utterance.onend = () => {
+      setIsSpeakingOverall(false);
+    };
+    
+    utterance.onerror = () => {
+      setIsSpeakingOverall(false);
+    };
+    
+    setIsSpeakingOverall(true);
+    synth.speak(utterance);
+  };
+
   const loading = !hydrated || manifestLoading || partLoading;
   const error = manifestError || partError;
 
@@ -138,12 +376,110 @@ export default function DayContent({ trackId, dayN }: Props) {
 
       <AudioExplainer day={day} trackName={manifest.name} />
 
+      {/* Gemini AI Topic Assistant Card */}
+      <div className="overall-gemini-card">
+        <div className="overall-gemini-header">
+          <div className="overall-gemini-title">
+            <span className="gemini-icon">✨</span>
+            <div>
+              <h3>AI Topic Assistant</h3>
+              <p className="gemini-subtitle">
+                Ask Gemini to explain the entire day&apos;s topic or generate a comprehensive SQL script.
+              </p>
+            </div>
+          </div>
+          <div className="overall-gemini-actions">
+            <button
+              type="button"
+              className="gemini-btn"
+              onClick={() => handleAskGeminiOverall("explain")}
+              disabled={overallLoading}
+            >
+              📖 Simplify Whole Topic
+            </button>
+            <button
+              type="button"
+              className="gemini-btn"
+              onClick={() => handleAskGeminiOverall("example")}
+              disabled={overallLoading}
+            >
+              💡 Overall SQL Example
+            </button>
+            {overallReply && (
+              <button
+                type="button"
+                className={`gemini-speak-btn ${isSpeakingOverall ? "active" : ""}`}
+                onClick={() => speakOverallReply(overallReply)}
+              >
+                {isSpeakingOverall ? "⏸ Stop Voice" : "🔊 Listen"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {showOverallInput && !apiKey && (
+          <div className="gemini-key-input-box" style={{ marginTop: "14px" }}>
+            <p className="gemini-input-tip">
+              Provide a Google Gemini API Key. It will be stored locally in your browser.
+            </p>
+            <div className="gemini-input-row">
+              <input
+                type="password"
+                placeholder="AIzaSy..."
+                className="gemini-key-input"
+                id="overall-key-input"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSaveLocalKey((e.target as HTMLInputElement).value);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="gemini-save-btn"
+                onClick={() => {
+                  const val = (document.getElementById("overall-key-input") as HTMLInputElement)?.value;
+                  if (val) handleSaveLocalKey(val);
+                }}
+              >
+                Save
+              </button>
+            </div>
+            <a
+              href="https://aistudio.google.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="gemini-link"
+            >
+              Get a free API key from Google AI Studio →
+            </a>
+          </div>
+        )}
+
+        {overallReply && (
+          <div className="gemini-blackboard-box" style={{ marginTop: "16px" }}>
+            <div className="blackboard-header">
+              <span className="blackboard-chalk-icon">✨</span>
+              <span className="blackboard-title">AI Blackboard — Topic Masterclass</span>
+            </div>
+            <div className="blackboard-text">
+              {renderGeminiResponse(overallReply)}
+            </div>
+          </div>
+        )}
+      </div>
+
       {(day.pts?.length ?? 0) > 0 && (
         <section className="content-section">
           <h2 className="section-label">Key concepts & SQL examples</h2>
           <div className="concept-detail-list">
             {day.pts!.map((pt, i) => {
               const matchedSecs = day.code ? findMatchingCodeSection(pt, parseCodeBlocks(day.code)) : [];
+              const isSpeaking = !!isSpeakingGemini[i];
+              const isLoading = !!loadingMap[i];
+              const replyText = geminiReplies[i];
+              const showInput = inputIdx === i;
+
               return (
                 <div key={i} className="concept-detail-card">
                   <div className="concept-detail-header">
@@ -158,6 +494,86 @@ export default function DayContent({ trackId, dayN }: Props) {
                           <CodeBlock code={sec.code} />
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Gemini AI Actions */}
+                  <div className="gemini-action-section">
+                    <button
+                      type="button"
+                      className="gemini-btn"
+                      onClick={() => handleAskGemini(i, pt, "explain")}
+                      disabled={isLoading}
+                    >
+                      📖 Explain this point
+                    </button>
+                    <button
+                      type="button"
+                      className="gemini-btn"
+                      onClick={() => handleAskGemini(i, pt, "example")}
+                      disabled={isLoading}
+                    >
+                      💡 Give query example
+                    </button>
+                    {replyText && (
+                      <button
+                        type="button"
+                        className={`gemini-speak-btn ${isSpeaking ? "active" : ""}`}
+                        onClick={() => speakGeminiReply(i, replyText)}
+                      >
+                        {isSpeaking ? "⏸ Stop Voice" : "🔊 Listen"}
+                      </button>
+                    )}
+                  </div>
+
+                  {showInput && !apiKey && (
+                    <div className="gemini-key-input-box">
+                      <p className="gemini-input-tip">
+                        Provide a Google Gemini API Key. It will be stored locally in your browser.
+                      </p>
+                      <div className="gemini-input-row">
+                        <input
+                          type="password"
+                          placeholder="AIzaSy..."
+                          className="gemini-key-input"
+                          id={`key-input-${i}`}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleSaveLocalKey((e.target as HTMLInputElement).value);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="gemini-save-btn"
+                          onClick={() => {
+                            const val = (document.getElementById(`key-input-${i}`) as HTMLInputElement)?.value;
+                            if (val) handleSaveLocalKey(val);
+                          }}
+                        >
+                          Save
+                        </button>
+                      </div>
+                      <a
+                        href="https://aistudio.google.com/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="gemini-link"
+                      >
+                        Get a free API key from Google AI Studio →
+                      </a>
+                    </div>
+                  )}
+
+                  {replyText && (
+                    <div className="gemini-blackboard-box">
+                      <div className="blackboard-header">
+                        <span className="blackboard-chalk-icon">✨</span>
+                        <span className="blackboard-title">Gemini AI Blackboard Explanation</span>
+                      </div>
+                      <div className="blackboard-text">
+                        {renderGeminiResponse(replyText)}
+                      </div>
                     </div>
                   )}
                 </div>

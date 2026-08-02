@@ -26,6 +26,27 @@ const isLikelyFemale = (name: string): boolean => {
   return femaleKeywords.some(keyword => lowercaseName.includes(keyword)) || lowercaseName.includes("female");
 };
 
+const getCoachName = (voiceName: string): string => {
+  if (!voiceName) return "Sophia";
+  const lower = voiceName.toLowerCase();
+  if (lower.includes("rishi")) return "Rishi";
+  if (lower.includes("raveena")) return "Raveena";
+  if (lower.includes("veena")) return "Veena";
+  if (lower.includes("heera")) return "Heera";
+  if (lower.includes("neerja")) return "Neerja";
+  if (lower.includes("samantha")) return "Samantha";
+  if (lower.includes("zira")) return "Zira";
+  if (lower.includes("siri")) return "Siri";
+  if (lower.includes("daniel")) return "Daniel";
+  if (lower.includes("karen")) return "Karen";
+  if (lower.includes("moira")) return "Moira";
+  
+  // Clean up and extract first word
+  const cleaned = voiceName.replace(/Microsoft|Google|Apple|Natural|Online|Desktop|\([^)]*\)|-|_/gi, "").trim();
+  const firstWord = cleaned.split(/\s+/)[0];
+  return firstWord || "Sophia";
+};
+
 interface CodeSection {
   title: string;
   code: string;
@@ -136,6 +157,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>("");
   const [currentSegLabel, setCurrentSegLabel] = useState<string>("");
   const [currentSegText, setCurrentSegText] = useState<string>("");
+  const [displayedText, setDisplayedText] = useState<string>("");
 
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -143,6 +165,8 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
   const isPlayingRef = useRef(false);
   const rateRef = useRef(1);
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+
+  const coachName = getCoachName(selectedVoiceName);
 
 
 
@@ -154,7 +178,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     list.push({
       id: "intro",
       label: "Intro & Overview",
-      text: `Hello, I'm Sophia, your AI instructor. Welcome to Day ${day.n} of ${trackName}. Today's topic is: ${day.title}. Let's write some examples on the blackboard and analyze them together.`,
+      text: `Hello, I'm ${coachName}, your AI instructor. Welcome to Day ${day.n} of ${trackName}. Today's topic is: ${day.title}. Let's write some examples on the blackboard and analyze them together.`,
       pauseAfterMs: 1600,
     });
 
@@ -233,6 +257,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     setCurrentSegmentIdx(-1);
     setCurrentSegLabel("");
     setCurrentSegText("");
+    setDisplayedText("");
   }
 
   function speakSegment(index: number, segments: SpeechSegment[]) {
@@ -245,6 +270,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
     const seg = segments[index];
     setCurrentSegLabel(seg.label);
     setCurrentSegText(seg.text);
+    setDisplayedText(""); // Start with empty blackboard for writing effect
 
     const synth = window.speechSynthesis;
     synth.cancel(); // ensure clean queue
@@ -262,7 +288,18 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
       if (enVoice) utterance.voice = enVoice;
     }
 
+    // Word boundary mapping for dynamic blackboard chalk-writing animation
+    utterance.onboundary = (event) => {
+      if (event.name === "word") {
+        const charIndex = event.charIndex;
+        const nextSpace = seg.text.indexOf(" ", charIndex);
+        const currentProgress = nextSpace !== -1 ? seg.text.substring(0, nextSpace) : seg.text;
+        setDisplayedText(currentProgress);
+      }
+    };
+
     utterance.onend = () => {
+      setDisplayedText(seg.text); // ensure full text is written at the end
       if (!isPlayingRef.current) return;
       // Pause based on segment complexity before next item
       const delay = Math.round(seg.pauseAfterMs / rateRef.current);
@@ -273,6 +310,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
 
     utterance.onerror = (e) => {
       console.error("Speech error:", e);
+      setDisplayedText(seg.text);
       if (isPlayingRef.current && index + 1 < segments.length) {
         speakSegment(index + 1, segments);
       } else {
@@ -353,12 +391,24 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
         filtered = allVoices;
       }
       
-      // Sort: female voices first, then others
+      // Sort: Indian English first, then female voices, then others
       filtered = [...filtered].sort((a, b) => {
+        const aLang = a.lang.toLowerCase();
+        const bLang = b.lang.toLowerCase();
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        
+        const aIndian = aLang.includes("en-in") || aName.includes("india") || aName.includes("indian");
+        const bIndian = bLang.includes("en-in") || bName.includes("india") || bName.includes("indian");
+        
+        if (aIndian && !bIndian) return -1;
+        if (!aIndian && bIndian) return 1;
+        
         const aFemale = isLikelyFemale(a.name);
         const bFemale = isLikelyFemale(b.name);
         if (aFemale && !bFemale) return -1;
         if (!aFemale && bFemale) return 1;
+        
         return a.name.localeCompare(b.name);
       });
 
@@ -368,8 +418,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
         const active = selectedVoiceRef.current;
         const stillExists = active ? filtered.some(v => v.name === active.name) : false;
         if (!stillExists) {
-          const firstFemale = filtered.find(v => isLikelyFemale(v.name));
-          const defaultVoice = firstFemale || filtered[0];
+          const defaultVoice = filtered[0];
           setSelectedVoiceName(defaultVoice.name);
           selectedVoiceRef.current = defaultVoice;
         }
@@ -389,17 +438,17 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
 
   if (!supported) return null;
 
-  let coachStatus = "Sophia is idle";
+  let coachStatus = `${coachName} is idle`;
   let isWriting = false;
   if (isPlaying) {
     if (currentSegLabel.toLowerCase().includes("concept") || currentSegLabel.toLowerCase().includes("pitch") || currentSegLabel.toLowerCase().includes("story")) {
-      coachStatus = "Sophia is writing on the blackboard...";
+      coachStatus = `${coachName} is writing on the blackboard...`;
       isWriting = true;
     } else {
-      coachStatus = "Sophia is explaining...";
+      coachStatus = `${coachName} is explaining...`;
     }
   } else if (isPaused) {
-    coachStatus = "Sophia is paused";
+    coachStatus = `${coachName} is paused`;
   }
 
   return (
@@ -409,7 +458,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
         {/* AI Character Panel */}
         <div className="ai-coach-panel">
           <div className={`avatar-container ${isPlaying ? "speaking" : ""} ${isWriting ? "writing" : ""}`}>
-            <img src="/ai-avatar.png" alt="Sophia - AI Coach" className="ai-avatar-img" />
+            <img src="/ai-avatar.png" alt={`${coachName} - AI Coach`} className="ai-avatar-img" />
             <div className="mouth-overlay"></div>
             <div className="pulse-ring"></div>
             {isPlaying && (
@@ -423,7 +472,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
             )}
           </div>
           <div className="ai-coach-info">
-            <h4 className="coach-name">Sophia</h4>
+            <h4 className="coach-name">{coachName}</h4>
             <span className="coach-title">AI SQL Instructor</span>
             <div className="coach-status">
               <span className={`status-dot ${isPlaying ? "active" : isPaused ? "paused" : ""}`}></span>
@@ -438,7 +487,7 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
             <div>
               <h3>Daily Video-Style Explainer</h3>
               <p className="audio-subtitle">
-                Listen to Sophia explain concepts and walk through query examples.
+                Listen to {coachName} explain concepts and walk through query examples.
               </p>
             </div>
 
@@ -505,7 +554,10 @@ export default function AudioExplainer({ day, trackName }: AudioExplainerProps) 
                 <span className="blackboard-chalk-icon">📝</span>
                 <span className="blackboard-title">Blackboard — Narrating ({currentSegLabel})</span>
               </div>
-              <p className="blackboard-text">{currentSegText}</p>
+              <p className="blackboard-text">
+                {displayedText || currentSegText}
+                {isPlaying && <span className="chalk-cursor">|</span>}
+              </p>
             </div>
           )}
         </div>
