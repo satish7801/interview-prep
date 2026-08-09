@@ -99,21 +99,38 @@ function findMatchingCodeSection(pt: string, sections: CodeSection[]): CodeSecti
   
   return sections.filter(sec => {
     const cleanTitle = sec.title.toLowerCase();
+    const cleanCode = sec.code.toLowerCase();
     
-    if (backticks.some(bt => cleanTitle.includes(bt) || bt.includes(cleanTitle))) return true;
-    if (boldTerms.some(bt => cleanTitle.includes(bt) || bt.includes(cleanTitle))) return true;
+    // 1. Backtick terms (e.g. `COUNT(*)`) inside the title or the code body
+    if (backticks.some(bt => 
+      cleanTitle.includes(bt) || bt.includes(cleanTitle) || cleanCode.includes(bt)
+    )) return true;
     
-    const keywords = ["join", "apply", "exists", "isnull", "coalesce", "nullif", "try_convert", "try_cast", "rollup", "cube", "grouping", "string_agg", "having", "group by", "where", "window", "rank", "partition", "cte", "lead", "lag", "index", "statistics", "tempdb", "lock", "transaction", "isolation"];
+    // 2. Bold terms in the title or the code body
+    if (boldTerms.some(bt => 
+      cleanTitle.includes(bt) || bt.includes(cleanTitle) || cleanCode.includes(bt)
+    )) return true;
+    
+    // 3. Match SQL keywords/concepts in both the point and the section (title or code body)
+    const keywords = [
+      "join", "apply", "exists", "isnull", "coalesce", "nullif", "try_convert", "try_cast", 
+      "rollup", "cube", "grouping", "string_agg", "having", "group by", "where", "window", 
+      "rank", "partition", "cte", "lead", "lag", "index", "statistics", "tempdb", "lock", 
+      "transaction", "isolation", "count", "sum", "avg", "min", "max"
+    ];
     
     for (const kw of keywords) {
-      if (cleanPt.includes(kw) && cleanTitle.includes(kw)) {
+      if (cleanPt.includes(kw) && (cleanTitle.includes(kw) || cleanCode.includes(kw))) {
         return true;
       }
     }
     
+    // 4. Word-based matching with the title
     const words = cleanTitle.split(/\s+/).filter(w => w.length > 3);
     const matches = words.filter(w => cleanPt.includes(w));
-    return matches.length >= 2;
+    if (matches.length >= 2) return true;
+    
+    return false;
   });
 }
 
@@ -144,12 +161,67 @@ export default function DayContent({ trackId, dayN }: Props) {
   const [overallLoading, setOverallLoading] = useState<boolean>(false);
   const [isSpeakingOverall, setIsSpeakingOverall] = useState<boolean>(false);
   const [showOverallInput, setShowOverallInput] = useState<boolean>(false);
+  const [isExplainingAll, setIsExplainingAll] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setApiKey(process.env.NEXT_PUBLIC_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || "");
     }
   }, []);
+
+  // Reset replies when track or day changes
+  useEffect(() => {
+    setGeminiReplies({});
+    setLoadingMap({});
+    setIsSpeakingGemini({});
+    setOverallReply("");
+    setOverallLoading(false);
+    setIsSpeakingOverall(false);
+    setInputIdx(null);
+    setShowOverallInput(false);
+  }, [trackId, dayN]);
+
+  // Handler to explain all points sequentially
+  const handleExplainAllPoints = async () => {
+    const activeKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || apiKey;
+    if (!activeKey) {
+      setInputIdx(0);
+      return;
+    }
+    if (!day || !day.pts) return;
+
+    setIsExplainingAll(true);
+    for (let i = 0; i < day.pts.length; i++) {
+      if (geminiReplies[i]) continue;
+      await handleAskGemini(i, day.pts[i], "explain");
+      await new Promise(resolve => setTimeout(resolve, 400));
+    }
+    setIsExplainingAll(false);
+  };
+
+  // Auto explain all on mount/load if API key is present
+  useEffect(() => {
+    let active = true;
+    const activeKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || apiKey;
+    if (activeKey && day && day.pts) {
+      const pts = day.pts;
+      const run = async () => {
+        setIsExplainingAll(true);
+        for (let i = 0; i < pts.length; i++) {
+          if (!active) break;
+          if (geminiReplies[i]) continue;
+          await handleAskGemini(i, pts[i], "explain");
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
+        if (active) setIsExplainingAll(false);
+      };
+      run();
+    }
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [day, apiKey]);
 
   const handleSaveLocalKey = (key: string) => {
     localStorage.setItem("gemini_api_key", key);
@@ -175,7 +247,7 @@ export default function DayContent({ trackId, dayN }: Props) {
       }
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`,
         {
           method: "POST",
           headers: {
@@ -228,7 +300,7 @@ export default function DayContent({ trackId, dayN }: Props) {
       }
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`,
         {
           method: "POST",
           headers: {
@@ -471,7 +543,17 @@ export default function DayContent({ trackId, dayN }: Props) {
 
       {(day.pts?.length ?? 0) > 0 && (
         <section className="content-section">
-          <h2 className="section-label">Key concepts & SQL examples</h2>
+          <div className="section-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <h2 className="section-label" style={{ marginBottom: 0 }}>Key concepts & SQL examples</h2>
+            <button
+              type="button"
+              className="gemini-btn"
+              onClick={handleExplainAllPoints}
+              disabled={isExplainingAll}
+            >
+              {isExplainingAll ? "✨ Explaining all..." : "📖 Explain all points"}
+            </button>
+          </div>
           <div className="concept-detail-list">
             {day.pts!.map((pt, i) => {
               const matchedSecs = day.code ? findMatchingCodeSection(pt, parseCodeBlocks(day.code)) : [];
